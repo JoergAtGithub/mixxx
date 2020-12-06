@@ -42,14 +42,22 @@
 
 // Translate the MSVC _M_AMD64, _M_X64 and _M_IX86_FP to gcc style defines for SSE and SSE2 instruction sets
 #if defined(_M_AMD64) || defined(_M_X64)
-#define __SSE__
-#define __SSE2__
-#elif defined(_M_IX86_FP)
-#if _M_IX86_FP >= 1
+#ifndef __SSE__
 #define __SSE__
 #endif
-#if _M_IX86_FP == 2
+#ifndef __SSE2__
 #define __SSE2__
+#endif
+#elif defined(_M_IX86_FP)
+#if _M_IX86_FP >= 1
+#ifndef __SSE__
+#define __SSE__
+#endif
+#endif
+#if _M_IX86_FP == 2
+#ifndef __SSE2__
+#define __SSE2__
+#endif
 #endif
 #endif
 
