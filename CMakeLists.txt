@@ -2070,12 +2070,6 @@ if(SndFile_SUPPORTS_SET_COMPRESSION_LEVEL)
   target_compile_definitions(mixxx-lib PUBLIC SFC_SUPPORTS_SET_COMPRESSION_LEVEL)
 endif()
 
-#libsndfile is always build statically, so we don't check for STATIC_DEPS
-if(WIN32)
-  find_package(G72X REQUIRED)
-  target_link_libraries(mixxx-lib PUBLIC G72X::G72X)
-endif()
-
 # SoundTouch
 find_package(SoundTouch)
 cmake_dependent_option(SoundTouch_STATIC "Link libSoundTouch statically" OFF "SoundTouch_FOUND" ON)
@@ -2414,12 +2408,6 @@ if(OPUS)
       message(FATAL_ERROR "Opus support with static dependencies requires the celt library.")
     endif()
     target_link_libraries(mixxx-lib PUBLIC Celt::Celt)
-
-    find_package(Silk)
-    if(NOT Silk_FOUND)
-      message(FATAL_ERROR "Opus support with static dependencies requires the silk library.")
-    endif()
-    target_link_libraries(mixxx-lib PUBLIC Silk::Float)
   endif()
 endif()
 
@@ -2507,12 +2495,12 @@ if(HID)
     target_include_directories(mixxx-hidapi SYSTEM PUBLIC lib/hidapi/hidapi)
     if(WIN32)
         target_sources(mixxx-hidapi PRIVATE lib/hidapi/windows/hid.c)
+        find_library(Setupapi_LIBRARY Setupapi REQUIRED)
+        target_link_libraries(mixxx-hidapi PUBLIC ${Setupapi_LIBRARY})
     elseif(APPLE)
         target_sources(mixxx-hidapi PRIVATE lib/hidapi/mac/hid.c)
-        find_library(APPKIT_LIBRARY AppKit REQUIRED)
-        target_link_libraries(mixxx-lib PUBLIC
-          ${APPKIT_LIBRARY}
-        )
+        find_library(AppKit_LIBRARY AppKit REQUIRED)
+        target_link_libraries(mixxx-hidapi PUBLIC ${AppKit_LIBRARY})
     elseif(UNIX)
       if(NOT LibUSB_FOUND)
         message(FATAL_ERROR "USB HID controller support on Unix with statically linked libhidapi-libusb requires libusb 1.0 and its development headers.")
