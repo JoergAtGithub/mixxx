@@ -207,6 +207,7 @@ jobs:
         -DOPUS=ON
         -DQTKEYCHAIN=ON
         -DVINYLCONTROL=ON
+        ${{ env.CMAKE_ARGS }}
         ..
       working-directory: build
       env:
