@@ -184,7 +184,7 @@ void Logging::initialize(
                 }
                 if (!QFile::rename(logFileName, olderlogname)) {
                     fprintf(stderr,
-                            "Error rolling over logfile %s",
+                            "Error rolling over logfile %s\n",
                             logFileName.toLocal8Bit().constData());
                 }
             }
