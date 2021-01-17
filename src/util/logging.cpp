@@ -153,7 +153,7 @@ void Logging::initialize(
         const QDir& logDir,
         LogLevel logLevel,
         LogLevel logFlushLevel,
-        bool debugAssertBreak) {
+        LogFlags flags) {
     VERIFY_OR_DEBUG_ASSERT(!g_logfile.isOpen()) {
         // Somebody already called Logging::initialize.
         return;
@@ -161,7 +161,10 @@ void Logging::initialize(
 
     setLogLevel(logLevel);
 
-    if (logDir.exists()) {
+    if (flags.testFlag(LogFlag::LogToFile)) {
+        if (logDir.exists()) {
+            qWarning() << "Log directory does not exist!";
+        }
         QString logFileName;
 
         // Rotate old logfiles.
@@ -197,7 +200,7 @@ void Logging::initialize(
         g_logFlushLevel = LogLevel::Critical;
     }
 
-    g_debugAssertBreak = debugAssertBreak;
+    g_debugAssertBreak = flags.testFlag(LogFlag::DebugAssertBreak);
 
     // Install the Qt message handler.
     qInstallMessageHandler(MessageHandler);
