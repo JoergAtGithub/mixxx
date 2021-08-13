@@ -15,9 +15,11 @@ constexpr int kReportIdSize = 1;
 constexpr int kMaxHidErrorMessageSize = 512;
 } // namespace
 
-HidIO::HidIO(hid_device* device)
+HidIO::HidIO(hid_device* device, const QString device_name, const wchar_t* device_serial_number)
         : QThread(),
           m_pHidDevice(device),
+          m_pHidDeviceName(device_name),
+          m_pHidDeviceSerialNumber(device_serial_number),
           m_pollingBufferIndex(0) {
 
     // This isn't strictly necessary but is good practice.
@@ -80,6 +82,34 @@ void HidIO::processInputReport(int bytesRead) {
     // Execute callback function in JavaScript mapping
     // and print to stdout in case of --controllerDebug
     emit(receive(incomingData, mixxx::Time::elapsed()));
+}
+
+void HidIO::sendBytesReport(QByteArray data, unsigned int reportID) {
+    QMutexLocker locker(&m_HidIoMutex);
+    // Append the Report ID to the beginning of data[] per the API..
+    data.prepend(reportID);
+
+    locker.relock();
+    int result = hid_write(m_pHidDevice, (unsigned char*)data.constData(), data.size());
+    locker.unlock();
+    if (result == -1) {
+        if (ControllerDebug::isEnabled()) {
+            qWarning() << "Unable to send data to" << m_pHidDeviceName
+                       << "serial #" << m_pHidDeviceSerialNumber << ":"
+                       << mixxx::convertWCStringToQString(
+                                  hid_error(m_pHidDevice),
+                                  kMaxHidErrorMessageSize);
+        } else {
+            qWarning() << "Unable to send data to" << m_pHidDeviceName << ":"
+                       << mixxx::convertWCStringToQString(
+                                  hid_error(m_pHidDevice),
+                                  kMaxHidErrorMessageSize);
+        }
+    } else {
+        controllerDebug(result << "bytes sent to" << m_pHidDeviceName
+                               << "serial #" << m_pHidDeviceSerialNumber
+                               << "(including report ID of" << reportID << ")");
+    }
 }
 
 HidController::HidController(
@@ -179,10 +209,11 @@ int HidController::open() {
     if (m_pHidIO != NULL) {
         qWarning() << "HidIO already present for" << getName();
     } else {
-        m_pHidIO = new HidIO(m_pHidDevice);
+        m_pHidIO = new HidIO(m_pHidDevice, getName(), m_deviceInfo.serialNumberRaw());
         m_pHidIO->setObjectName(QString("HidIO %1").arg(getName()));
 
         connect(m_pHidIO, SIGNAL(receive(QByteArray, mixxx::Duration)), this, SLOT(receive(QByteArray, mixxx::Duration)));
+        connect(this, SIGNAL(sendBytesReport(QByteArray, unsigned int)), m_pHidIO, SLOT(sendBytesReport(QByteArray, unsigned int)));
 
         // Controller input needs to be prioritized since it can affect the
         // audio directly, like when scratching
@@ -206,17 +237,21 @@ int HidController::close() {
                    << "yet the device is open!";
     } else {
         disconnect(m_pHidIO, SIGNAL(receive(QByteArray, mixxx::Duration)), this, SLOT(receive(QByteArray, mixxx::Duration)));
+        disconnect(this, SIGNAL(sendBytesReport(QByteArray, unsigned int)), m_pHidIO, SLOT(sendBytesReport(QByteArray, unsigned int)));
         m_pHidIO->stop();
         hid_set_nonblocking(m_pHidDevice, 1); // Quit blocking
-        controllerDebug("  Waiting on reader to finish");
+        controllerDebug("  Waiting on IO thread to finish");
         m_pHidIO->wait();
-        delete m_pHidIO;
-        m_pHidIO = NULL;
     }
 
     // Stop controller engine here to ensure it's done before the device is closed
     //  in case it has any final parting messages
     stopEngine();
+
+    if (m_pHidIO != NULL) {
+        delete m_pHidIO;
+        m_pHidIO = NULL;
+    }
 
     // Close device
     controllerDebug("  Closing device");
@@ -234,43 +269,38 @@ QList<int> HidController::getInputReport(unsigned int reportID) {
     int bytesRead = 0;
 
     locker.relock();
-    if (m_pHidIO != NULL) {
-        m_pHidIO->m_pPollData[m_pHidIO->m_pollingBufferIndex][0] = reportID;
+    m_pHidIO->m_pPollData[m_pHidIO->m_pollingBufferIndex][0] = reportID;
 
-        // FIXME: implement upstream for hidraw backend on Linux
-        // https://github.com/libusb/hidapi/issues/259
-        bytesRead = hid_get_input_report(m_pHidDevice, m_pHidIO->m_pPollData[m_pHidIO->m_pollingBufferIndex], kBufferSize);
+    // FIXME: implement upstream for hidraw backend on Linux
+    // https://github.com/libusb/hidapi/issues/259
+    bytesRead = hid_get_input_report(m_pHidDevice, m_pHidIO->m_pPollData[m_pHidIO->m_pollingBufferIndex], kBufferSize);
 
-        controllerDebug(bytesRead
-                << "bytes received by hid_get_input_report" << getName()
-                << "serial #" << m_deviceInfo.serialNumber()
-                << "(including one byte for the report ID:"
-                << QString::number(static_cast<quint8>(reportID), 16)
-                           .toUpper()
-                           .rightJustified(2, QChar('0'))
-                << ")");
-        if (bytesRead <= kReportIdSize) {
-            // -1 is the only error value according to hidapi documentation.
-            // Otherwise minimum possible value is 1, because 1 byte is for the reportID,
-            // the smallest report with data is therefore 2 bytes.
-            DEBUG_ASSERT(bytesRead <= kReportIdSize);
-            locker.unlock();
-            return QList<int>();
-        }
-
-        // Convert array of bytes read in a JavaScript compatible return type
-        // For compatibility with the array provided by HidController::poll the reportID is contained as prefix
-        QList<int> dataList;
-        dataList.reserve(bytesRead);
-        for (int i = 0; i < bytesRead; i++) {
-            dataList.append(m_pHidIO->m_pPollData[m_pHidIO->m_pollingBufferIndex][i]);
-        }
+    controllerDebug(bytesRead
+            << "bytes received by hid_get_input_report" << getName()
+            << "serial #" << m_deviceInfo.serialNumber()
+            << "(including one byte for the report ID:"
+            << QString::number(static_cast<quint8>(reportID), 16)
+                        .toUpper()
+                        .rightJustified(2, QChar('0'))
+            << ")");
+    if (bytesRead <= kReportIdSize) {
+        // -1 is the only error value according to hidapi documentation.
+        // Otherwise minimum possible value is 1, because 1 byte is for the reportID,
+        // the smallest report with data is therefore 2 bytes.
+        DEBUG_ASSERT(bytesRead <= kReportIdSize);
         locker.unlock();
-        return dataList;
-    } else {
-        DEBUG_ASSERT("No HidIO thread");
         return QList<int>();
     }
+
+    // Convert array of bytes read in a JavaScript compatible return type
+    // For compatibility with the array provided by HidController::poll the reportID is contained as prefix
+    QList<int> dataList;
+    dataList.reserve(bytesRead);
+    for (int i = 0; i < bytesRead; i++) {
+        dataList.append(m_pHidIO->m_pPollData[m_pHidIO->m_pollingBufferIndex][i]);
+    }
+    locker.unlock();
+    return dataList;
 }
 
 
@@ -280,39 +310,11 @@ void HidController::sendReport(QList<int> data, unsigned int length, unsigned in
     foreach (int datum, data) {
         temp.append(datum);
     }
-    sendBytesReport(temp, reportID);
+    emit(sendBytesReport(temp, reportID));
 }
 
 void HidController::sendBytes(const QByteArray& data) {
-    sendBytesReport(data, 0);
-}
-
-void HidController::sendBytesReport(QByteArray data, unsigned int reportID) {
-    QMutexLocker locker(&m_pHidIO->m_HidIoMutex);
-    // Append the Report ID to the beginning of data[] per the API..
-    data.prepend(reportID);
-
-    locker.relock();
-    int result = hid_write(m_pHidDevice, (unsigned char*)data.constData(), data.size());
-    locker.unlock();
-    if (result == -1) {
-        if (ControllerDebug::isEnabled()) {
-            qWarning() << "Unable to send data to" << getName()
-                       << "serial #" << m_deviceInfo.serialNumber() << ":"
-                       << mixxx::convertWCStringToQString(
-                                  hid_error(m_pHidDevice),
-                                  kMaxHidErrorMessageSize);
-        } else {
-            qWarning() << "Unable to send data to" << getName() << ":"
-                       << mixxx::convertWCStringToQString(
-                                  hid_error(m_pHidDevice),
-                                  kMaxHidErrorMessageSize);
-        }
-    } else {
-        controllerDebug(result << "bytes sent to" << getName()
-                               << "serial #" << m_deviceInfo.serialNumber()
-                               << "(including report ID of" << reportID << ")");
-    }
+    emit(sendBytesReport(data, 0));
 }
 
 void HidController::sendFeatureReport(

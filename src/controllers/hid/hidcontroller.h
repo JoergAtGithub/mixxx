@@ -16,7 +16,7 @@ namespace {
 class HidIO : public QThread {
     Q_OBJECT
   public:
-    HidIO(hid_device* device);
+    HidIO(hid_device* device, const QString, const wchar_t*);
     virtual ~HidIO();
 
     void stop() {
@@ -33,12 +33,17 @@ signals:
     /// Signals that a HID InputReport received by Interupt triggered from HID device
   void receive(const QByteArray& data, mixxx::Duration timestamp);
 
+public slots:
+  void sendBytesReport(QByteArray data, unsigned int reportID);
+
   protected:
     void run();
 
   private:
     void processInputReport(int bytesRead);
     hid_device* m_pHidDevice;
+    const QString m_pHidDeviceName;
+    const wchar_t* m_pHidDeviceSerialNumber;
     QAtomicInt m_stop;
 };
 
@@ -73,12 +78,14 @@ class HidController final : public Controller {
     int open() override;
     int close() override;
 
+  signals:
+    void sendBytesReport(QByteArray data, unsigned int reportID);
+
   private:
 
     // For devices which only support a single report, reportID must be set to
     // 0x0.
     void sendBytes(const QByteArray& data) override;
-    void sendBytesReport(QByteArray data, unsigned int reportID);
     void sendFeatureReport(const QList<int>& dataList, unsigned int reportID);
 
     // getInputReport receives an input report on request.
