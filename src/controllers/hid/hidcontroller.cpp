@@ -14,6 +14,32 @@ namespace {
 constexpr int kReportIdSize = 1;
 constexpr int kMaxHidErrorMessageSize = 512;
 } // namespace
+HidIO::HidIO(hid_device* device)
+        : QThread(),
+          m_pHidDevice(device) {
+}
+
+HidIO::~HidIO() {
+}
+
+void HidIO::run() {
+    m_stop = 0;
+    unsigned char* data = new unsigned char[255];
+    while (m_stop.load() == 0) {
+        // hid_read_timeout reads an Input Report from a HID device.
+        // If no packet was available to be read within
+        // the timeout period, this function returns 0.
+        int result = hid_read_timeout(m_pHidDevice, data, 255, 500);
+        Trace timeout("HidIO timeout");
+        if (result > 0) {
+            Trace process("HidIO process packet");
+            //qDebug() << "Read" << result << "bytes, pointer:" << data;
+            QByteArray incomingData(reinterpret_cast<char*>(data), result);
+            emit(incomingInputReport(incomingData));
+        }
+    }
+    delete[] data;
+}
 
 HidController::HidController(
         mixxx::hid::DeviceInfo&& deviceInfo)
@@ -26,6 +52,8 @@ HidController::HidController(
     // All HID devices are full-duplex
     setInputDevice(true);
     setOutputDevice(true);
+
+    m_pHidIO = NULL;
 }
 
 HidController::~HidController() {
@@ -114,6 +142,19 @@ int HidController::open() {
     setOpen(true);
     startEngine();
 
+    if (m_pHidIO != NULL) {
+        qWarning() << "HidIO already present for" << getName();
+    } else {
+        m_pHidIO = new HidIO(m_pHidDevice);
+        m_pHidIO->setObjectName(QString("HidIO %1").arg(getName()));
+
+        connect(m_pHidIO, SIGNAL(incomingInputReport(QByteArray)), this, SLOT(processInputReport(QByteArray)));
+
+        // Controller input needs to be prioritized since it can affect the
+        // audio directly, like when scratching
+        m_pHidIO->start(QThread::HighPriority);
+    }
+
     return 0;
 }
 
@@ -124,6 +165,20 @@ int HidController::close() {
     }
 
     qDebug() << "Shutting down HID device" << getName();
+
+    // Stop the reading thread
+    if (m_pHidIO == NULL) {
+        qWarning() << "HidIO not present for" << getName()
+                   << "yet the device is open!";
+    } else {
+        disconnect(m_pHidIO, SIGNAL(incomingInputReport(QByteArray)), this, SLOT(processInputReport(QByteArray)));
+        m_pHidIO->stop();
+        hid_set_nonblocking(m_pHidDevice, 1); // Quit blocking
+        controllerDebug("  Waiting on reader to finish");
+        m_pHidIO->wait();
+        delete m_pHidIO;
+        m_pHidIO = NULL;
+    }
 
     // Stop controller engine here to ensure it's done before the device is closed
     //  in case it has any final parting messages

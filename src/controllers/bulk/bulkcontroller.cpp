@@ -85,7 +85,7 @@ BulkController::BulkController(
 
     setInputDevice(true);
     setOutputDevice(true);
-    m_pReader = nullptr;
+    m_pHidIO = nullptr;
 }
 
 BulkController::~BulkController() {
@@ -172,17 +172,17 @@ int BulkController::open() {
     setOpen(true);
     startEngine();
 
-    if (m_pReader != nullptr) {
+    if (m_pHidIO != nullptr) {
         qWarning() << "BulkReader already present for" << getName();
     } else {
-        m_pReader = new BulkReader(m_phandle, in_epaddr);
-        m_pReader->setObjectName(QString("BulkReader %1").arg(getName()));
+        m_pHidIO = new BulkReader(m_phandle, in_epaddr);
+        m_pHidIO->setObjectName(QString("BulkReader %1").arg(getName()));
 
-        connect(m_pReader, &BulkReader::incomingData, this, &BulkController::receive);
+        connect(m_pHidIO, &BulkReader::incomingData, this, &BulkController::receive);
 
         // Controller input needs to be prioritized since it can affect the
         // audio directly, like when scratching
-        m_pReader->start(QThread::HighPriority);
+        m_pHidIO->start(QThread::HighPriority);
     }
 
     return 0;
@@ -197,16 +197,16 @@ int BulkController::close() {
     qDebug() << "Shutting down USB Bulk device" << getName();
 
     // Stop the reading thread
-    if (m_pReader == nullptr) {
+    if (m_pHidIO == nullptr) {
         qWarning() << "BulkReader not present for" << getName()
                    << "yet the device is open!";
     } else {
-        disconnect(m_pReader, &BulkReader::incomingData, this, &BulkController::receive);
-        m_pReader->stop();
+        disconnect(m_pHidIO, &BulkReader::incomingData, this, &BulkController::receive);
+        m_pHidIO->stop();
         controllerDebug("  Waiting on reader to finish");
-        m_pReader->wait();
-        delete m_pReader;
-        m_pReader = nullptr;
+        m_pHidIO->wait();
+        delete m_pHidIO;
+        m_pHidIO = nullptr;
     }
 
     // Stop controller engine here to ensure it's done before the device is

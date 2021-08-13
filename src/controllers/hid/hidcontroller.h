@@ -1,9 +1,33 @@
 #pragma once
 
+#include <QThread>
+
 #include "controllers/controller.h"
 #include "controllers/hid/hiddevice.h"
 #include "controllers/hid/legacyhidcontrollermapping.h"
 #include "util/duration.h"
+
+class HidIO : public QThread {
+    Q_OBJECT
+  public:
+    HidIO(hid_device* device);
+    virtual ~HidIO();
+
+    void stop() {
+        m_stop = 1;
+    }
+
+signals:
+    /// Signals that a HID InputReport received by Interupt triggered from HID device
+    void incomingInputReport(QByteArray data);
+
+  protected:
+    void run();
+
+  private:
+    hid_device* m_pHidDevice;
+    QAtomicInt m_stop;
+};
 
 /// HID controller backend
 class HidController final : public Controller {
@@ -68,6 +92,7 @@ class HidController final : public Controller {
 
     const mixxx::hid::DeviceInfo m_deviceInfo;
 
+    HidIO* m_pHidIO;
     hid_device* m_pHidDevice;
     std::shared_ptr<LegacyHidControllerMapping> m_pMapping;
 
