@@ -1,11 +1,17 @@
 #pragma once
 
 #include <QThread>
+#include <QMutexLocker>
 
 #include "controllers/controller.h"
 #include "controllers/hid/hiddevice.h"
 #include "controllers/hid/legacyhidcontrollermapping.h"
 #include "util/duration.h"
+
+
+namespace {
+   static constexpr int kBufferSize = 255;
+} // namespace
 
 class HidIO : public QThread {
     Q_OBJECT
@@ -16,15 +22,22 @@ class HidIO : public QThread {
     void stop() {
         m_stop = 1;
     }
+    mutable QMutex m_HidIoMutex;
+        
+    static constexpr int kNumBuffers = 2;
+    unsigned char m_pPollData[kNumBuffers][kBufferSize];
+    int m_lastPollSize;
+    int m_pollingBufferIndex;
 
 signals:
     /// Signals that a HID InputReport received by Interupt triggered from HID device
-    void incomingInputReport(QByteArray data);
+  void receive(const QByteArray& data, mixxx::Duration timestamp);
 
   protected:
     void run();
 
   private:
+    void processInputReport(int bytesRead);
     hid_device* m_pHidDevice;
     QAtomicInt m_stop;
 };
@@ -60,11 +73,7 @@ class HidController final : public Controller {
     int open() override;
     int close() override;
 
-    bool poll() override;
-
   private:
-    bool isPolling() const override;
-    void processInputReport(int bytesRead);
 
     // For devices which only support a single report, reportID must be set to
     // 0x0.
@@ -95,12 +104,6 @@ class HidController final : public Controller {
     HidIO* m_pHidIO;
     hid_device* m_pHidDevice;
     std::shared_ptr<LegacyHidControllerMapping> m_pMapping;
-
-    static constexpr int kNumBuffers = 2;
-    static constexpr int kBufferSize = 255;
-    unsigned char m_pPollData[kNumBuffers][kBufferSize];
-    int m_lastPollSize;
-    int m_pollingBufferIndex;
 
     friend class HidControllerJSProxy;
 };
