@@ -33,7 +33,7 @@ HidIO::~HidIO() {
 void HidIO::run() {
     QMutexLocker locker(&m_HidIoMutex);
     m_stop = 0;
-    unsigned char* data = new unsigned char[255];
+
     while (m_stop.loadRelaxed() == 0) {
         // hid_read_timeout reads an Input Report from a HID device.
         // If no packet was available to be read within
@@ -51,9 +51,8 @@ void HidIO::run() {
             processInputReport(bytesRead);
         }
         locker.unlock();
-
+        usleep(500);
     }
-    delete[] data;
 }
 
 void HidIO::processInputReport(int bytesRead) {
