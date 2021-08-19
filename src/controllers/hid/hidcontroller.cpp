@@ -42,15 +42,22 @@ void HidIO::run() {
         // the timeout period, this function returns 0.
         locker.relock();
         Trace hidio_run("HidIO read interupt based IO");
-        int bytesRead = hid_read(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize);
-        Trace hidio_run2("HidIO process packet");
-        if (bytesRead < 0) {
-            // -1 is the only error value according to hidapi documentation.
-            DEBUG_ASSERT(bytesRead == -1);
-        } else if (bytesRead == 0) {
-            // No packet was available to be read
-        } else {
-            processInputReport(bytesRead);
+        for (int i = 0; i < 512; i++) {
+            int bytesRead = hid_read(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize);
+            //int bytesRead = hid_read_timeout(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize, 1);
+            Trace hidio_run2("HidIO process packet");
+            if (bytesRead < 0) {
+                // -1 is the only error value according to hidapi documentation.
+                DEBUG_ASSERT(bytesRead == -1);
+            } else if (bytesRead == 0) {
+                // No packet was available to be read -> HID ring buffer completly read
+                // Ring buffer size differs by hidapi backend: libusb(30 reports), mac(30 report), windows(64 reports), hidraw(2048 bytes)
+                if (i >= 30)
+                    qWarning() << "HID controller: " << m_pHidDeviceName << " Serial #" << m_pHidDeviceSerialNumber << " HID Ring buffer critical filled -> InputReports might be popped off -> Events by state transitions might be missed in the mapping. (Ring buffers received: " << i << ")";
+                break;
+            } else {
+                processInputReport(bytesRead);
+            }
         }
         locker.unlock();
         usleep(500);
