@@ -1086,7 +1086,7 @@ void EngineBuffer::processTrackLocked(
     const auto trackEndPosition = mixxx::audio::FramePos::fromEngineSamplePos(m_trackSamplesOld);
     for (const auto& pControl: qAsConst(m_engineControls)) {
         pControl->setFrameInfo(currentPosition, trackEndPosition, m_trackSampleRateOld);
-        pControl->process(rate, m_filepos_play, iBufferSize);
+        pControl->process(rate, currentPosition, iBufferSize);
     }
 
     m_scratching_old = is_scratching;
@@ -1247,7 +1247,7 @@ void EngineBuffer::processSeek(bool paused) {
     const QueuedSeek queuedSeek = m_queuedSeek.getValue();
 
     SeekRequests seekType = queuedSeek.seekType;
-    mixxx::audio::FramePos framePosition = queuedSeek.position;
+    mixxx::audio::FramePos position = queuedSeek.position;
 
     // Add SEEK_PHASE bit, if any
     if (m_iSeekPhaseQueued.fetchAndStoreRelease(0)) {
@@ -1259,7 +1259,7 @@ void EngineBuffer::processSeek(bool paused) {
             return;
         case SEEK_PHASE:
             // only adjust phase
-            framePosition = mixxx::audio::FramePos::fromEngineSamplePos(m_filepos_play);
+            position = mixxx::audio::FramePos::fromEngineSamplePos(m_filepos_play);
             break;
         case SEEK_STANDARD:
             if (m_pQuantize->toBool()) {
@@ -1278,35 +1278,35 @@ void EngineBuffer::processSeek(bool paused) {
             return;
     }
 
-    VERIFY_OR_DEBUG_ASSERT(framePosition.isValid()) {
+    VERIFY_OR_DEBUG_ASSERT(position.isValid()) {
         return;
     }
 
-    auto position = framePosition.toEngineSamplePos();
+    const auto trackEndPosition = mixxx::audio::FramePos::fromEngineSamplePos(m_trackSamplesOld);
 
     // Don't allow the playposition to go past the end.
-    if (position > m_trackSamplesOld) {
-        position = m_trackSamplesOld;
+    if (position > trackEndPosition) {
+        position = trackEndPosition;
     }
 
     if (!paused && (seekType & SEEK_PHASE)) {
         if (kLogger.traceEnabled()) {
             kLogger.trace() << "EngineBuffer::processSeek" << getGroup() << "Seeking phase";
         }
-        double requestedPosition = position;
-        double syncPosition = m_pBpmControl->getBeatMatchPosition(position, true, true);
-        position = m_pLoopingControl->getSyncPositionInsideLoop(requestedPosition, syncPosition);
+        const mixxx::audio::FramePos syncPosition =
+                m_pBpmControl->getBeatMatchPosition(position, true, true);
+        position = m_pLoopingControl->getSyncPositionInsideLoop(position, syncPosition);
         if (kLogger.traceEnabled()) {
             kLogger.trace()
                     << "EngineBuffer::processSeek" << getGroup() << "seek info:" << m_filepos_play
                     << "->" << position;
         }
     }
-    if (position != m_filepos_play) {
+    if (position.toEngineSamplePos() != m_filepos_play) {
         if (kLogger.traceEnabled()) {
             kLogger.trace() << "EngineBuffer::processSeek" << getGroup() << "Seek to" << position;
         }
-        setNewPlaypos(position);
+        setNewPlaypos(position.toEngineSamplePos());
         m_previousBufferSeek = true;
     }
     // Reset the m_queuedSeek value after it has been processed in
@@ -1399,7 +1399,9 @@ void EngineBuffer::updateIndicators(double speed, int iBufferSize) {
     // ClockControl::updateIndicators into the waveform update loop which is synced with the display refresh rate.
     // Via the visual play position it's possible to access to the sample that is currently played,
     // and not the one that have been processed as in the current solution.
-    m_pClockControl->updateIndicators(speed * m_baserate_old, m_filepos_play, m_pSampleRate->get());
+    const auto currentPosition = mixxx::audio::FramePos::fromEngineSamplePos(m_filepos_play);
+    const auto sampleRate = mixxx::audio::SampleRate::fromDouble(m_pSampleRate->get());
+    m_pClockControl->updateIndicators(speed * m_baserate_old, currentPosition, sampleRate);
 }
 
 void EngineBuffer::hintReader(const double dRate) {
