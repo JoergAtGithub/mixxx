@@ -406,7 +406,7 @@ void BrowseFeature::onLazyChildExpandation(const QModelIndex& index) {
     if (path == DEVICE_NODE) {
         folders += getRemovableDevices();
     } else {
-        m_childModel.processFolder(index, path);
+        m_pSidebarModel->processFolder(index, path);
         // FIXME: create QTimer to update label
         /*
         auto title = m_childModel.data(index, Qt::DisplayRole);
