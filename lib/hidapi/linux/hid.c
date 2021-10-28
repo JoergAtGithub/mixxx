@@ -1066,12 +1066,22 @@ int HID_API_EXPORT hid_get_feature_report(hid_device *dev, unsigned char *data, 
 }
 
 // Not supported by Linux HidRaw yet
-int HID_API_EXPORT HID_API_CALL hid_get_input_report(hid_device *dev, unsigned char *data, size_t length)
-{
+int HID_API_EXPORT HID_API_CALL hid_get_input_report(hid_device *dev, unsigned char *data, size_t length) {
+   
+	int res;
+
+    res = ioctl(dev->device_handle, HIDIOCGINPUT(length), data);
+    if (res < 0)
+        register_device_error_format(dev, "ioctl (GINPUT): %s", strerror(errno));
+
+    return res;
+	/*
+#ifndef HIDIOCSFEATURE
 	(void)dev;
 	(void)data;
 	(void)length;
 	return -1;
+#endif*/
 }
 
 void HID_API_EXPORT hid_close(hid_device *dev)
