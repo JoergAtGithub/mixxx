@@ -2709,7 +2709,7 @@ find_package(LibUSB)
 # USB HID controller support
 option(HID "USB HID controller support" ON)
 if(HID)
-  find_package(hidapi 0.10.1)
+  #find_package(hidapi 0.10.1)
   if(NOT hidapi_FOUND)
     message(STATUS "Linking internal libhidapi statically")
     add_library(mixxx-hidapi STATIC EXCLUDE_FROM_ALL)
