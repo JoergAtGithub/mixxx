@@ -7,7 +7,6 @@
 
 #include "track/beatmap.h"
 
-#include <QMutexLocker>
 #include <QtDebug>
 #include <QtGlobal>
 #include <algorithm>
@@ -179,6 +178,7 @@ class BeatMapIterator : public BeatIterator {
 };
 
 BeatMap::BeatMap(
+        MakeSharedTag,
         audio::SampleRate sampleRate,
         const QString& subVersion,
         BeatList beats,
@@ -189,19 +189,27 @@ BeatMap::BeatMap(
           m_beats(std::move(beats)) {
 }
 
-BeatMap::BeatMap(const BeatMap& other, BeatList beats, mixxx::Bpm nominalBpm)
-        : m_subVersion(other.m_subVersion),
-          m_sampleRate(other.m_sampleRate),
-          m_nominalBpm(nominalBpm),
-          m_beats(std::move(beats)) {
+BeatMap::BeatMap(
+        MakeSharedTag,
+        const BeatMap& other,
+        BeatList beats,
+        mixxx::Bpm nominalBpm)
+        : BeatMap(
+                  MakeSharedTag{},
+                  other.m_sampleRate,
+                  other.m_subVersion,
+                  std::move(beats),
+                  nominalBpm) {
 }
 
-BeatMap::BeatMap(const BeatMap& other)
-        : BeatMap(other, other.m_beats, other.m_nominalBpm) {
+BeatMap::BeatMap(
+        MakeSharedTag,
+        const BeatMap& other)
+        : BeatMap(MakeSharedTag{}, other, other.m_beats, other.m_nominalBpm) {
 }
 
 // static
-BeatsPointer BeatMap::makeBeatMap(
+BeatsPointer BeatMap::fromByteArray(
         audio::SampleRate sampleRate,
         const QString& subVersion,
         const QByteArray& byteArray) {
@@ -219,7 +227,7 @@ BeatsPointer BeatMap::makeBeatMap(
         qDebug() << "ERROR: Could not parse BeatMap from QByteArray of size"
                  << byteArray.size();
     }
-    return BeatsPointer(new BeatMap(sampleRate, subVersion, beatList, nominalBpm));
+    return std::make_shared<BeatMap>(MakeSharedTag{}, sampleRate, subVersion, beatList, nominalBpm);
 }
 
 // static
@@ -251,7 +259,7 @@ BeatsPointer BeatMap::makeBeatMap(
         previousBeatPos = beatPos;
     }
     const auto nominalBpm = calculateNominalBpm(beatList, sampleRate);
-    return BeatsPointer(new BeatMap(sampleRate, subVersion, beatList, nominalBpm));
+    return std::make_shared<BeatMap>(MakeSharedTag{}, sampleRate, subVersion, beatList, nominalBpm);
 }
 
 QByteArray BeatMap::toByteArray() const {
@@ -278,36 +286,6 @@ QString BeatMap::getSubVersion() const {
 
 bool BeatMap::isValid() const {
     return m_sampleRate.isValid() && m_beats.size() >= kMinNumberOfBeats;
-}
-
-audio::FramePos BeatMap::findNextBeat(audio::FramePos position) const {
-    return findNthBeat(position, 1);
-}
-
-audio::FramePos BeatMap::findPrevBeat(audio::FramePos position) const {
-    return findNthBeat(position, -1);
-}
-
-audio::FramePos BeatMap::findClosestBeat(audio::FramePos position) const {
-    if (!isValid()) {
-        return audio::kInvalidFramePos;
-    }
-    audio::FramePos prevBeatPosition;
-    audio::FramePos nextBeatPosition;
-    findPrevNextBeats(position, &prevBeatPosition, &nextBeatPosition, true);
-    if (!prevBeatPosition.isValid()) {
-        // If both positions are invalid, we correctly return an invalid position.
-        return nextBeatPosition;
-    }
-
-    if (!nextBeatPosition.isValid()) {
-        return prevBeatPosition;
-    }
-
-    // Both position are valid, return the closest position.
-    return (nextBeatPosition - position > position - prevBeatPosition)
-            ? prevBeatPosition
-            : nextBeatPosition;
 }
 
 audio::FramePos BeatMap::findNthBeat(audio::FramePos position, int n) const {
@@ -554,10 +532,9 @@ mixxx::Bpm BeatMap::getBpmAroundPosition(audio::FramePos position, int n) const 
             numberOfBeats, m_sampleRate, lowerFrame, upperFrame);
 }
 
-BeatsPointer BeatMap::translate(audio::FrameDiff_t offset) const {
-    // Converting to frame offset
+std::optional<BeatsPointer> BeatMap::tryTranslate(audio::FrameDiff_t offset) const {
     if (!isValid()) {
-        return BeatsPointer(new BeatMap(*this));
+        return std::nullopt;
     }
 
     BeatList beats = m_beats;
@@ -575,12 +552,12 @@ BeatsPointer BeatMap::translate(audio::FrameDiff_t offset) const {
         }
     }
 
-    return BeatsPointer(new BeatMap(*this, beats, m_nominalBpm));
+    return std::make_shared<BeatMap>(MakeSharedTag{}, *this, beats, m_nominalBpm);
 }
 
-BeatsPointer BeatMap::scale(BpmScale scale) const {
-    if (!isValid() || m_beats.isEmpty()) {
-        return BeatsPointer(new BeatMap(*this));
+std::optional<BeatsPointer> BeatMap::tryScale(BpmScale scale) const {
+    VERIFY_OR_DEBUG_ASSERT(isValid()) {
+        return std::nullopt;
     }
 
     BeatList beats = m_beats;
@@ -619,41 +596,22 @@ BeatsPointer BeatMap::scale(BpmScale scale) const {
         break;
     default:
         DEBUG_ASSERT(!"scale value invalid");
-        return BeatsPointer(new BeatMap(*this));
+        return std::nullopt;
     }
 
     mixxx::Bpm bpm = calculateNominalBpm(beats, m_sampleRate);
-    return BeatsPointer(new BeatMap(*this, beats, bpm));
+    return std::make_shared<BeatMap>(MakeSharedTag{}, *this, beats, bpm);
 }
 
-BeatsPointer BeatMap::setBpm(mixxx::Bpm bpm) {
-    Q_UNUSED(bpm);
-    DEBUG_ASSERT(!"BeatMap::setBpm() not implemented");
-    return BeatsPointer(new BeatMap(*this));
+std::optional<BeatsPointer> BeatMap::trySetBpm(mixxx::Bpm bpm) const {
+    VERIFY_OR_DEBUG_ASSERT(bpm.isValid()) {
+        return std::nullopt;
+    }
 
-    /*
-     * One of the problems of beattracking algorithms is the so called "octave error"
-     * that is, calculated bpm is a power-of-two fraction of the bpm of the track.
-     * But there is more. In an experiment, it had been proved that roughly 30% of the humans
-     * fail to guess the correct bpm of a track by usually reporting it as the double or one
-     * half of the correct one.
-     * We can interpret it in two ways:
-     * On one hand, a beattracking algorithm which totally avoid the octave error does not yet exists.
-     * On the other hand, even if the algorithm guesses the correct bpm,
-     * 30% of the users will perceive a different bpm and likely change it.
-     * In this case, we assume that calculated beat markers are correctly placed. All
-     * that we have to do is to delete or add some beat markers, while leaving others
-     * so that the number of the beat markers per minute matches the new bpm.
-     * We are jealous of our well-guessed beats since they belong to a time-expensive analysis.
-     * When requested we simply turn them off instead of deleting them, so that they can be recollected.
-     * If the new provided bpm is not a power-of-two fraction, we assume that the algorithm failed
-     * at all to guess the bpm. I have no idea on how to deal with this.
-     * If we assume that bpm does not change along the track, i.e. if we use
-     * fixed tempo approximation (see analyzerbeat.*), this should coincide with the
-     * method in beatgrid.cpp.
-     *
-     * - vittorio.
-     */
+    const auto firstBeatPosition = mixxx::audio::FramePos(m_beats.first().frame_position());
+    DEBUG_ASSERT(firstBeatPosition.isValid());
+
+    return fromConstTempo(m_sampleRate, firstBeatPosition, bpm);
 }
 
 } // namespace mixxx

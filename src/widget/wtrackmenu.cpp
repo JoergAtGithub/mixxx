@@ -26,6 +26,7 @@
 #include "preferences/colorpalettesettings.h"
 #include "sources/soundsourceproxy.h"
 #include "track/track.h"
+#include "util/defs.h"
 #include "util/desktophelper.h"
 #include "util/parented_ptr.h"
 #include "util/qt.h"
@@ -80,7 +81,7 @@ int WTrackMenu::getTrackCount() const {
     if (m_pTrackModel) {
         return m_trackIndexList.size();
     } else {
-        return m_trackPointerList.size();
+        return m_pTrack ? 1 : 0;
     }
 }
 
@@ -211,6 +212,13 @@ void WTrackMenu::createActions() {
 
     if (featureIsEnabled(Feature::Properties)) {
         m_pPropertiesAct = new QAction(tr("Properties"), this);
+        // This is just for having the shortcut displayed next to the action
+        // when the menu is invoked from the tracks table.
+        // The keypress is caught in WTrackTableView::keyPressEvent
+        if (m_pTrackModel) {
+            m_pPropertiesAct->setShortcut(
+                    QKeySequence(kPropertiesShortcutModifier + kPropertiesShortcutKey));
+        }
         connect(m_pPropertiesAct, &QAction::triggered, this, &WTrackMenu::slotShowDlgTrackInfo);
     }
 
@@ -338,6 +346,15 @@ void WTrackMenu::createActions() {
                 &QAction::triggered,
                 this,
                 &WTrackMenu::slotClearBeats);
+    }
+
+    if (featureIsEnabled(Feature::UpdateReplayGain)) {
+        m_pUpdateReplayGain =
+                new QAction(tr("Update ReplayGain from Deck Gain"), m_pClearMetadataMenu);
+        connect(m_pUpdateReplayGain,
+                &QAction::triggered,
+                this,
+                &WTrackMenu::slotUpdateReplayGainFromPregain);
     }
 
     if (featureIsEnabled(Feature::Color)) {
@@ -473,6 +490,10 @@ void WTrackMenu::setupActions() {
         addMenu(m_pClearMetadataMenu);
     }
 
+    if (featureIsEnabled(Feature::UpdateReplayGain)) {
+        addAction(m_pUpdateReplayGain);
+    }
+
     addSeparator();
     if (featureIsEnabled(Feature::HideUnhidePurge)) {
         if (m_pTrackModel->hasCapabilities(TrackModel::Capability::Hide)) {
@@ -508,10 +529,8 @@ bool WTrackMenu::isAnyTrackBpmLocked() const {
             }
         }
     } else {
-        for (const auto& pTrack : m_trackPointerList) {
-            if (pTrack->isBpmLocked()) {
-                return true;
-            }
+        if (m_pTrack && m_pTrack->isBpmLocked()) {
+            return true;
         }
     }
     return false;
@@ -536,13 +555,10 @@ std::optional<std::optional<mixxx::RgbColor>> WTrackMenu::getCommonTrackColor() 
             }
         }
     } else {
-        commonColor = m_trackPointerList.first()->getColor();
-        for (const auto& pTrack : m_trackPointerList) {
-            if (commonColor != pTrack->getColor()) {
-                // Multiple, different colors
-                return std::nullopt;
-            }
+        if (!m_pTrack) {
+            return std::nullopt;
         }
+        commonColor = m_pTrack->getColor();
     }
     return make_optional(commonColor);
 }
@@ -605,7 +621,7 @@ CoverInfo WTrackMenu::getCoverInfoOfLastTrack() const {
                         .toString();
         return coverInfo;
     } else {
-        return m_trackPointerList.last()->getCoverInfoWithLocation();
+        return m_pTrack->getCoverInfoWithLocation();
     }
 }
 
@@ -706,6 +722,10 @@ void WTrackMenu::updateMenus() {
         }
     }
 
+    if (featureIsEnabled(Feature::UpdateReplayGain)) {
+        m_pUpdateReplayGain->setEnabled(!m_deckGroup.isEmpty());
+    }
+
     if (featureIsEnabled(Feature::Color)) {
         m_pColorPickerAction->setColorPalette(
                 ColorPaletteSettings(m_pConfig).getTrackColorPalette());
@@ -741,7 +761,7 @@ void WTrackMenu::updateMenus() {
 }
 
 void WTrackMenu::loadTrack(
-        const TrackPointer& pTrack) {
+        const TrackPointer& pTrack, const QString& deckGroup) {
     // This asserts that this function is only accessible when a track model is not set,
     // thus maintaining only the TrackPointerList in state and avoiding storing
     // duplicate state with TrackIdList and QModelIndexList.
@@ -755,7 +775,8 @@ void WTrackMenu::loadTrack(
     if (!pTrack) {
         return;
     }
-    m_trackPointerList = TrackPointerList{pTrack};
+    m_pTrack = pTrack;
+    m_deckGroup = deckGroup;
     updateMenus();
 }
 
@@ -788,9 +809,8 @@ TrackIdList WTrackMenu::getTrackIds() const {
             trackIds.push_back(trackId);
         }
     } else {
-        trackIds.reserve(m_trackPointerList.size());
-        for (const auto& pTrack : m_trackPointerList) {
-            const auto trackId = pTrack->getId();
+        if (m_pTrack) {
+            const auto trackId = m_pTrack->getId();
             DEBUG_ASSERT(trackId.isValid());
             trackIds.push_back(trackId);
         }
@@ -812,15 +832,11 @@ QList<TrackRef> WTrackMenu::getTrackRefs() const {
             }
             trackRefs.push_back(std::move(trackRef));
         }
-    } else {
-        trackRefs.reserve(m_trackPointerList.size());
-        for (const auto& pTrack : m_trackPointerList) {
-            DEBUG_ASSERT(pTrack);
-            auto trackRef = TrackRef::fromFileInfo(
-                    pTrack->getFileInfo(),
-                    pTrack->getId());
-            trackRefs.push_back(std::move(trackRef));
-        }
+    } else if (m_pTrack) {
+        auto trackRef = TrackRef::fromFileInfo(
+                m_pTrack->getFileInfo(),
+                m_pTrack->getId());
+        trackRefs.push_back(std::move(trackRef));
     }
     return trackRefs;
 }
@@ -835,13 +851,8 @@ TrackPointer WTrackMenu::getFirstTrackPointer() const {
             // Skip unavailable tracks
         }
         return TrackPointer();
-    } else {
-        if (m_trackPointerList.isEmpty()) {
-            return TrackPointer();
-        }
-        DEBUG_ASSERT(m_trackPointerList.first());
-        return m_trackPointerList.first();
     }
+    return m_pTrack;
 }
 
 std::unique_ptr<mixxx::TrackPointerIterator> WTrackMenu::newTrackPointerIterator() const {
@@ -854,13 +865,11 @@ std::unique_ptr<mixxx::TrackPointerIterator> WTrackMenu::newTrackPointerIterator
         return std::make_unique<mixxx::TrackPointerModelIterator>(
                 m_pTrackModel,
                 m_trackIndexList);
-    } else {
-        if (m_trackPointerList.isEmpty()) {
-            return nullptr;
-        }
+    } else if (m_pTrack) {
         return std::make_unique<mixxx::TrackPointerListIterator>(
-                m_trackPointerList);
+                TrackPointerList{m_pTrack});
     }
+    return nullptr;
 }
 
 int WTrackMenu::applyTrackPointerOperation(
@@ -901,6 +910,12 @@ void WTrackMenu::slotOpenInFileBrowser() {
 namespace {
 
 class ImportMetadataFromFileTagsTrackPointerOperation : public mixxx::TrackPointerOperation {
+  public:
+    explicit ImportMetadataFromFileTagsTrackPointerOperation(
+            UserSettingsPointer pConfig)
+            : m_pConfig(std::move(pConfig)) {
+    }
+
   private:
     void doApply(
             const TrackPointer& pTrack) const override {
@@ -908,17 +923,36 @@ class ImportMetadataFromFileTagsTrackPointerOperation : public mixxx::TrackPoint
         // to override the information within Mixxx! Custom cover art must be
         // reloaded separately.
         SoundSourceProxy(pTrack).updateTrackFromSource(
-                SoundSourceProxy::UpdateTrackFromSourceMode::Again);
+                m_pConfig,
+                SoundSourceProxy::UpdateTrackFromSourceMode::Always);
     }
+
+    const UserSettingsPointer m_pConfig;
 };
 
 } // anonymous namespace
+
+void WTrackMenu::slotUpdateReplayGainFromPregain() {
+    VERIFY_OR_DEBUG_ASSERT(m_pTrack) {
+        return;
+    }
+    VERIFY_OR_DEBUG_ASSERT(!m_deckGroup.isEmpty()) {
+        return;
+    }
+
+    const double gain = ControlObject::get(ConfigKey(m_deckGroup, "pregain"));
+    // Gain is at unity already, ignore and return.
+    if (gain == 1.0) {
+        return;
+    }
+    m_pTrack->adjustReplayGainFromPregain(gain);
+}
 
 void WTrackMenu::slotImportMetadataFromFileTags() {
     const auto progressLabelText =
             tr("Importing metadata of %n track(s) from file tags", "", getTrackCount());
     const auto trackOperator =
-            ImportMetadataFromFileTagsTrackPointerOperation();
+            ImportMetadataFromFileTagsTrackPointerOperation(m_pConfig);
     applyTrackPointerOperation(
             progressLabelText,
             &trackOperator,
@@ -1206,7 +1240,11 @@ class ScaleBpmTrackPointerOperation : public mixxx::TrackPointerOperation {
         if (!pBeats) {
             return;
         }
-        pTrack->trySetBeats(pBeats->scale(m_bpmScale));
+        const auto scaledBeats = pBeats->tryScale(m_bpmScale);
+        if (!scaledBeats) {
+            return;
+        }
+        pTrack->trySetBeats(*scaledBeats);
     }
 
     const mixxx::Beats::BpmScale m_bpmScale;
@@ -1597,7 +1635,7 @@ void WTrackMenu::slotShowDlgTrackInfo() {
     if (m_pTrackModel) {
         m_pDlgTrackInfo->loadTrack(m_trackIndexList.at(0));
     } else {
-        m_pDlgTrackInfo->loadTrack(m_trackPointerList.at(0));
+        m_pDlgTrackInfo->loadTrack(m_pTrack);
     }
     m_pDlgTrackInfo->show();
 }
@@ -1621,7 +1659,7 @@ void WTrackMenu::slotShowDlgTagFetcher() {
     if (m_pTrackModel) {
         m_pDlgTagFetcher->loadTrack(m_trackIndexList.at(0));
     } else {
-        m_pDlgTagFetcher->loadTrack(m_trackPointerList.at(0));
+        m_pDlgTagFetcher->loadTrack(m_pTrack);
     }
     m_pDlgTagFetcher->show();
 }
@@ -1737,7 +1775,8 @@ void WTrackMenu::slotPurge() {
 }
 
 void WTrackMenu::clearTrackSelection() {
-    m_trackPointerList.clear();
+    m_pTrack = nullptr;
+    m_deckGroup = QString();
     m_trackIndexList.clear();
 }
 

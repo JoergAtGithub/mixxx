@@ -1,9 +1,10 @@
 #pragma once
 
+#include <gtest/gtest_prod.h>
+
 #include <QAtomicInt>
 #include <QAtomicPointer>
 #include <QList>
-#include <QMutex>
 
 #include "control/controlproxy.h"
 #include "engine/controls/enginecontrol.h"
@@ -11,6 +12,7 @@
 #include "preferences/usersettings.h"
 #include "track/cue.h"
 #include "track/track_decl.h"
+#include "util/compatibility/qmutex.h"
 #include "util/parented_ptr.h"
 
 #define NUM_HOT_CUES 37
@@ -105,15 +107,14 @@ class HotcueControl : public QObject {
     /// Used for caching the preview state of this hotcue control
     /// for the case the cue is deleted during preview.
     mixxx::audio::FramePos getPreviewingPosition() const {
-        return mixxx::audio::FramePos::fromEngineSamplePosMaybeInvalid(
-                m_previewingPosition.getValue());
+        return m_previewingPosition.getValue();
     }
 
     /// Used for caching the preview state of this hotcue control
     /// for the case the cue is deleted during preview.
     void cachePreviewingStartState() {
         if (m_pCue) {
-            m_previewingPosition.setValue(m_pCue->getPosition().toEngineSamplePosMaybeInvalid());
+            m_previewingPosition.setValue(m_pCue->getPosition());
             m_previewingType.setValue(m_pCue->getType());
         } else {
             m_previewingType.setValue(mixxx::CueType::Invalid);
@@ -183,7 +184,7 @@ class HotcueControl : public QObject {
     std::unique_ptr<ControlPushButton> m_hotcueClear;
 
     ControlValueAtomic<mixxx::CueType> m_previewingType;
-    ControlValueAtomic<double> m_previewingPosition;
+    ControlValueAtomic<mixxx::audio::FramePos> m_previewingPosition;
 };
 
 class CueControl : public EngineControl {
@@ -207,7 +208,7 @@ class CueControl : public EngineControl {
   public slots:
     void slotLoopReset();
     void slotLoopEnabledChanged(bool enabled);
-    void slotLoopUpdated(double startPosition, double endPosition);
+    void slotLoopUpdated(mixxx::audio::FramePos startPosition, mixxx::audio::FramePos endPosition);
 
   private slots:
     void quantizeChanged(double v);
@@ -237,8 +238,10 @@ class CueControl : public EngineControl {
     void cueGotoAndPlay(double v);
     void cueGotoAndStop(double v);
     void cuePreview(double v);
+    FRIEND_TEST(CueControlTest, SeekOnSetCueCDJ);
     void cueCDJ(double v);
     void cueDenon(double v);
+    FRIEND_TEST(CueControlTest, SeekOnSetCuePlay);
     void cuePlay(double v);
     void cueDefault(double v);
     void pause(double v);
@@ -290,7 +293,7 @@ class CueControl : public EngineControl {
     parented_ptr<ControlProxy> m_pBeatLoopActivate;
     parented_ptr<ControlProxy> m_pBeatLoopSize;
     bool m_bypassCueSetByPlay;
-    ControlValueAtomic<double> m_usedSeekOnLoadPosition;
+    ControlValueAtomic<mixxx::audio::FramePos> m_usedSeekOnLoadPosition;
 
     const int m_iNumHotCues;
     QList<HotcueControl*> m_hotcueControls;
@@ -349,11 +352,7 @@ class CueControl : public EngineControl {
     QMap<QObject*, int> m_controlMap;
 
     // Must be locked when using the m_pLoadedTrack and it's properties
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
-    QRecursiveMutex m_trackMutex;
-#else
-    QMutex m_trackMutex;
-#endif
+    QT_RECURSIVE_MUTEX m_trackMutex;
     TrackPointer m_pLoadedTrack; // is written from an engine worker thread
 
     friend class HotcueControlTest;

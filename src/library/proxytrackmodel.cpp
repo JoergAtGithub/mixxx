@@ -112,6 +112,20 @@ TrackModel::Capabilities ProxyTrackModel::getCapabilities() const {
     return m_pTrackModel ? m_pTrackModel->getCapabilities() : Capability::None;
 }
 
+bool ProxyTrackModel::updateTrackGenre(
+        Track* pTrack,
+        const QString& genre) const {
+    return m_pTrackModel ? m_pTrackModel->updateTrackGenre(pTrack, genre) : false;
+}
+
+#if defined(__EXTRA_METADATA__)
+bool ProxyTrackModel::updateTrackMood(
+        Track* pTrack,
+        const QString& mood) const {
+    return m_pTrackModel ? m_pTrackModel->updateTrackMood(pTrack, mood) : false;
+}
+#endif // __EXTRA_METADATA__
+
 bool ProxyTrackModel::filterAcceptsRow(int sourceRow,
         const QModelIndex& sourceParent) const {
     if (!m_bHandleSearches) {
@@ -127,14 +141,14 @@ bool ProxyTrackModel::filterAcceptsRow(int sourceRow,
             dynamic_cast<QAbstractItemModel*>(m_pTrackModel);
     bool rowMatches = false;
 
-    QRegExp filter = filterRegExp();
+    QRegularExpression filter = filterRegularExpression();
     QListIterator<int> iter(filterColumns);
 
     while (!rowMatches && iter.hasNext()) {
         int i = iter.next();
         QModelIndex index = itemModel->index(sourceRow, i, sourceParent);
         QVariant data = itemModel->data(index);
-        if (data.canConvert(QMetaType::QString)) {
+        if (data.canConvert<QString>()) {
             QString strData = data.toString();
             if (strData.contains(filter)) {
                 rowMatches = true;

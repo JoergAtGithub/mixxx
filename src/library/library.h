@@ -7,6 +7,7 @@
 #include <QPointer>
 
 #include "analyzer/analyzerprogress.h"
+#include "library/library_decl.h"
 #ifdef __ENGINEPRIME__
 #include "library/trackset/crate/crateid.h"
 #endif
@@ -48,8 +49,6 @@ class Library: public QObject {
     Q_OBJECT
 
   public:
-    static const QString kConfigGroup;
-
     Library(QObject* parent,
             UserSettingsPointer pConfig,
             mixxx::DbConnectionPoolPtr pDbConnectionPool,
@@ -76,11 +75,6 @@ class Library: public QObject {
     /// Needed for exposing models to QML
     LibraryTableModel* trackTableModel() const;
 
-    /// Needed for exposing sidebar to QML
-    SidebarModel* sidebarModel() const {
-        return m_pSidebarModel.get();
-    }
-
     int getTrackTableRowHeight() const {
         return m_iTrackTableRowHeight;
     }
@@ -90,12 +84,6 @@ class Library: public QObject {
     }
 
     //static Library* buildDefaultLibrary();
-
-    enum class RemovalType {
-        KeepTracks,
-        HideTracks,
-        PurgeTracks
-    };
 
     static const int kDefaultRowHeightPx;
 
@@ -121,7 +109,7 @@ class Library: public QObject {
     void slotCreatePlaylist();
     void slotCreateCrate();
     void slotRequestAddDir(const QString& directory);
-    void slotRequestRemoveDir(const QString& directory, Library::RemovalType removalType);
+    void slotRequestRemoveDir(const QString& directory, LibraryRemovalType removalType);
     void slotRequestRelocateDir(const QString& previousDirectory, const QString& newDirectory);
     void onSkinLoadFinished();
 

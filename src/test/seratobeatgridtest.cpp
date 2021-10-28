@@ -5,8 +5,7 @@
 #include <QDir>
 #include <QtDebug>
 
-#include "track/beatgrid.h"
-#include "track/beatmap.h"
+#include "track/beats.h"
 #include "track/serato/beatgrid.h"
 #include "track/serato/beatsimporter.h"
 #include "util/memory.h"
@@ -116,8 +115,8 @@ TEST_F(SeratoBeatGridTest, SerializeBeatgrid) {
     constexpr mixxx::Bpm bpm(120.0);
     const auto sampleRate = mixxx::audio::SampleRate(44100);
     EXPECT_EQ(sampleRate.isValid(), true);
-    const auto pBeats = mixxx::BeatGrid::makeBeatGrid(
-            sampleRate, QString("Test"), bpm, mixxx::audio::kStartFramePos);
+    const auto pBeats = mixxx::Beats::fromConstTempo(
+            sampleRate, mixxx::audio::kStartFramePos, bpm);
     const auto signalInfo = mixxx::audio::SignalInfo(mixxx::audio::ChannelCount(2), sampleRate);
     const auto duration = mixxx::Duration::fromSeconds<int>(300);
 
@@ -153,8 +152,7 @@ TEST_F(SeratoBeatGridTest, SerializeBeatMap) {
 
     // Check the const beatmap
     {
-        const auto pBeats = mixxx::BeatMap::makeBeatMap(
-                sampleRate, QString("Test"), beatPositionsFrames);
+        const auto pBeats = mixxx::Beats::fromBeatPositions(sampleRate, beatPositionsFrames);
         // Check that the first section's BPM is 100
         EXPECT_EQ(pBeats->getBpmAroundPosition(
                           mixxx::audio::FramePos(initialFrameOffset +
@@ -172,14 +170,19 @@ TEST_F(SeratoBeatGridTest, SerializeBeatMap) {
         mixxx::SeratoBeatsImporter beatsImporter(
                 seratoBeatGrid.nonTerminalMarkers(),
                 seratoBeatGrid.terminalMarker());
-        const QVector<mixxx::audio::FramePos> importedBeatPositionsFrames =
-                beatsImporter.importBeatsAndApplyTimingOffset(timingOffsetMillis, signalInfo);
-        ASSERT_EQ(beatPositionsFrames.size(), importedBeatPositionsFrames.size());
+        const auto pImportedBeats =
+                beatsImporter.importBeatsAndApplyTimingOffset(
+                        timingOffsetMillis, signalInfo);
+        auto pBeatsIterator =
+                pImportedBeats->findBeats(beatPositionsFrames.first() - 1000,
+                        beatPositionsFrames.last() + 1000);
         for (int i = 0; i < beatPositionsFrames.size(); i++) {
+            const auto importedPosition = pBeatsIterator->next();
             EXPECT_NEAR(beatPositionsFrames[i].value(),
-                    importedBeatPositionsFrames[i].value(),
+                    importedPosition.value(),
                     kEpsilon);
         }
+        ASSERT_FALSE(pBeatsIterator->hasNext());
     }
 
     constexpr int kNumBeats60BPM = 4;
@@ -191,8 +194,7 @@ TEST_F(SeratoBeatGridTest, SerializeBeatMap) {
     ASSERT_EQ(beatPositionsFrames.size(), kNumBeats120BPM + kNumBeats60BPM);
 
     {
-        const auto pBeats = mixxx::BeatMap::makeBeatMap(
-                sampleRate, QString("Test"), beatPositionsFrames);
+        const auto pBeats = mixxx::Beats::fromBeatPositions(sampleRate, beatPositionsFrames);
         // Check that the first section'd BPM is 100
         EXPECT_EQ(pBeats->getBpmAroundPosition(
                           mixxx::audio::FramePos(initialFrameOffset +
@@ -221,14 +223,19 @@ TEST_F(SeratoBeatGridTest, SerializeBeatMap) {
         mixxx::SeratoBeatsImporter beatsImporter(
                 seratoBeatGrid.nonTerminalMarkers(),
                 seratoBeatGrid.terminalMarker());
-        const QVector<mixxx::audio::FramePos> importedBeatPositionsFrames =
-                beatsImporter.importBeatsAndApplyTimingOffset(timingOffsetMillis, signalInfo);
-        ASSERT_EQ(beatPositionsFrames.size(), importedBeatPositionsFrames.size());
+        const auto pImportedBeats =
+                beatsImporter.importBeatsAndApplyTimingOffset(
+                        timingOffsetMillis, signalInfo);
+        auto pBeatsIterator =
+                pImportedBeats->findBeats(beatPositionsFrames.first() - 1000,
+                        beatPositionsFrames.last() + 1000);
         for (int i = 0; i < beatPositionsFrames.size(); i++) {
+            const auto importedPosition = pBeatsIterator->next();
             EXPECT_NEAR(beatPositionsFrames[i].value(),
-                    importedBeatPositionsFrames[i].value(),
+                    importedPosition.value(),
                     kEpsilon);
         }
+        ASSERT_FALSE(pBeatsIterator->hasNext());
     }
 
     qInfo() << "Step 3: Add" << kNumBeats120BPM << "beats at 100 bpm to the beatgrid";
@@ -242,8 +249,7 @@ TEST_F(SeratoBeatGridTest, SerializeBeatMap) {
     beatPositionsFrames.append(beatPositionFrames);
 
     {
-        const auto pBeats = mixxx::BeatMap::makeBeatMap(
-                sampleRate, QString("Test"), beatPositionsFrames);
+        const auto pBeats = mixxx::Beats::fromBeatPositions(sampleRate, beatPositionsFrames);
         // Check that the first section's BPM is 100
         EXPECT_EQ(pBeats->getBpmAroundPosition(
                           mixxx::audio::FramePos(initialFrameOffset +
@@ -278,14 +284,19 @@ TEST_F(SeratoBeatGridTest, SerializeBeatMap) {
         mixxx::SeratoBeatsImporter beatsImporter(
                 seratoBeatGrid.nonTerminalMarkers(),
                 seratoBeatGrid.terminalMarker());
-        const QVector<mixxx::audio::FramePos> importedBeatPositionsFrames =
-                beatsImporter.importBeatsAndApplyTimingOffset(timingOffsetMillis, signalInfo);
-        ASSERT_EQ(beatPositionsFrames.size(), importedBeatPositionsFrames.size());
+        const auto pImportedBeats =
+                beatsImporter.importBeatsAndApplyTimingOffset(
+                        timingOffsetMillis, signalInfo);
+        auto pBeatsIterator =
+                pImportedBeats->findBeats(beatPositionsFrames.first() - 1000,
+                        beatPositionsFrames.last() + 1000);
         for (int i = 0; i < beatPositionsFrames.size(); i++) {
+            const auto importedPosition = pBeatsIterator->next();
             EXPECT_NEAR(beatPositionsFrames[i].value(),
-                    importedBeatPositionsFrames[i].value(),
+                    importedPosition.value(),
                     kEpsilon);
         }
+        ASSERT_FALSE(pBeatsIterator->hasNext());
     }
 }
 

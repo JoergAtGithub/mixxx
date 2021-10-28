@@ -21,7 +21,7 @@ constexpr int kChannels = 2;
 } // namespace
 
 // Sample threshold below which we consider there to be no signal.
-const double kMinSignal = 75.0 / SAMPLE_MAXIMUM;
+constexpr double kMinSignal = 75.0 / SAMPLE_MAXIMUM;
 
 bool VinylControlXwax::s_bLUTInitialized = false;
 QMutex VinylControlXwax::s_xwaxLUTMutex;
@@ -229,8 +229,7 @@ void VinylControlXwax::analyzeSamples(CSAMPLE* pSamples, size_t nFrames) {
 
     //TODO: Move all these config object get*() calls to an "updatePrefs()" function,
     //        and make that get called when any options get changed in the preferences dialog, rather than
-    //        polling everytime we get a buffer.
-
+    //        polling every time we get a buffer.
 
     // Check if vinyl control is enabled...
     m_bIsEnabled = enabled && checkEnabled(m_bIsEnabled, enabled->toBool());
@@ -686,8 +685,8 @@ void VinylControlXwax::doTrackSelection(bool valid_pos, double pitch, double pos
     //track will be selected when the needle is moved back to play area
     //track selection can be cancelled by loading a track manually
 
-    const int SELECT_INTERVAL = 150;
-    const double NOPOS_SPEED = 0.50;
+    constexpr int SELECT_INTERVAL = 150;
+    constexpr double NOPOS_SPEED = 0.50;
 
     if (m_pControlTrackSelector == nullptr) {
         // this isn't done in the constructor because this object

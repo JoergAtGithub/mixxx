@@ -3,7 +3,7 @@
 
 #include <QtDebug>
 
-#include "track/beatmap.h"
+#include "track/beats.h"
 #include "track/track.h"
 
 using namespace mixxx;
@@ -56,29 +56,29 @@ TEST_F(BeatMapTest, Scale) {
     m_pTrack->trySetBpm(bpm.value());
     mixxx::audio::FrameDiff_t beatLengthFrames = getBeatLengthFrames(bpm);
     const auto startOffsetFrames = mixxx::audio::FramePos(7);
-    const int numBeats = 100;
+    constexpr int numBeats = 100;
     // Note beats must be in frames, not samples.
     QVector<mixxx::audio::FramePos> beats =
             createBeatVector(startOffsetFrames, numBeats, beatLengthFrames);
-    auto pMap = BeatMap::makeBeatMap(m_pTrack->getSampleRate(), QString(), beats);
+    auto pMap = Beats::fromBeatPositions(m_pTrack->getSampleRate(), beats);
 
     EXPECT_DOUBLE_EQ(bpm.value(), pMap->getBpm().value());
-    pMap = pMap->scale(Beats::BpmScale::Double);
+    pMap = *pMap->tryScale(Beats::BpmScale::Double);
     EXPECT_DOUBLE_EQ(2 * bpm.value(), pMap->getBpm().value());
 
-    pMap = pMap->scale(Beats::BpmScale::Halve);
+    pMap = *pMap->tryScale(Beats::BpmScale::Halve);
     EXPECT_DOUBLE_EQ(bpm.value(), pMap->getBpm().value());
 
-    pMap = pMap->scale(Beats::BpmScale::TwoThirds);
+    pMap = *pMap->tryScale(Beats::BpmScale::TwoThirds);
     EXPECT_DOUBLE_EQ(bpm.value() * 2 / 3, pMap->getBpm().value());
 
-    pMap = pMap->scale(Beats::BpmScale::ThreeHalves);
+    pMap = *pMap->tryScale(Beats::BpmScale::ThreeHalves);
     EXPECT_DOUBLE_EQ(bpm.value(), pMap->getBpm().value());
 
-    pMap = pMap->scale(Beats::BpmScale::ThreeFourths);
+    pMap = *pMap->tryScale(Beats::BpmScale::ThreeFourths);
     EXPECT_DOUBLE_EQ(bpm.value() * 3 / 4, pMap->getBpm().value());
 
-    pMap = pMap->scale(Beats::BpmScale::FourThirds);
+    pMap = *pMap->tryScale(Beats::BpmScale::FourThirds);
     EXPECT_DOUBLE_EQ(bpm.value(), pMap->getBpm().value());
 }
 
@@ -87,11 +87,11 @@ TEST_F(BeatMapTest, TestNthBeat) {
     m_pTrack->trySetBpm(bpm.value());
     mixxx::audio::FrameDiff_t beatLengthFrames = getBeatLengthFrames(bpm);
     const auto startOffsetFrames = mixxx::audio::FramePos(7);
-    const int numBeats = 100;
+    constexpr int numBeats = 100;
     // Note beats must be in frames, not samples.
     QVector<mixxx::audio::FramePos> beats =
             createBeatVector(startOffsetFrames, numBeats, beatLengthFrames);
-    auto pMap = BeatMap::makeBeatMap(m_pTrack->getSampleRate(), QString(), beats);
+    auto pMap = Beats::fromBeatPositions(m_pTrack->getSampleRate(), beats);
 
     // Check edge cases
     const mixxx::audio::FramePos firstBeat = startOffsetFrames + beatLengthFrames * 0;
@@ -133,14 +133,14 @@ TEST_F(BeatMapTest, TestNthBeatWhenOnBeat) {
     m_pTrack->trySetBpm(bpm.value());
     mixxx::audio::FrameDiff_t beatLengthFrames = getBeatLengthFrames(bpm);
     const auto startOffsetFrames = mixxx::audio::FramePos(7);
-    const int numBeats = 100;
+    constexpr int numBeats = 100;
     // Note beats must be in frames, not samples.
     QVector<mixxx::audio::FramePos> beats =
             createBeatVector(startOffsetFrames, numBeats, beatLengthFrames);
-    auto pMap = BeatMap::makeBeatMap(m_pTrack->getSampleRate(), QString(), beats);
+    auto pMap = Beats::fromBeatPositions(m_pTrack->getSampleRate(), beats);
 
     // Pretend we're on the 20th beat;
-    const int curBeat = 20;
+    constexpr int curBeat = 20;
     const mixxx::audio::FramePos position = startOffsetFrames + beatLengthFrames * curBeat;
 
     // The spec dictates that a value of 0 is always invalid and returns an invalid position
@@ -176,11 +176,11 @@ TEST_F(BeatMapTest, TestNthBeatWhenNotOnBeat) {
     m_pTrack->trySetBpm(bpm.value());
     mixxx::audio::FrameDiff_t beatLengthFrames = getBeatLengthFrames(bpm);
     const auto startOffsetFrames = mixxx::audio::FramePos(7);
-    const int numBeats = 100;
+    constexpr int numBeats = 100;
     // Note beats must be in frames, not samples.
     QVector<mixxx::audio::FramePos> beats =
             createBeatVector(startOffsetFrames, numBeats, beatLengthFrames);
-    auto pMap = BeatMap::makeBeatMap(m_pTrack->getSampleRate(), QString(), beats);
+    auto pMap = Beats::fromBeatPositions(m_pTrack->getSampleRate(), beats);
 
     // Pretend we're half way between the 20th and 21st beat
     const mixxx::audio::FramePos previousBeat = startOffsetFrames + beatLengthFrames * 20.0;
@@ -215,7 +215,7 @@ TEST_F(BeatMapTest, TestBpmAround) {
     constexpr mixxx::Bpm filebpm(60.0);
     double approx_beat_length = getBeatLengthFrames(filebpm);
     m_pTrack->trySetBpm(filebpm.value());
-    const int numBeats = 64;
+    constexpr int numBeats = 64;
 
     QVector<mixxx::audio::FramePos> beats;
     mixxx::audio::FramePos beat_pos = mixxx::audio::kStartFramePos;
@@ -225,7 +225,7 @@ TEST_F(BeatMapTest, TestBpmAround) {
         beat_pos += beat_length;
     }
 
-    auto pMap = BeatMap::makeBeatMap(m_pTrack->getSampleRate(), QString(), beats);
+    auto pMap = Beats::fromBeatPositions(m_pTrack->getSampleRate(), beats);
 
     // The average of the first 8 beats should be different than the average
     // of the last 8 beats.
@@ -251,7 +251,7 @@ TEST_F(BeatMapTest, TestBpmAround) {
     // Try a really, really short track
     constexpr auto startFramePos = mixxx::audio::FramePos(10);
     beats = createBeatVector(startFramePos, 3, approx_beat_length);
-    pMap = BeatMap::makeBeatMap(m_pTrack->getSampleRate(), QString(), beats);
+    pMap = Beats::fromBeatPositions(m_pTrack->getSampleRate(), beats);
     EXPECT_DOUBLE_EQ(filebpm.value(),
             pMap->getBpmAroundPosition(
                         mixxx::audio::kStartFramePos + 1 * approx_beat_length,
@@ -271,7 +271,7 @@ TEST_F(BeatMapTest, FindBeatsWithFractionalPos) {
     for (; beatPos <= lastBeatPos; beatPos += beatLengthFrames) {
         beats.append(beatPos);
     }
-    const auto pMap = BeatMap::makeBeatMap(m_pTrack->getSampleRate(), QString(), beats);
+    const auto pMap = Beats::fromBeatPositions(m_pTrack->getSampleRate(), beats);
 
     // All beats are in range
     auto it = pMap->findBeats(mixxx::audio::kStartFramePos, lastBeatPos);
@@ -318,7 +318,7 @@ TEST_F(BeatMapTest, HasBeatInRangeWithFractionalPos) {
     for (; beatPos <= lastBeatPos; beatPos += beatLengthFrames) {
         beats.append(beatPos);
     }
-    const auto pMap = BeatMap::makeBeatMap(m_pTrack->getSampleRate(), QString(), beats);
+    const auto pMap = Beats::fromBeatPositions(m_pTrack->getSampleRate(), beats);
 
     const mixxx::audio::FrameDiff_t halfBeatLengthFrames = beatLengthFrames / 2;
     EXPECT_TRUE(pMap->hasBeatInRange(mixxx::audio::kStartFramePos,

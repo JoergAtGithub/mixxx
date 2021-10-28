@@ -20,10 +20,9 @@ namespace mixxx {
 
 class BeatMap final : public Beats {
   public:
-
     ~BeatMap() override = default;
 
-    static BeatsPointer makeBeatMap(
+    static BeatsPointer fromByteArray(
             audio::SampleRate sampleRate,
             const QString& subVersion,
             const QByteArray& byteArray);
@@ -33,8 +32,8 @@ class BeatMap final : public Beats {
             const QString& subVersion,
             const QVector<mixxx::audio::FramePos>& beats);
 
-    Beats::CapabilitiesFlags getCapabilities() const override {
-        return BEATSCAP_NONE;
+    bool hasConstantTempo() const override {
+        return false;
     }
 
     QByteArray toByteArray() const override;
@@ -45,13 +44,10 @@ class BeatMap final : public Beats {
     // Beat calculations
     ////////////////////////////////////////////////////////////////////////////
 
-    audio::FramePos findNextBeat(audio::FramePos position) const override;
-    audio::FramePos findPrevBeat(audio::FramePos position) const override;
     bool findPrevNextBeats(audio::FramePos position,
             audio::FramePos* prevBeatPosition,
             audio::FramePos* nextBeatPosition,
             bool snapToNearBeats) const override;
-    audio::FramePos findClosestBeat(audio::FramePos position) const override;
     audio::FramePos findNthBeat(audio::FramePos position, int n) const override;
     std::unique_ptr<BeatIterator> findBeats(audio::FramePos startPosition,
             audio::FramePos endPosition) const override;
@@ -68,21 +64,32 @@ class BeatMap final : public Beats {
     // Beat mutations
     ////////////////////////////////////////////////////////////////////////////
 
-    BeatsPointer translate(audio::FrameDiff_t offset) const override;
-    BeatsPointer scale(BpmScale scale) const override;
-    BeatsPointer setBpm(mixxx::Bpm bpm) override;
+    std::optional<BeatsPointer> tryTranslate(audio::FrameDiff_t offset) const override;
+    std::optional<BeatsPointer> tryScale(BpmScale scale) const override;
+    std::optional<BeatsPointer> trySetBpm(mixxx::Bpm bpm) const override;
 
-  private:
-    BeatMap(audio::SampleRate sampleRate,
+    ////////////////////////////////////////////////////////////////////////////
+    // Hidden constructors
+    ////////////////////////////////////////////////////////////////////////////
+
+    BeatMap(
+            MakeSharedTag,
+            audio::SampleRate sampleRate,
             const QString& subVersion,
             BeatList beats,
             mixxx::Bpm nominalBpm);
     // Constructor to update the beat map
-    BeatMap(const BeatMap& other, BeatList beats, mixxx::Bpm nominalBpm);
-    BeatMap(const BeatMap& other);
+    BeatMap(
+            MakeSharedTag,
+            const BeatMap& other,
+            BeatList beats,
+            mixxx::Bpm nominalBpm);
+    BeatMap(
+            MakeSharedTag,
+            const BeatMap& other);
 
-    // For internal use only.
-    bool isValid() const;
+  private:
+    bool isValid() const override;
 
     const QString m_subVersion;
     const audio::SampleRate m_sampleRate;

@@ -364,7 +364,7 @@ double RateControl::getWheelFactor() const {
 
 double RateControl::getJogFactor() const {
     // FIXME: Sensitivity should be configurable separately?
-    const double jogSensitivity = 0.1;  // Nudges during playback
+    constexpr double jogSensitivity = 0.1; // Nudges during playback
     double jogValue = m_pJog->get();
 
     // Since m_pJog is an accumulator, reset it since we've used its value.
@@ -453,7 +453,7 @@ double RateControl::calculateSpeed(double baserate, double speed, bool paused,
             }
         }
 
-        double currentSample = getSampleOfTrack().current;
+        double currentSample = frameInfo().currentPosition.toEngineSamplePos();
         m_pScratchController->process(currentSample, rate, iSamplesPerBuffer, baserate);
 
         // If waveform scratch is enabled, override all other controls
@@ -590,11 +590,6 @@ void RateControl::subRateTemp(double v)
 void RateControl::resetRateTemp(void)
 {
     setRateTemp(0.0);
-}
-
-void RateControl::notifySeek(double playPos) {
-    m_pScratchController->notifySeek(playPos);
-    EngineControl::notifySeek(playPos);
 }
 
 bool RateControl::isReverseButtonPressed() {

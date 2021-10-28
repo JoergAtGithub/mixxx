@@ -2,8 +2,10 @@
 
 #include <QByteArray>
 #include <QList>
-#include <QSharedPointer>
 #include <QString>
+#include <QVector>
+#include <memory>
+#include <optional>
 
 #include "audio/frame.h"
 #include "audio/types.h"
@@ -14,7 +16,7 @@
 namespace mixxx {
 
 class Beats;
-typedef QSharedPointer<Beats> BeatsPointer;
+typedef std::shared_ptr<const Beats> BeatsPointer;
 
 class BeatIterator {
   public:
@@ -26,17 +28,33 @@ class BeatIterator {
 /// Beats is the base class for BPM and beat management classes. It provides a
 /// specification of all methods a beat-manager class must provide, as well as
 /// a capability model for representing optional features.
-class Beats {
+///
+/// All instances of this class are supposed to be managed by std::shared_ptr!
+class Beats : private std::enable_shared_from_this<Beats> {
   public:
     virtual ~Beats() = default;
 
-    enum Capabilities {
-        BEATSCAP_NONE = 0,
-        /// Set new bpm, beat grid only
-        BEATSCAP_SETBPM = 1
-    };
-    /// Allows us to do ORing
-    typedef int CapabilitiesFlags;
+    BeatsPointer clonePointer() const {
+        // All instances are immutable and can be shared safely
+        return shared_from_this();
+    }
+
+    static mixxx::BeatsPointer fromByteArray(
+            mixxx::audio::SampleRate sampleRate,
+            const QString& beatsVersion,
+            const QString& beatsSubVersion,
+            const QByteArray& beatsSerialized);
+
+    static mixxx::BeatsPointer fromConstTempo(
+            audio::SampleRate sampleRate,
+            audio::FramePos position,
+            Bpm bpm,
+            const QString& subVersion = QString());
+
+    static mixxx::BeatsPointer fromBeatPositions(
+            audio::SampleRate sampleRate,
+            const QVector<audio::FramePos>& beatPositions,
+            const QString& subVersion = QString());
 
     enum class BpmScale {
         Double,
@@ -47,8 +65,12 @@ class Beats {
         ThreeHalves,
     };
 
-    /// Retrieve the capabilities supported by the beats implementation.
-    virtual Beats::CapabilitiesFlags getCapabilities() const = 0;
+    /// Returns false if the beats implementation supports non-const beats.
+    ///
+    /// TODO: This is only needed for the "Asumme Constant Tempo" checkbox in
+    /// `DlgTrackInfo`. This should probably be removed or reimplemented to
+    /// check if all neighboring beats in this object have the same distance.
+    virtual bool hasConstantTempo() const = 0;
 
     /// Serialize beats to QByteArray.
     virtual QByteArray toByteArray() const = 0;
@@ -73,12 +95,12 @@ class Beats {
     /// Starting from frame position `position`, return the frame position of
     /// the next beat in the track, or an invalid position if none exists. If
     /// `position` refers to the location of a beat, `position` is returned.
-    virtual audio::FramePos findNextBeat(audio::FramePos position) const = 0;
+    audio::FramePos findNextBeat(audio::FramePos position) const;
 
     /// Starting from frame position `position`, return the frame position of
     /// the previous beat in the track, or an invalid position if none exists.
     /// If `position` refers to the location of beat, `position` is returned.
-    virtual audio::FramePos findPrevBeat(audio::FramePos position) const = 0;
+    audio::FramePos findPrevBeat(audio::FramePos position) const;
 
     /// Starting from frame position `position`, fill the frame position of the
     /// previous beat and next beat. Either can be invalid if none exists. If
@@ -97,8 +119,8 @@ class Beats {
     }
 
     /// Starting from frame position `position`, return the frame position of
-    /// the closest beat in the track, or an invalid positon if none exists.
-    virtual audio::FramePos findClosestBeat(audio::FramePos position) const = 0;
+    /// the closest beat in the track, or an invalid position if none exists.
+    audio::FramePos findClosestBeat(audio::FramePos position) const;
 
     /// Find the Nth beat from frame position `position`. Works with both
     /// positive and negative values of n. Calling findNthBeat with `n=0` is
@@ -146,14 +168,36 @@ class Beats {
     /// Translate all beats in the song by `offset` frames. Beats that lie
     /// before the start of the track or after the end of the track are *not*
     /// removed.
-    virtual BeatsPointer translate(audio::FrameDiff_t offset) const = 0;
+    //
+    /// Returns a pointer to the modified beats object, or `nullopt` on
+    /// failure.
+    virtual std::optional<BeatsPointer> tryTranslate(audio::FrameDiff_t offset) const = 0;
 
     /// Scale the position of every beat in the song by `scale`.
-    virtual BeatsPointer scale(BpmScale scale) const = 0;
+    //
+    /// Returns a pointer to the modified beats object, or `nullopt` on
+    /// failure.
+    virtual std::optional<BeatsPointer> tryScale(BpmScale scale) const = 0;
 
-    /// Adjust the beats so the global average BPM matches `bpm`. The `Beats`
-    /// class must have the capability `BEATSCAP_SET`.
-    virtual BeatsPointer setBpm(mixxx::Bpm bpm) = 0;
+    /// Adjust the beats so the global average BPM matches `bpm`.
+    //
+    /// Returns a pointer to the modified beats object, or `nullopt` on
+    /// failure.
+    virtual std::optional<BeatsPointer> trySetBpm(mixxx::Bpm bpm) const = 0;
+
+  protected:
+    /// Type tag for making public constructors of derived classes inaccessible.
+    ///
+    /// The constructors must be public for using std::make_shared().
+    struct MakeSharedTag {};
+
+    Beats() = default;
+
+    virtual bool isValid() const = 0;
+
+  private:
+    Beats(const Beats&) = delete;
+    Beats(Beats&&) = delete;
 };
 
 } // namespace mixxx

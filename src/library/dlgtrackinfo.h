@@ -57,6 +57,7 @@ class DlgTrackInfo : public QDialog, public Ui::DlgTrackInfo {
     void slotBpmThreeFourth();
     void slotBpmFourThirds();
     void slotBpmThreeHalves();
+    void slotBpmScale(mixxx::Beats::BpmScale bpmScale);
     void slotBpmClear();
     void slotBpmConstChanged(int state);
     void slotBpmTap(double averageLength, int numSamples);
@@ -103,6 +104,8 @@ class DlgTrackInfo : public QDialog, public Ui::DlgTrackInfo {
     }
 
     void updateTrackMetadataFields();
+    void updateSpinBpmFromBeats();
+
     const TrackModel* const m_pTrackModel;
 
     TrackPointer m_pLoadedTrack;

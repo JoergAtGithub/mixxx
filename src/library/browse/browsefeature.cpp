@@ -1,7 +1,6 @@
 #include "library/browse/browsefeature.h"
 
 #include <QAction>
-#include <QDirModel>
 #include <QFileInfo>
 #include <QMenu>
 #include <QPushButton>
@@ -263,6 +262,7 @@ void BrowseFeature::activateChild(const QModelIndex& index) {
         m_browseModel.setPath(std::move(dirAccess));
     }
     emit showTrackModel(&m_proxyModel);
+    emit disableSearch();
     emit enableCoverArtDisplay(false);
 }
 
@@ -382,7 +382,7 @@ void BrowseFeature::onLazyChildExpandation(const QModelIndex& index) {
 
     QString path = item->getData().toString();
 
-    // If the item is a build-in node, e.g., 'QuickLink' return
+    // If the item is a built-in node, e.g., 'QuickLink' return
     if (path.isEmpty() || path == QUICK_LINK_NODE) {
         return;
     }

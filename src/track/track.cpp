@@ -4,10 +4,9 @@
 #include <atomic>
 
 #include "engine/engine.h"
+#include "library/library_prefs.h"
 #include "moc_track.cpp"
 #include "sources/metadatasource.h"
-#include "track/beatfactory.h"
-#include "track/beatmap.h"
 #include "track/trackref.h"
 #include "util/assert.h"
 #include "util/color/color.h"
@@ -18,7 +17,6 @@ namespace {
 const mixxx::Logger kLogger("Track");
 
 constexpr bool kLogStats = false;
-const ConfigKey kConfigKeySeratoMetadataExport("[Library]", "SeratoMetadataExport");
 
 // Count the number of currently existing instances for detecting
 // memory leaks.
@@ -242,10 +240,11 @@ bool Track::mergeExtraMetadataFromSource(
 }
 
 mixxx::TrackMetadata Track::getMetadata(
-        bool* pSourceSynchronized) const {
+        mixxx::TrackRecord::SourceSyncStatus* pSourceSyncStatus) const {
     const auto locked = lockMutex(&m_qMutex);
-    if (pSourceSynchronized) {
-        *pSourceSynchronized = m_record.isSourceSynchronized();
+    if (pSourceSyncStatus) {
+        *pSourceSyncStatus =
+                m_record.checkSourceSyncStatus(m_fileAccess.info());
     }
     return m_record.getMetadata();
 }
@@ -328,6 +327,16 @@ void Track::setReplayGain(const mixxx::ReplayGain& replayGain) {
     }
 }
 
+void Track::adjustReplayGainFromPregain(double gain) {
+    auto locked = lockMutex(&m_qMutex);
+    mixxx::ReplayGain replayGain = m_record.getMetadata().getTrackInfo().getReplayGain();
+    replayGain.setRatio(gain * replayGain.getRatio());
+    if (compareAndSet(m_record.refMetadata().refTrackInfo().ptrReplayGain(), replayGain)) {
+        markDirtyAndUnlock(&locked);
+        emit replayGainAdjusted(replayGain);
+    }
+}
+
 mixxx::Bpm Track::getBpmWhileLocked() const {
     // BPM values must be synchronized at all times!
     DEBUG_ASSERT(m_record.getMetadata().getTrackInfo().getBpm() == getBeatsPointerBpm(m_pBeats));
@@ -345,17 +354,20 @@ bool Track::trySetBpmWhileLocked(mixxx::Bpm bpm) {
         if (!cuePosition.isValid()) {
             cuePosition = mixxx::audio::kStartFramePos;
         }
-        auto pBeats = BeatFactory::makeBeatGrid(getSampleRate(),
-                bpm,
-                cuePosition);
+        auto pBeats = mixxx::Beats::fromConstTempo(getSampleRate(),
+                cuePosition,
+                bpm);
         return trySetBeatsWhileLocked(std::move(pBeats));
-    } else if ((m_pBeats->getCapabilities() & mixxx::Beats::BEATSCAP_SETBPM) &&
-            m_pBeats->getBpm() != bpm) {
+    } else if (m_pBeats->getBpm() != bpm) {
         // Continue with the regular cases
-        if (kLogger.debugEnabled()) {
-            kLogger.debug() << "Updating BPM:" << getLocation();
+        const auto newBeats = m_pBeats->trySetBpm(bpm);
+        if (newBeats) {
+            if (kLogger.debugEnabled()) {
+                kLogger.debug() << "Updating BPM:" << getLocation();
+            }
+
+            return trySetBeatsWhileLocked(*newBeats);
         }
-        return trySetBeatsWhileLocked(m_pBeats->setBpm(bpm));
     }
     return false;
 }
@@ -464,9 +476,10 @@ void Track::emitChangedSignalsForAllMetadata() {
     emit keyChanged();
 }
 
-bool Track::isSourceSynchronized() const {
+bool Track::checkSourceSynchronized() const {
     const auto locked = lockMutex(&m_qMutex);
-    return m_record.isSourceSynchronized();
+    return m_record.checkSourceSyncStatus(m_fileAccess.info()) ==
+            mixxx::TrackRecord::SourceSyncStatus::Synchronized;
 }
 
 void Track::setSourceSynchronizedAt(const QDateTime& sourceSynchronizedAt) {
@@ -628,20 +641,6 @@ void Track::setYear(const QString& s) {
     if (compareAndSet(m_record.refMetadata().refTrackInfo().ptrYear(), value)) {
         markDirtyAndUnlock(&locked);
         emit yearChanged(value);
-    }
-}
-
-QString Track::getGenre() const {
-    QMutexLocker lock(&m_qMutex);
-    return m_record.getMetadata().getTrackInfo().getGenre();
-}
-
-void Track::setGenre(const QString& s) {
-    QMutexLocker lock(&m_qMutex);
-    const QString value = s.trimmed();
-    if (compareAndSet(m_record.refMetadata().refTrackInfo().ptrGenre(), value)) {
-        markDirtyAndUnlock(&lock);
-        emit genreChanged(value);
     }
 }
 
@@ -1088,11 +1087,9 @@ bool Track::importPendingBeatsWhileLocked() {
     // The sample rate is supposed to be consistent
     DEBUG_ASSERT(m_record.getStreamInfoFromSource()->getSignalInfo().getSampleRate() ==
             m_record.getMetadata().getStreamInfo().getSignalInfo().getSampleRate());
-    const auto pBeats = mixxx::BeatMap::makeBeatMap(
-            m_record.getStreamInfoFromSource()->getSignalInfo().getSampleRate(),
-            QString(),
+    const auto pBeats =
             m_pBeatsImporterPending->importBeatsAndApplyTimingOffset(
-                    getLocation(), *m_record.getStreamInfoFromSource()));
+                    getLocation(), *m_record.getStreamInfoFromSource());
     DEBUG_ASSERT(m_pBeatsImporterPending->isEmpty());
     m_pBeatsImporterPending.reset();
     return setBeatsWhileLocked(pBeats);
@@ -1449,8 +1446,11 @@ ExportTrackMetadataResult Track::exportMetadata(
     // TODO(XXX): Use sourceSynchronizedAt to decide if metadata
     // should be (re-)imported before exporting it. The file might
     // have been updated by external applications. Overwriting
-    // this modified metadata might not be intended.
-    if (!m_bMarkedForMetadataExport && !m_record.isSourceSynchronized()) {
+    // this modified metadata is probably not be intended if not
+    // explicitly requested by m_bMarkedForMetadataExport.
+    if (!m_bMarkedForMetadataExport &&
+            m_record.checkSourceSyncStatus(m_fileAccess.info()) !=
+                    mixxx::TrackRecord::SourceSyncStatus::Synchronized) {
         // If the metadata has never been imported from file tags it
         // must be exported explicitly once. This ensures that we don't
         // overwrite existing file tags with completely different
@@ -1462,7 +1462,7 @@ ExportTrackMetadataResult Track::exportMetadata(
         return ExportTrackMetadataResult::Skipped;
     }
 
-    if (pConfig->getValue<bool>(kConfigKeySeratoMetadataExport)) {
+    if (pConfig->getValue<bool>(mixxx::library::prefs::kSyncSeratoMetadataConfigKey)) {
         const auto streamInfo = m_record.getStreamInfoFromSource();
         VERIFY_OR_DEBUG_ASSERT(streamInfo &&
                 streamInfo->getSignalInfo().isValid() &&
@@ -1690,3 +1690,55 @@ void Track::updateStreamInfoFromSource(
         emit cuesUpdated();
     }
 }
+
+QString Track::getGenre() const {
+    const auto locked = lockMutex(&m_qMutex);
+    return m_record.getMetadata().getTrackInfo().getGenre();
+}
+
+void Track::setGenreFromTrackDAO(
+        const QString& genre) {
+    auto locked = lockMutex(&m_qMutex);
+    if (compareAndSet(
+                m_record.refMetadata().refTrackInfo().ptrGenre(),
+                genre)) {
+        markDirtyAndUnlock(&locked);
+    }
+}
+
+bool Track::updateGenre(
+        const QString& genre) {
+    auto locked = lockMutex(&m_qMutex);
+    if (!compareAndSet(
+                m_record.refMetadata().refTrackInfo().ptrGenre(),
+                genre)) {
+        return false;
+    }
+    const auto newGenre =
+            m_record.getMetadata().getTrackInfo().getGenre();
+    markDirtyAndUnlock(&locked);
+    emit genreChanged(newGenre);
+    return true;
+}
+
+#if defined(__EXTRA_METADATA__)
+QString Track::getMood() const {
+    const auto locked = lockMutex(&m_qMutex);
+    return m_record.getMetadata().getTrackInfo().getMood();
+}
+
+bool Track::updateMood(
+        const QString& mood) {
+    auto locked = lockMutex(&m_qMutex);
+    if (!compareAndSet(
+                m_record.refMetadata().refTrackInfo().ptrMood(),
+                mood)) {
+        return false;
+    }
+    const auto newMood =
+            m_record.getMetadata().getTrackInfo().getMood();
+    markDirtyAndUnlock(&locked);
+    emit moodChanged(newMood);
+    return true;
+}
+#endif // __EXTRA_METADATA__

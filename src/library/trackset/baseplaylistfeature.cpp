@@ -138,7 +138,10 @@ void BasePlaylistFeature::initActions() {
     connect(m_pLibrary,
             &Library::trackSelected,
             this,
-            &BasePlaylistFeature::slotTrackSelected);
+            [this](const TrackPointer& pTrack) {
+                const auto trackId = pTrack ? pTrack->getId() : TrackId{};
+                slotTrackSelected(trackId);
+            });
     connect(m_pLibrary,
             &Library::switchToView,
             this,
@@ -177,31 +180,24 @@ void BasePlaylistFeature::activateChild(const QModelIndex& index) {
     //qDebug() << "BasePlaylistFeature::activateChild()" << index;
     int playlistId = playlistIdFromIndex(index);
     if (playlistId == kInvalidPlaylistId) {
+        // This happens if user clicks on group nodes
+        // like the year folder in the history feature
         return;
     }
-
     m_pPlaylistTableModel->setTableModel(playlistId);
     emit showTrackModel(m_pPlaylistTableModel);
     emit enableCoverArtDisplay(true);
-    // Update selection
-    emit featureSelect(this, m_lastRightClickedIndex);
-
-    if (!m_pSidebarWidget) {
-        return;
-    }
-    m_pSidebarWidget->selectChildIndex(index);
 }
 
 void BasePlaylistFeature::activatePlaylist(int playlistId) {
-    // qDebug() << "BasePlaylistFeature::activatePlaylist()" << playlistId;
-    if (playlistId == kInvalidPlaylistId) {
+    VERIFY_OR_DEBUG_ASSERT(playlistId != kInvalidPlaylistId) {
         return;
     }
     QModelIndex index = indexFromPlaylistId(playlistId);
-    if (!index.isValid()) {
+    //qDebug() << "BasePlaylistFeature::activatePlaylist()" << playlistId << index;
+    VERIFY_OR_DEBUG_ASSERT(index.isValid()) {
         return;
     }
-
     m_lastRightClickedIndex = index;
     m_pPlaylistTableModel->setTableModel(playlistId);
     emit showTrackModel(m_pPlaylistTableModel);
@@ -367,14 +363,16 @@ void BasePlaylistFeature::slotCreatePlaylist() {
 /// Returns a playlist that is a sibling inside the same parent
 /// as the start index
 int BasePlaylistFeature::getSiblingPlaylistIdOf(QModelIndex& start) {
-    for (int i = start.row() + 1; i >= (start.row() - 1); i -= 2) {
-        QModelIndex nextIndex = start.sibling(i, start.column());
-        if (nextIndex.isValid()) {
-            TreeItem* pTreeItem = m_pSidebarModel->getItem(nextIndex);
-            DEBUG_ASSERT(pTreeItem != nullptr);
-            if (!pTreeItem->hasChildren()) {
-                return playlistIdFromIndex(nextIndex);
-            }
+    QModelIndex nextIndex = start.sibling(start.row() + 1, start.column());
+    if (!nextIndex.isValid() && start.row() > 0) {
+        // No playlist below, looking above.
+        nextIndex = start.sibling(start.row() - 1, start.column());
+    }
+    if (nextIndex.isValid()) {
+        TreeItem* pTreeItem = m_pSidebarModel->getItem(nextIndex);
+        DEBUG_ASSERT(pTreeItem != nullptr);
+        if (!pTreeItem->hasChildren()) {
+            return playlistIdFromIndex(nextIndex);
         }
     }
     return kInvalidPlaylistId;
@@ -726,13 +724,9 @@ QModelIndex BasePlaylistFeature::indexFromPlaylistId(int playlistId) {
     return QModelIndex();
 }
 
-void BasePlaylistFeature::slotTrackSelected(TrackPointer pTrack) {
-    m_pSelectedTrack = pTrack;
-    TrackId trackId;
-    if (pTrack) {
-        trackId = pTrack->getId();
-    }
-    m_playlistDao.getPlaylistsTrackIsIn(trackId, &m_playlistIdsOfSelectedTrack);
+void BasePlaylistFeature::slotTrackSelected(TrackId trackId) {
+    m_selectedTrackId = trackId;
+    m_playlistDao.getPlaylistsTrackIsIn(m_selectedTrackId, &m_playlistIdsOfSelectedTrack);
 
     for (int row = 0; row < m_pSidebarModel->rowCount(); ++row) {
         QModelIndex index = m_pSidebarModel->index(row, 0);
@@ -768,5 +762,5 @@ void BasePlaylistFeature::markTreeItem(TreeItem* pTreeItem) {
 }
 
 void BasePlaylistFeature::slotResetSelectedTrack() {
-    slotTrackSelected(TrackPointer());
+    slotTrackSelected(TrackId{});
 }
