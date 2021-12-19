@@ -9,6 +9,7 @@
 #include "control/controlobject.h"
 #include "library/dao/trackschema.h"
 #include "library/library.h"
+#include "library/library_prefs.h"
 #include "library/librarytablemodel.h"
 #include "library/trackcollection.h"
 #include "library/trackcollectionmanager.h"
@@ -20,6 +21,7 @@
 #include "track/track.h"
 #include "track/trackref.h"
 #include "util/assert.h"
+#include "util/defs.h"
 #include "util/dnd.h"
 #include "util/time.h"
 #include "widget/wtrackmenu.h"
@@ -27,20 +29,28 @@
 
 namespace {
 
-const ConfigKey kConfigKeyAllowTrackLoadToPlayingDeck("[Controls]", "AllowTrackLoadToPlayingDeck");
+// ConfigValue key for QTable vertical scrollbar position
+const ConfigKey kVScrollBarPosConfigKey{
+        // mixxx::library::prefs::kConfigGroup is defined in another
+        // unit of compilation and cannot be reused here!
+        QStringLiteral("[Library]"),
+        QStringLiteral("VScrollBarPos")};
+
+const ConfigKey kConfigKeyAllowTrackLoadToPlayingDeck{
+        QStringLiteral("[Controls]"),
+        QStringLiteral("AllowTrackLoadToPlayingDeck")};
+
 // Default color for the focus border of TableItemDelegates
 const QColor kDefaultFocusBorderColor = Qt::white;
-} // namespace
+
+} // anonymous namespace
 
 WTrackTableView::WTrackTableView(QWidget* parent,
         UserSettingsPointer pConfig,
         Library* pLibrary,
         double backgroundColorOpacity,
         bool sorting)
-        : WLibraryTableView(parent,
-                  pConfig,
-                  ConfigKey(LIBRARY_CONFIGVALUE,
-                          WTRACKTABLEVIEW_VSCROLLBARPOS_KEY)),
+        : WLibraryTableView(parent, pConfig),
           m_pConfig(pConfig),
           m_pLibrary(pLibrary),
           m_backgroundColorOpacity(backgroundColorOpacity),
@@ -48,13 +58,14 @@ WTrackTableView::WTrackTableView(QWidget* parent,
           m_sorting(sorting),
           m_selectionChangedSinceLastGuiTick(true),
           m_loadCachedOnly(false) {
+    qRegisterMetaType<FocusWidget>("FocusWidget");
     // Connect slots and signals to make the world go 'round.
     connect(this, &WTrackTableView::doubleClicked, this, &WTrackTableView::slotMouseDoubleClicked);
 
     m_pCOTGuiTick = new ControlProxy("[Master]", "guiTick50ms", this);
     m_pCOTGuiTick->connectValueChanged(this, &WTrackTableView::slotGuiTick50ms);
 
-    m_pKeyNotation = new ControlProxy("[Library]", "key_notation", this);
+    m_pKeyNotation = new ControlProxy(mixxx::library::prefs::kKeyNotationConfigKey, this);
     m_pKeyNotation->connectValueChanged(this, &WTrackTableView::keyNotationChanged);
 
     m_pSortColumn = new ControlProxy("[Library]", "sort_column", this);
@@ -139,32 +150,31 @@ void WTrackTableView::slotGuiTick50ms(double /*unused*/) {
 }
 
 // slot
-void WTrackTableView::loadTrackModel(QAbstractItemModel* model) {
+void WTrackTableView::loadTrackModel(QAbstractItemModel* model, bool restoreState) {
     qDebug() << "WTrackTableView::loadTrackModel()" << model;
-
-    TrackModel* trackModel = dynamic_cast<TrackModel*>(model);
 
     VERIFY_OR_DEBUG_ASSERT(model) {
         return;
     }
+    TrackModel* trackModel = dynamic_cast<TrackModel*>(model);
+
     VERIFY_OR_DEBUG_ASSERT(trackModel) {
         return;
     }
 
-    // If the model has not changed
-    // there's no need to exchange the headers
-    // this will cause a small GUI freeze
+    // If the model has not changed there's no need to exchange the headers
+    // which would cause a small GUI freeze
     if (getTrackModel() == trackModel) {
         // Re-sort the table even if the track model is the same. This triggers
         // a select() if the table is dirty.
         doSortByColumn(horizontalHeader()->sortIndicatorSection(),
                 horizontalHeader()->sortIndicatorOrder());
+
+        if (restoreState) {
+            restoreCurrentViewState();
+        }
         return;
     }
-
-    // saving current vertical bar position
-    // using address of track model as key
-    saveVScrollBarPos(getTrackModel());
 
     setVisible(false);
 
@@ -314,9 +324,10 @@ void WTrackTableView::loadTrackModel(QAbstractItemModel* model) {
 
     setVisible(true);
 
-    restoreVScrollBarPos(trackModel);
-    // restoring scrollBar position using model pointer as key
-    // scrollbar positions with respect to different models are backed by map
+    // trigger restoring scrollBar position, selection etc.
+    if (restoreState) {
+        restoreCurrentViewState();
+    }
     initTrackMenu();
 }
 
@@ -386,7 +397,7 @@ TrackModel::SortColumnId WTrackTableView::getColumnIdFromCurrentIndex() {
 
 void WTrackTableView::assignPreviousTrackColor() {
     QModelIndexList indices = selectionModel()->selectedRows();
-    if (indices.size() <= 0) {
+    if (indices.isEmpty()) {
         return;
     }
 
@@ -407,7 +418,7 @@ void WTrackTableView::assignPreviousTrackColor() {
 
 void WTrackTableView::assignNextTrackColor() {
     QModelIndexList indices = selectionModel()->selectedRows();
-    if (indices.size() <= 0) {
+    if (indices.isEmpty()) {
         return;
     }
 
@@ -428,22 +439,32 @@ void WTrackTableView::assignNextTrackColor() {
 
 void WTrackTableView::slotPurge() {
     QModelIndexList indices = selectionModel()->selectedRows();
-    if (indices.size() > 0) {
-        TrackModel* trackModel = getTrackModel();
-        if (trackModel) {
-            trackModel->purgeTracks(indices);
-        }
+    if (indices.isEmpty()) {
+        return;
     }
+    TrackModel* trackModel = getTrackModel();
+    if (trackModel) {
+        trackModel->purgeTracks(indices);
+    }
+}
+
+void WTrackTableView::slotDeleteTracksFromDisk() {
+    QModelIndexList indices = selectionModel()->selectedRows();
+    if (indices.isEmpty()) {
+        return;
+    }
+    m_pTrackMenu->loadTrackModelIndices(indices);
+    m_pTrackMenu->slotRemoveFromDisk();
 }
 
 void WTrackTableView::slotUnhide() {
     QModelIndexList indices = selectionModel()->selectedRows();
-
-    if (indices.size() > 0) {
-        TrackModel* trackModel = getTrackModel();
-        if (trackModel) {
-            trackModel->unhideTracks(indices);
-        }
+    if (indices.isEmpty()) {
+        return;
+    }
+    TrackModel* trackModel = getTrackModel();
+    if (trackModel) {
+        trackModel->unhideTracks(indices);
     }
 }
 
@@ -463,15 +484,9 @@ void WTrackTableView::contextMenuEvent(QContextMenuEvent* event) {
 void WTrackTableView::onSearch(const QString& text) {
     TrackModel* trackModel = getTrackModel();
     if (trackModel) {
-        bool searchWasEmpty = false;
-        if (trackModel->currentSearch().isEmpty()) {
-            saveNoSearchVScrollBarPos();
-            searchWasEmpty = true;
-        }
+        saveCurrentViewState();
         trackModel->search(text);
-        if (!searchWasEmpty && text.isEmpty()) {
-            restoreNoSearchVScrollBarPos();
-        }
+        restoreCurrentViewState();
     }
 }
 
@@ -744,44 +759,94 @@ TrackModel* WTrackTableView::getTrackModel() const {
 }
 
 void WTrackTableView::keyPressEvent(QKeyEvent* event) {
-    if (event->key() == Qt::Key_Return) {
-        // It is not a good idea if 'key_return'
-        // causes a track to load since we allow in-line editing
-        // of table items in general
+    // Ctrl+Return opens track properties dialog.
+    // Ignore it if any cell editor is open.
+    // Note: the shortcut is displayed in the track context menu
+    if (event->key() == kPropertiesShortcutKey &&
+            (event->modifiers() & kPropertiesShortcutModifier) &&
+            state() != QTableView::EditingState) {
+        QModelIndexList indices = selectionModel()->selectedRows();
+        if (indices.length() == 1) {
+            m_pTrackMenu->loadTrackModelIndices(indices);
+            m_pTrackMenu->slotShowDlgTrackInfo();
+        }
+    } else if (event->key() == kHideRemoveShortcutKey &&
+            event->modifiers() == kHideRemoveShortcutModifier) {
+        hideOrRemoveSelectedTracks();
+    }
+    QTableView::keyPressEvent(event);
+}
+
+void WTrackTableView::hideOrRemoveSelectedTracks() {
+    QModelIndexList indices = selectionModel()->selectedRows();
+    if (indices.isEmpty()) {
         return;
+    }
+
+    TrackModel* pTrackModel = getTrackModel();
+    if (!pTrackModel) {
+        return;
+    }
+
+    QMessageBox::StandardButton response;
+    if (pTrackModel->hasCapabilities(TrackModel::Capability::Hide)) {
+        // Hide tracks if this is the main library table
+        response = QMessageBox::question(this,
+                tr("Confirm track hide"),
+                tr("Are you sure you want to hide the selected tracks?"));
+        if (response == QMessageBox::Yes) {
+            pTrackModel->hideTracks(indices);
+        }
     } else {
-        QTableView::keyPressEvent(event);
+        // Else remove the tracks from AutoDJ/crate/playlist
+        QString message;
+        if (pTrackModel->hasCapabilities(TrackModel::Capability::Remove)) {
+            message = tr("Are you sure you want to remove the selected tracks from AutoDJ queue?");
+        } else if (pTrackModel->hasCapabilities(TrackModel::Capability::RemoveCrate)) {
+            message = tr("Are you sure you want to remove the selected tracks from this crate?");
+        } else if (pTrackModel->hasCapabilities(TrackModel::Capability::RemovePlaylist)) {
+            message = tr("Are you sure you want to remove the selected tracks from this playlist?");
+        } else {
+            return;
+        }
+
+        response = QMessageBox::question(this, tr("Confirm track removal"), message);
+        if (response == QMessageBox::Yes) {
+            pTrackModel->removeTracks(indices);
+        }
     }
 }
 
 void WTrackTableView::loadSelectedTrack() {
     auto indices = selectionModel()->selectedRows();
-    if (indices.size() > 0) {
-        slotMouseDoubleClicked(indices.at(0));
+    if (indices.isEmpty()) {
+        return;
     }
+    slotMouseDoubleClicked(indices.at(0));
 }
 
 void WTrackTableView::loadSelectedTrackToGroup(const QString& group, bool play) {
     auto indices = selectionModel()->selectedRows();
-    if (indices.size() > 0) {
-        // If the track load override is disabled, check to see if a track is
-        // playing before trying to load it
-        if (!(m_pConfig->getValueString(
-                               ConfigKey("[Controls]", "AllowTrackLoadToPlayingDeck"))
-                            .toInt())) {
-            // TODO(XXX): Check for other than just the first preview deck.
-            if (group != "[PreviewDeck1]" &&
-                    ControlObject::get(ConfigKey(group, "play")) > 0.0) {
-                return;
-            }
+    if (indices.isEmpty()) {
+        return;
+    }
+    // If the track load override is disabled, check to see if a track is
+    // playing before trying to load it
+    if (!(m_pConfig->getValueString(
+                           ConfigKey("[Controls]", "AllowTrackLoadToPlayingDeck"))
+                        .toInt())) {
+        // TODO(XXX): Check for other than just the first preview deck.
+        if (group != "[PreviewDeck1]" &&
+                ControlObject::get(ConfigKey(group, "play")) > 0.0) {
+            return;
         }
-        auto index = indices.at(0);
-        auto* trackModel = getTrackModel();
-        TrackPointer pTrack;
-        if (trackModel &&
-                (pTrack = trackModel->getTrack(index))) {
-            emit loadTrackToPlayer(pTrack, group, play);
-        }
+    }
+    auto index = indices.at(0);
+    auto* trackModel = getTrackModel();
+    TrackPointer pTrack;
+    if (trackModel &&
+            (pTrack = trackModel->getTrack(index))) {
+        emit loadTrackToPlayer(pTrack, group, play);
     }
 }
 
@@ -1007,16 +1072,31 @@ void WTrackTableView::slotSortingChanged(int headerSection, Qt::SortOrder order)
     }
 }
 
+void WTrackTableView::focusInEvent(QFocusEvent* event) {
+    QWidget::focusInEvent(event);
+    emit trackTableFocusChange(FocusWidget::TracksTable);
+}
+
+void WTrackTableView::focusOutEvent(QFocusEvent* event) {
+    QWidget::focusOutEvent(event);
+    emit trackTableFocusChange(FocusWidget::None);
+}
+
 bool WTrackTableView::hasFocus() const {
     return QWidget::hasFocus();
 }
 
-void WTrackTableView::saveCurrentVScrollBarPos() {
-    saveVScrollBarPos(getTrackModel());
+void WTrackTableView::setFocus() {
+    QWidget::setFocus();
 }
 
-void WTrackTableView::restoreCurrentVScrollBarPos() {
-    restoreVScrollBarPos(getTrackModel());
+QString WTrackTableView::getModelStateKey() const {
+    TrackModel* trackModel = getTrackModel();
+    if (trackModel) {
+        bool noSearch = trackModel->currentSearch().trimmed().isEmpty();
+        return trackModel->modelKey(noSearch);
+    }
+    return QString();
 }
 
 void WTrackTableView::keyNotationChanged() {

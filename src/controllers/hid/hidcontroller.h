@@ -16,7 +16,7 @@ namespace {
 class HidIO : public QThread {
     Q_OBJECT
   public:
-    HidIO(hid_device* device, const QString, const wchar_t*);
+    HidIO(hid_device* device, const QString, const wchar_t*, const RuntimeLoggingCategory &logBase, const RuntimeLoggingCategory &logInput, const RuntimeLoggingCategory &logOutput);
     virtual ~HidIO();
 
     void stop() {
@@ -28,6 +28,9 @@ class HidIO : public QThread {
     unsigned char m_pPollData[kNumBuffers][kBufferSize];
     int m_lastPollSize;
     int m_pollingBufferIndex;
+    const RuntimeLoggingCategory m_logBase;
+    const RuntimeLoggingCategory m_logInput;
+    const RuntimeLoggingCategory m_logOutput;
 
 signals:
     /// Signals that a HID InputReport received by Interupt triggered from HID device
@@ -86,7 +89,7 @@ class HidController final : public Controller {
     // For devices which only support a single report, reportID must be set to
     // 0x0.
     void sendBytes(const QByteArray& data) override;
-    void sendFeatureReport(const QList<int>& dataList, unsigned int reportID);
+    void sendFeatureReport(const QByteArray& reportData, unsigned int reportID);
 
     // getInputReport receives an input report on request.
     // This can be used on startup to initialize the knob positions in Mixxx
@@ -95,7 +98,7 @@ class HidController final : public Controller {
     // as in the polling functionality (including ReportID in first byte).
     // The returned list can be used to call the incomingData
     // function of the common-hid-packet-parser.
-    QList<int> getInputReport(unsigned int reportID);
+    QByteArray getInputReport(unsigned int reportID);
 
     // getFeatureReport receives a feature reports on request.
     // HID doesn't support polling feature reports, therefore this is the
@@ -104,7 +107,7 @@ class HidController final : public Controller {
     // changing the other bits. The returned list matches the input
     // format of sendFeatureReport, allowing it to be read, modified
     // and sent it back to the controller.
-    QList<int> getFeatureReport(unsigned int reportID);
+    QByteArray getFeatureReport(unsigned int reportID);
 
     const mixxx::hid::DeviceInfo m_deviceInfo;
 
@@ -131,17 +134,17 @@ class HidControllerJSProxy : public ControllerJSProxy {
         m_pHidController->sendReport(data, length, reportID);
     }
 
-    Q_INVOKABLE QList<int> getInputReport(
+    Q_INVOKABLE QByteArray getInputReport(
             unsigned int reportID) {
         return m_pHidController->getInputReport(reportID);
     }
 
     Q_INVOKABLE void sendFeatureReport(
-            const QList<int>& dataList, unsigned int reportID) {
-        m_pHidController->sendFeatureReport(dataList, reportID);
+            const QByteArray& reportData, unsigned int reportID) {
+        m_pHidController->sendFeatureReport(reportData, reportID);
     }
 
-    Q_INVOKABLE QList<int> getFeatureReport(
+    Q_INVOKABLE QByteArray getFeatureReport(
             unsigned int reportID) {
         return m_pHidController->getFeatureReport(reportID);
     }

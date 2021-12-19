@@ -19,7 +19,7 @@
 #include "soundio/sounddeviceportaudio.h"
 #include "soundio/soundmanagerutil.h"
 #include "util/cmdlineargs.h"
-#include "util/compatibility.h"
+#include "util/compatibility/qatomic.h"
 #include "util/defs.h"
 #include "util/sample.h"
 #include "util/sleep.h"
@@ -39,7 +39,7 @@ struct DeviceMode {
 };
 
 #ifdef __LINUX__
-const unsigned int kSleepSecondsAfterClosingDevice = 5;
+constexpr unsigned int kSleepSecondsAfterClosingDevice = 5;
 #endif
 } // anonymous namespace
 
@@ -81,7 +81,10 @@ SoundManager::SoundManager(UserSettingsPointer pConfig,
         m_config.loadDefaults(this, SoundManagerConfig::ALL);
     }
     checkConfig();
-    m_config.writeToDisk(); // in case anything changed by applying defaults
+    // Don't write config to disk, yet -- it may be reset to defaults in case
+    // previously configured devices were not found.
+    // Write new config after MixxxMainWindow::noOutputDlg where the user has
+    // a chance to keep the previous sound config (exit).
 }
 
 SoundManager::~SoundManager() {

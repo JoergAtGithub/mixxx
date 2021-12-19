@@ -38,7 +38,7 @@ void QuantizeControl::trackLoaded(TrackPointer pNewTrack) {
         lookupBeatPositions(mixxx::audio::kStartFramePos);
         updateClosestBeat(mixxx::audio::kStartFramePos);
     } else {
-        m_pBeats.clear();
+        m_pBeats.reset();
         m_pCOPrevBeat->set(mixxx::audio::kInvalidFramePos.toEngineSamplePosMaybeInvalid());
         m_pCONextBeat->set(mixxx::audio::kInvalidFramePos.toEngineSamplePosMaybeInvalid());
         m_pCOClosestBeat->set(mixxx::audio::kInvalidFramePos.toEngineSamplePosMaybeInvalid());
@@ -55,8 +55,13 @@ void QuantizeControl::trackBeatsUpdated(mixxx::BeatsPointer pBeats) {
 void QuantizeControl::setFrameInfo(mixxx::audio::FramePos currentPosition,
         mixxx::audio::FramePos trackEndPosition,
         mixxx::audio::SampleRate sampleRate) {
-    EngineControl::setFrameInfo(currentPosition, trackEndPosition, sampleRate);
-    playPosChanged(currentPosition);
+    FrameInfo frameInf = frameInfo();
+    if (frameInf.currentPosition != currentPosition ||
+            frameInf.trackEndPosition != trackEndPosition ||
+            frameInf.sampleRate != sampleRate) {
+        EngineControl::setFrameInfo(currentPosition, trackEndPosition, sampleRate);
+        playPosChanged(currentPosition);
+    }
 }
 
 void QuantizeControl::playPosChanged(mixxx::audio::FramePos position) {

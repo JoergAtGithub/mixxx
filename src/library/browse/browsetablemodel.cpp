@@ -18,8 +18,30 @@
 #include "mixer/playermanager.h"
 #include "moc_browsetablemodel.cpp"
 #include "track/track.h"
-#include "util/compatibility.h"
 #include "widget/wlibrarytableview.h"
+
+namespace {
+
+/// Helper to insert values into a QList with specific indices.
+///
+/// *For legacy code only - Do not use for new code!*
+template<typename T>
+void listAppendOrReplaceAt(QList<T>* pList, int index, const T& value) {
+    VERIFY_OR_DEBUG_ASSERT(index <= pList->size()) {
+        qWarning() << "listAppendOrReplaceAt: Padding list with"
+                   << (index - pList->size()) << "default elements";
+        while (index > pList->size()) {
+            pList->append(T());
+        }
+    }
+    VERIFY_OR_DEBUG_ASSERT(index == pList->size()) {
+        pList->replace(index, value);
+        return;
+    }
+    pList->append(value);
+}
+
+} // anonymous namespace
 
 BrowseTableModel::BrowseTableModel(QObject* parent,
         TrackCollectionManager* pTrackCollectionManager,
@@ -188,6 +210,11 @@ void BrowseTableModel::addSearchColumn(int index) {
 }
 
 void BrowseTableModel::setPath(mixxx::FileAccess path) {
+    if (path.info().hasLocation()) {
+        m_currentDirectory = path.info().locationPath();
+    } else {
+        m_currentDirectory = QString();
+    }
     m_pBrowseThread->executePopulation(std::move(path), this);
 }
 
@@ -231,9 +258,18 @@ TrackId BrowseTableModel::getTrackId(const QModelIndex& index) const {
     } else {
         qWarning()
                 << "Track is not available in library"
-                << getTrackLocation(index);
+                << getTrackUrl(index);
         return TrackId();
     }
+}
+
+QUrl BrowseTableModel::getTrackUrl(const QModelIndex& index) const {
+    const QString trackLocation = getTrackLocation(index);
+    DEBUG_ASSERT(trackLocation.trimmed() == trackLocation);
+    if (trackLocation.isEmpty()) {
+        return {};
+    }
+    return QUrl::fromLocalFile(trackLocation);
 }
 
 CoverInfo BrowseTableModel::getCoverInfo(const QModelIndex& index) const {
@@ -243,7 +279,7 @@ CoverInfo BrowseTableModel::getCoverInfo(const QModelIndex& index) const {
     } else {
         qWarning()
                 << "Track is not available in library"
-                << getTrackLocation(index);
+                << getTrackUrl(index);
         return CoverInfo();
     }
 }
@@ -299,7 +335,7 @@ QMimeData* BrowseTableModel::mimeData(const QModelIndexList& indexes) const {
         if (index.isValid()) {
             if (!rows.contains(index.row())) {
                 rows.push_back(index.row());
-                QUrl url = mixxx::FileInfo(getTrackLocation(index)).toQUrl();
+                QUrl url = getTrackUrl(index);
                 if (!url.isValid()) {
                     qDebug() << "ERROR invalid url" << url;
                     continue;
@@ -329,6 +365,7 @@ void BrowseTableModel::slotInsert(const QList<QList<QStandardItem*> >& rows,
             appendRow(rows.at(i));
         }
     }
+    emit restoreModelState();
 }
 
 TrackModel::Capabilities BrowseTableModel::getCapabilities() const {
@@ -336,7 +373,14 @@ TrackModel::Capabilities BrowseTableModel::getCapabilities() const {
             Capability::AddToAutoDJ |
             Capability::LoadToDeck |
             Capability::LoadToPreviewDeck |
-            Capability::LoadToSampler;
+            Capability::LoadToSampler |
+            Capability::RemoveFromDisk;
+}
+
+QString BrowseTableModel::modelKey(bool noSearch) const {
+    // Browse feature does currently not support searching.
+    Q_UNUSED(noSearch);
+    return QStringLiteral("browse:") + m_currentDirectory;
 }
 
 Qt::ItemFlags BrowseTableModel::flags(const QModelIndex& index) const {

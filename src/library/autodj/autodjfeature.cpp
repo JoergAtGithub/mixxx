@@ -17,7 +17,6 @@
 #include "moc_autodjfeature.cpp"
 #include "sources/soundsourceproxy.h"
 #include "track/track.h"
-#include "util/compatibility.h"
 #include "util/dnd.h"
 #include "widget/wlibrary.h"
 #include "widget/wlibrarysidebar.h"
@@ -29,7 +28,7 @@ const QString kViewName = QStringLiteral("Auto DJ");
 } // namespace
 
 namespace {
-    const int kMaxRetrieveAttempts = 3;
+constexpr int kMaxRetrieveAttempts = 3;
 
     int findOrCrateAutoDjPlaylistId(PlaylistDAO& playlistDAO) {
         int playlistId = playlistDAO.getPlaylistIdFromName(AUTODJ_TABLE);
@@ -62,10 +61,15 @@ AutoDJFeature::AutoDJFeature(Library* pLibrary,
             pPlayerManager,
             pLibrary->trackCollectionManager(),
             m_iAutoDJPlaylistId);
+
+    // Connect loadTrackToPlayer signal as a queued connection to make sure all callbacks of a
+    // previous load attempt have been called (lp1941743)
     connect(m_pAutoDJProcessor,
             &AutoDJProcessor::loadTrackToPlayer,
             this,
-            &AutoDJFeature::loadTrackToPlayer);
+            &LibraryFeature::loadTrackToPlayer,
+            Qt::QueuedConnection);
+
     m_playlistDao.setAutoDJProcessor(m_pAutoDJProcessor);
 
     // Create the "Crates" tree-item under the root item.
@@ -127,7 +131,7 @@ void AutoDJFeature::bindLibraryWidget(
     connect(m_pAutoDJView,
             &DlgAutoDJ::loadTrackToPlayer,
             this,
-            &AutoDJFeature::loadTrackToPlayer);
+            &LibraryFeature::loadTrackToPlayer);
 
     connect(m_pAutoDJView,
             &DlgAutoDJ::trackSelected,

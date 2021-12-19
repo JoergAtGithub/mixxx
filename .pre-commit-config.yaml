@@ -51,6 +51,8 @@ repos:
     - commit
     - manual
   - id: no-commit-to-branch
+    # protect main and any branch that has a semver-like name
+    args: [-b, main, -p, '^\d+\.\d+(?:\.\d+)?$']
 - repo: https://github.com/codespell-project/codespell
   rev: v2.1.0
   hooks:
@@ -61,7 +63,7 @@ repos:
     #args: [--ignore-words, .codespellignore, --ignore-regex, "\\W(?:m_p*(?=[A-Z])|m_(?=\\w)|pp*(?=[A-Z])|k(?=[A-Z])|s_(?=\\w))"]
     exclude: ^(packaging/wix/LICENSE.rtf|src/dialog/dlgabout\.cpp|.*\.(?:pot?|ts|wxl))$
 - repo: https://github.com/pre-commit/mirrors-eslint
-  rev: v7.32.0
+  rev: v8.0.0-1
   hooks:
   - id: eslint
     args: [--fix, --report-unused-disable-directives]
@@ -81,7 +83,7 @@ repos:
     language: python
     files: \.(c|cc|cxx|cpp|frag|glsl|h|hpp|hxx|ih|ispc|ipp|java|m|mm|proto|vert)$
 - repo: https://github.com/psf/black
-  rev: 21.7b0
+  rev: 21.9b0
   hooks:
   - id: black
     files: ^tools/.*$
@@ -96,7 +98,7 @@ repos:
   hooks:
   - id: shellcheck
 - repo: https://github.com/DavidAnson/markdownlint-cli2
-  rev: v0.2.0
+  rev: v0.3.2
   hooks:
   - id: markdownlint-cli2
 - repo: local
@@ -115,6 +117,13 @@ repos:
     stages:
     - commit
     - manual
+  - id: changelog
+    name: changelog
+    description: Add missing links to changelog.
+    entry: ./tools/changelog.py
+    language: python
+    types: [text]
+    files: ^CHANGELOG.md$
   - id: qmlformat
     name: qmlformat
     entry: tools/qmlformat.py
@@ -130,3 +139,15 @@ repos:
     language: system
     types: [text]
     files: ^.*\.qml$
+  - id: metainfo
+    name: metainfo
+    description: Update AppStream metainfo releases from CHANGELOG.md.
+    entry: ./tools/update_metainfo.py
+    pass_filenames: false
+    language: python
+    additional_dependencies:
+    - beautifulsoup4==4.9.3
+    - lxml==4.6.3
+    - Markdown==3.3.4
+    types: [text]
+    files: ^(CHANGELOG\.md|res/linux/org\.mixxx\.Mixxx\.metainfo.xml)$

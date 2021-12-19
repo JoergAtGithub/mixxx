@@ -109,14 +109,14 @@ void ControlDoublePrivate::insertAlias(const ConfigKey& alias, const ConfigKey& 
     MMutexLocker locker(&s_qCOHashMutex);
 
     auto it = s_qCOHash.constFind(key);
-    if (it == s_qCOHash.constEnd()) {
-        qWarning() << "WARNING: ControlDoublePrivate::insertAlias called for null control" << key;
+    VERIFY_OR_DEBUG_ASSERT(it != s_qCOHash.constEnd()) {
+        qWarning() << "cannot create alias for null control" << key;
         return;
     }
 
     QSharedPointer<ControlDoublePrivate> pControl = it.value();
-    if (pControl.isNull()) {
-        qWarning() << "WARNING: ControlDoublePrivate::insertAlias called for expired control" << key;
+    VERIFY_OR_DEBUG_ASSERT(!pControl.isNull()) {
+        qWarning() << "cannot create alias for expired control" << key;
         return;
     }
 
@@ -134,9 +134,11 @@ QSharedPointer<ControlDoublePrivate> ControlDoublePrivate::getControl(
         bool bPersist,
         double defaultValue) {
     if (!key.isValid()) {
-        qWarning() << "ControlDoublePrivate::getControl returning nullptr"
-                   << "for invalid ConfigKey" << key;
-        DEBUG_ASSERT(flags.testFlag(ControlFlag::AllowInvalidKey));
+        if (!flags.testFlag(ControlFlag::AllowInvalidKey)) {
+            qWarning() << "ControlDoublePrivate::getControl returning nullptr"
+                       << "for invalid ConfigKey" << key;
+            DEBUG_ASSERT(!"Unexpected invalid key");
+        }
         return nullptr;
     }
 
@@ -148,11 +150,12 @@ QSharedPointer<ControlDoublePrivate> ControlDoublePrivate::getControl(
             auto pControl = it.value().lock();
             if (pControl) {
                 // Control object already exists
-                VERIFY_OR_DEBUG_ASSERT(!pCreatorCO) {
+                if (pCreatorCO) {
                     qWarning()
                             << "ControlObject"
                             << key.group << key.item
                             << "already created";
+                    DEBUG_ASSERT(!"pCreatorCO != nullptr, ControlObject already created");
                     return nullptr;
                 }
                 return pControl;
@@ -311,8 +314,9 @@ double ControlDoublePrivate::getParameterForValue(double value) const {
 
 double ControlDoublePrivate::getParameterForMidi(double midiParam) const {
     QSharedPointer<ControlNumericBehavior> pBehavior = m_pBehavior;
-    VERIFY_OR_DEBUG_ASSERT(pBehavior) {
-        qWarning() << "Cannot set" << m_key << "by Midi";
+    if (!pBehavior) {
+        qWarning() << "Cannot get" << m_key << "for Midi";
+        DEBUG_ASSERT(!"pBehavior == nullptr, getParameterForMidi is returning 0");
         return 0;
     }
     return pBehavior->midiToParameter(midiParam);
@@ -320,8 +324,9 @@ double ControlDoublePrivate::getParameterForMidi(double midiParam) const {
 
 void ControlDoublePrivate::setValueFromMidi(MidiOpCode opcode, double midiParam) {
     QSharedPointer<ControlNumericBehavior> pBehavior = m_pBehavior;
-    VERIFY_OR_DEBUG_ASSERT(pBehavior) {
-        qWarning() << "Cannot set" << m_key << "by Midi";
+    if (!pBehavior) {
+        qWarning() << "Cannot set" << m_key << "from Midi";
+        DEBUG_ASSERT(!"pBehavior == nullptr, abort setValueFromMidi()");
         return;
     }
     pBehavior->setValueFromMidi(opcode, midiParam, this);
@@ -329,8 +334,9 @@ void ControlDoublePrivate::setValueFromMidi(MidiOpCode opcode, double midiParam)
 
 double ControlDoublePrivate::getMidiParameter() const {
     QSharedPointer<ControlNumericBehavior> pBehavior = m_pBehavior;
-    VERIFY_OR_DEBUG_ASSERT(pBehavior) {
-        qWarning() << "Cannot get" << m_key << "by Midi";
+    if (!pBehavior) {
+        qWarning() << "Cannot get" << m_key << "as Midi";
+        DEBUG_ASSERT(!"pBehavior == nullptr, getMidiParameter() is returning 0");
         return 0;
     }
     return pBehavior->valueToMidiParameter(get());

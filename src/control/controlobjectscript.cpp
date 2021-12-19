@@ -1,12 +1,12 @@
 #include "control/controlobjectscript.h"
 
-#include <QtDebug>
-
-#include "controllers/controllerdebug.h"
 #include "moc_controlobjectscript.cpp"
 
-ControlObjectScript::ControlObjectScript(const ConfigKey& key, QObject* pParent)
-        : ControlProxy(key, pParent, ControllerDebug::controlFlags()) {
+ControlObjectScript::ControlObjectScript(
+        const ConfigKey& key, const RuntimeLoggingCategory& logger, QObject* pParent)
+        : ControlProxy(key, pParent, ControlFlag::AllowMissingOrInvalid),
+          m_logger(logger),
+          m_proxy(key, logger, this) {
 }
 
 bool ControlObjectScript::addScriptConnection(const ScriptConnection& conn) {
@@ -15,9 +15,14 @@ bool ControlObjectScript::addScriptConnection(const ScriptConnection& conn) {
         // by script connections.
         connect(m_pControl.data(),
                 &ControlDoublePrivate::valueChanged,
+                &m_proxy,
+                &CompressingProxy::slotValueChanged,
+                Qt::QueuedConnection);
+        connect(&m_proxy,
+                &CompressingProxy::signalValueChanged,
                 this,
                 &ControlObjectScript::slotValueChanged,
-                Qt::QueuedConnection);
+                Qt::DirectConnection);
         connect(this,
                 &ControlObjectScript::trigger,
                 this,
@@ -27,36 +32,40 @@ bool ControlObjectScript::addScriptConnection(const ScriptConnection& conn) {
 
     for (const auto& priorConnection : qAsConst(m_scriptConnections)) {
         if (conn == priorConnection) {
-            qWarning() << "Connection " + conn.id.toString() +
-                          " already connected to (" +
-                          conn.key.group + ", " + conn.key.item +
-                          "). Ignoring attempt to connect again.";
+            qCWarning(m_logger) << "Connection " + conn.id.toString() +
+                            " already connected to (" +
+                            conn.key.group + ", " + conn.key.item +
+                            "). Ignoring attempt to connect again.";
             return false;
         }
     }
 
     m_scriptConnections.append(conn);
-    controllerDebug("Connected (" +
+    qCDebug(m_logger) << "Connected (" +
                     conn.key.group + ", " + conn.key.item +
-                    ") to connection " + conn.id.toString());
+                    ") to connection " + conn.id.toString();
     return true;
 }
 
 bool ControlObjectScript::removeScriptConnection(const ScriptConnection& conn) {
     bool success = m_scriptConnections.removeOne(conn);
     if (success) {
-        controllerDebug("Disconnected (" +
+        qCDebug(m_logger) << "Disconnected (" +
                         conn.key.group + ", " + conn.key.item +
-                        ") from connection " + conn.id.toString());
+                        ") from connection " + conn.id.toString();
     } else {
-        qWarning() << "Failed to disconnect (" +
-                      conn.key.group + ", " + conn.key.item +
-                      ") from connection " + conn.id.toString();
+        qCWarning(m_logger) << "Failed to disconnect (" +
+                        conn.key.group + ", " + conn.key.item +
+                        ") from connection " + conn.id.toString();
     }
     if (m_scriptConnections.isEmpty()) {
         // no ScriptConnections left, so disconnect signals
         disconnect(m_pControl.data(),
                 &ControlDoublePrivate::valueChanged,
+                &m_proxy,
+                &CompressingProxy::slotValueChanged);
+        disconnect(&m_proxy,
+                &CompressingProxy::signalValueChanged,
                 this,
                 &ControlObjectScript::slotValueChanged);
         disconnect(this,

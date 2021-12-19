@@ -7,7 +7,7 @@
 #include "util/math.h"
 #include "util/sample.h"
 
-static const int kNumChannels = 2;
+static constexpr int kNumChannels = 2;
 
 ReadAheadManager::ReadAheadManager()
         : m_pLoopingControl(nullptr),
@@ -278,4 +278,13 @@ double ReadAheadManager::getFilePlaypositionFromLog(
     }
 
     return filePlayposition;
+}
+
+mixxx::audio::FramePos ReadAheadManager::getFilePlaypositionFromLog(
+        mixxx::audio::FramePos currentPosition,
+        mixxx::audio::FrameDiff_t numConsumedFrames) {
+    const double positionSamples =
+            getFilePlaypositionFromLog(currentPosition.toEngineSamplePos(),
+                    numConsumedFrames * mixxx::kEngineChannelCount);
+    return mixxx::audio::FramePos::fromEngineSamplePos(positionSamples);
 }

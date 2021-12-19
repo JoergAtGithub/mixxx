@@ -54,6 +54,12 @@ find_path(PortAudio_INCLUDE_DIR
   DOC "PortAudio include directory")
 mark_as_advanced(PortAudio_INCLUDE_DIR)
 
+# Temporary hack until https://github.com/PortAudio/portaudio/pull/635 is released.
+find_path(PortAudio_ALSA_H
+  NAMES pa_linux_alsa.h
+  PATHS ${PC_PortAudio_INCLUDE_DIRS})
+mark_as_advanced(PortAudio_ALSA_H)
+
 find_library(PortAudio_LIBRARY
   NAMES portaudio
   PATHS ${PC_PortAudio_LIBRARY_DIRS}
@@ -78,5 +84,17 @@ if(PortAudio_FOUND)
         INTERFACE_COMPILE_OPTIONS "${PC_PortAudio_CFLAGS_OTHER}"
         INTERFACE_INCLUDE_DIRECTORIES "${PortAudio_INCLUDE_DIR}"
     )
+    is_static_library(PortAudio_IS_STATIC PortAudio::PortAudio)
+    if(PortAudio_IS_STATIC)
+      find_package(JACK)
+      if(JACK_FOUND)
+        set_property(TARGET PortAudio::PortAudio APPEND PROPERTY INTERFACE_LINK_LIBRARIES
+          JACK::jack
+        )
+      endif()
+    endif()
+    if(PortAudio_ALSA_H)
+      target_compile_definitions(PortAudio::PortAudio INTERFACE PA_USE_ALSA)
+    endif()
   endif()
 endif()
