@@ -38,6 +38,9 @@ signals:
 
 public slots:
   void sendBytesReport(QByteArray data, unsigned int reportID);
+  QByteArray getInputReport(unsigned int reportID);
+  void sendFeatureReport(const QByteArray& reportData, unsigned int reportID);
+  QByteArray getFeatureReport(unsigned int reportID);
 
   protected:
     void run();
@@ -83,14 +86,6 @@ class HidController final : public Controller {
 
   signals:
     void sendBytesReport(QByteArray data, unsigned int reportID);
-
-  private:
-
-    // For devices which only support a single report, reportID must be set to
-    // 0x0.
-    void sendBytes(const QByteArray& data) override;
-    void sendFeatureReport(const QByteArray& reportData, unsigned int reportID);
-
     // getInputReport receives an input report on request.
     // This can be used on startup to initialize the knob positions in Mixxx
     // to the physical position of the hardware knobs on the controller.
@@ -99,6 +94,8 @@ class HidController final : public Controller {
     // The returned list can be used to call the incomingData
     // function of the common-hid-packet-parser.
     QByteArray getInputReport(unsigned int reportID);
+
+    void sendFeatureReport(const QByteArray& reportData, unsigned int reportID);
 
     // getFeatureReport receives a feature reports on request.
     // HID doesn't support polling feature reports, therefore this is the
@@ -109,6 +106,12 @@ class HidController final : public Controller {
     // and sent it back to the controller.
     QByteArray getFeatureReport(unsigned int reportID);
 
+  private:
+
+    // For devices which only support a single report, reportID must be set to
+    // 0x0.
+    void sendBytes(const QByteArray& data) override;
+  
     const mixxx::hid::DeviceInfo m_deviceInfo;
 
     HidIO* m_pHidIO;

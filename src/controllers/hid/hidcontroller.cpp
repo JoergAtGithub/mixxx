@@ -36,14 +36,12 @@ HidIO::~HidIO() {
 }
 
 void HidIO::run() {
-    QMutexLocker locker(&m_HidIoMutex);
     m_stop = 0;
 
     while (m_stop.loadRelaxed() == 0) {
         // hid_read_timeout reads an Input Report from a HID device.
         // If no packet was available to be read within
         // the timeout period, this function returns 0.
-        locker.relock();
         Trace hidio_run("HidIO read interupt based IO");
         for (int i = 0; i < 512; i++) {
             int bytesRead = hid_read(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize);
@@ -62,7 +60,6 @@ void HidIO::run() {
                 processInputReport(bytesRead);
             }
         }
-        locker.unlock();
         usleep(500);
     }
 }
@@ -94,14 +91,41 @@ void HidIO::processInputReport(int bytesRead) {
     emit(receive(incomingData, mixxx::Time::elapsed()));
 }
 
+QByteArray HidIO::getInputReport(unsigned int reportID) {
+    Trace hidRead("HidIO getInputReport");
+
+    int bytesRead = 0;
+
+    m_pPollData[m_pollingBufferIndex][0] = reportID;
+
+    // FIXME: implement upstream for hidraw backend on Linux
+    // https://github.com/libusb/hidapi/issues/259
+    bytesRead = hid_get_input_report(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize);
+    qCDebug(m_logInput) << bytesRead
+                        << "bytes received by hid_get_input_report" << m_pHidDeviceName
+                        << "serial #" << m_pHidDeviceSerialNumber
+                        << "(including one byte for the report ID:"
+                        << QString::number(static_cast<quint8>(reportID), 16)
+                                   .toUpper()
+                                   .rightJustified(2, QChar('0'))
+                        << ")";
+    if (bytesRead <= kReportIdSize) {
+        // -1 is the only error value according to hidapi documentation.
+        // Otherwise minimum possible value is 1, because 1 byte is for the reportID,
+        // the smallest report with data is therefore 2 bytes.
+        DEBUG_ASSERT(bytesRead <= kReportIdSize);
+        return QByteArray();
+    }
+
+    return QByteArray::fromRawData(
+            reinterpret_cast<char*>(m_pPollData[m_pollingBufferIndex]), bytesRead);
+}
+
 void HidIO::sendBytesReport(QByteArray data, unsigned int reportID) {
-    QMutexLocker locker(&m_HidIoMutex);
     // Append the Report ID to the beginning of data[] per the API..
     data.prepend(reportID);
 
-    locker.relock();
     int result = hid_write(m_pHidDevice, (unsigned char*)data.constData(), data.size());
-    locker.unlock();
     if (result == -1) {
         qCWarning(m_logOutput) << "Unable to send data to" << m_pHidDeviceName << ":"
                                << mixxx::convertWCStringToQString(
@@ -112,6 +136,74 @@ void HidIO::sendBytesReport(QByteArray data, unsigned int reportID) {
                              << "serial #" << m_pHidDeviceSerialNumber
                              << "(including report ID of" << reportID << ")";
     }
+}
+
+
+void HidIO::sendFeatureReport(
+        const QByteArray& reportData, unsigned int reportID) {
+    QByteArray dataArray;
+    dataArray.reserve(kReportIdSize + reportData.size());
+
+    // Append the Report ID to the beginning of dataArray[] per the API..
+    dataArray.append(reportID);
+
+    for (const int datum : reportData) {
+        dataArray.append(datum);
+    }
+
+    int result = hid_send_feature_report(m_pHidDevice,
+            reinterpret_cast<const unsigned char*>(dataArray.constData()),
+            dataArray.size());
+    if (result == -1) {
+        qCWarning(m_logOutput) << "sendFeatureReport is unable to send data to"
+                               << m_pHidDeviceName << "serial #" << m_pHidDeviceSerialNumber
+                               << ":"
+                               << mixxx::convertWCStringToQString(
+                                          hid_error(m_pHidDevice),
+                                          kMaxHidErrorMessageSize);
+    } else {
+        qCDebug(m_logOutput) << result << "bytes sent by sendFeatureReport to" << m_pHidDeviceName
+                             << "serial #" << m_pHidDeviceSerialNumber
+                             << "(including report ID of" << reportID << ")";
+    }
+}
+
+
+QByteArray HidIO::getFeatureReport(
+        unsigned int reportID) {
+    unsigned char dataRead[kReportIdSize + kBufferSize];
+    dataRead[0] = reportID;
+
+    int bytesRead;
+    bytesRead = hid_get_feature_report(m_pHidDevice,
+            dataRead,
+            kReportIdSize + kBufferSize);
+    if (bytesRead <= kReportIdSize) {
+        // -1 is the only error value according to hidapi documentation.
+        // Otherwise minimum possible value is 1, because 1 byte is for the reportID,
+        // the smallest report with data is therefore 2 bytes.
+        qCWarning(m_logInput) << "getFeatureReport is unable to get data from" << m_pHidDeviceName
+                              << "serial #" << m_pHidDeviceSerialNumber << ":"
+                              << mixxx::convertWCStringToQString(
+                                         hid_error(m_pHidDevice),
+                                         kMaxHidErrorMessageSize);
+    } else {
+        qCDebug(m_logInput) << bytesRead
+                            << "bytes received by getFeatureReport from" << m_pHidDeviceName
+                            << "serial #" << m_pHidDeviceSerialNumber
+                            << "(including one byte for the report ID:"
+                            << QString::number(static_cast<quint8>(reportID), 16)
+                                       .toUpper()
+                                       .rightJustified(2, QChar('0'))
+                            << ")";
+    }
+
+    // Convert array of bytes read in a JavaScript compatible return type
+    // For compatibility with input array HidController::sendFeatureReport, a reportID prefix is not added here
+    QByteArray byteArray;
+    byteArray.reserve(bytesRead - kReportIdSize);
+    auto featureReportStart = reinterpret_cast<const char*>(dataRead + kReportIdSize);
+    return QByteArray(featureReportStart, bytesRead);
 }
 
 HidController::HidController(
@@ -214,8 +306,33 @@ int HidController::open() {
         m_pHidIO = new HidIO(m_pHidDevice, getName(), m_deviceInfo.serialNumberRaw(),m_logBase,m_logInput,m_logOutput);
         m_pHidIO->setObjectName(QString("HidIO %1").arg(getName()));
 
-        connect(m_pHidIO, SIGNAL(receive(QByteArray, mixxx::Duration)), this, SLOT(receive(QByteArray, mixxx::Duration)));
-        connect(this, SIGNAL(sendBytesReport(QByteArray, unsigned int)), m_pHidIO, SLOT(sendBytesReport(QByteArray, unsigned int)));
+        connect(m_pHidIO,
+                &HidIO::receive,
+                this,
+                &HidController::receive,
+                Qt::QueuedConnection);
+        connect(this,
+                &HidController::sendBytesReport,
+                m_pHidIO,
+                &HidIO::sendBytesReport,
+                Qt::QueuedConnection);
+
+        connect(this,
+                &HidController::getInputReport,
+                m_pHidIO,
+                &HidIO::getInputReport,
+                Qt::DirectConnection);
+
+        connect(this,
+                &HidController::getFeatureReport,
+                m_pHidIO,
+                &HidIO::getFeatureReport,
+                Qt::DirectConnection);
+        connect(this,
+                &HidController::sendFeatureReport,
+                m_pHidIO,
+                &HidIO::sendFeatureReport,
+                Qt::DirectConnection);
 
         // Controller input needs to be prioritized since it can affect the
         // audio directly, like when scratching
@@ -238,8 +355,29 @@ int HidController::close() {
         qWarning() << "HidIO not present for" << getName()
                    << "yet the device is open!";
     } else {
-        disconnect(m_pHidIO, SIGNAL(receive(QByteArray, mixxx::Duration)), this, SLOT(receive(QByteArray, mixxx::Duration)));
-        disconnect(this, SIGNAL(sendBytesReport(QByteArray, unsigned int)), m_pHidIO, SLOT(sendBytesReport(QByteArray, unsigned int)));
+        disconnect(m_pHidIO,
+                &HidIO::receive,
+                this,
+                &HidController::receive);
+        disconnect(this,
+                &HidController::sendBytesReport,
+                m_pHidIO,
+                &HidIO::sendBytesReport);
+
+        disconnect(this,
+                &HidController::getInputReport,
+                m_pHidIO,
+                &HidIO::getInputReport);
+
+        disconnect(this,
+                &HidController::getFeatureReport,
+                m_pHidIO,
+                &HidIO::getFeatureReport);
+        disconnect(this,
+                &HidController::sendFeatureReport,
+                m_pHidIO,
+                &HidIO::sendFeatureReport);
+
         m_pHidIO->stop();
         hid_set_nonblocking(m_pHidDevice, 1); // Quit blocking
         qDebug() << "Waiting on IO thread to finish";
@@ -263,43 +401,6 @@ int HidController::close() {
 }
 
 
-
-QByteArray HidController::getInputReport(unsigned int reportID) {
-    Trace hidRead("HidController getInputReport");
-    QMutexLocker locker(&m_pHidIO->m_HidIoMutex);
-
-    int bytesRead = 0;
-
-    locker.relock();
-    m_pHidIO->m_pPollData[m_pHidIO->m_pollingBufferIndex][0] = reportID;
-
-    // FIXME: implement upstream for hidraw backend on Linux
-    // https://github.com/libusb/hidapi/issues/259
-    bytesRead = hid_get_input_report(m_pHidDevice, m_pHidIO->m_pPollData[m_pHidIO->m_pollingBufferIndex], kBufferSize);
-    qCDebug(m_logInput) << bytesRead
-                        << "bytes received by hid_get_input_report" << getName()
-                        << "serial #" << m_deviceInfo.serialNumber()
-                        << "(including one byte for the report ID:"
-                        << QString::number(static_cast<quint8>(reportID), 16)
-                                   .toUpper()
-                                   .rightJustified(2, QChar('0'))
-                        << ")";
-    if (bytesRead <= kReportIdSize) {
-        // -1 is the only error value according to hidapi documentation.
-        // Otherwise minimum possible value is 1, because 1 byte is for the reportID,
-        // the smallest report with data is therefore 2 bytes.
-        DEBUG_ASSERT(bytesRead <= kReportIdSize);
-        locker.unlock();
-        return QByteArray();
-    }
-
-    
-    locker.unlock();
-    return QByteArray::fromRawData(
-            reinterpret_cast<char*>(m_pHidIO->m_pPollData[m_pHidIO->m_pollingBufferIndex]), bytesRead);
-}
-
-
 void HidController::sendReport(QList<int> data, unsigned int length, unsigned int reportID) {
     Q_UNUSED(length);
     QByteArray temp;
@@ -313,80 +414,8 @@ void HidController::sendBytes(const QByteArray& data) {
     emit(sendBytesReport(data, 0));
 }
 
-void HidController::sendFeatureReport(
-        const QByteArray& reportData, unsigned int reportID) {
-    QMutexLocker locker(&m_pHidIO->m_HidIoMutex);
-
-    QByteArray dataArray;
-    dataArray.reserve(kReportIdSize + reportData.size());
-
-    // Append the Report ID to the beginning of dataArray[] per the API..
-    dataArray.append(reportID);
-
-    for (const int datum : reportData) {
-        dataArray.append(datum);
-    }
-
-    locker.relock();
-    int result = hid_send_feature_report(m_pHidDevice,
-            reinterpret_cast<const unsigned char*>(dataArray.constData()),
-            dataArray.size());
-    locker.unlock();
-    if (result == -1) {
-        qCWarning(m_logOutput) << "sendFeatureReport is unable to send data to"
-                               << getName() << "serial #" << m_deviceInfo.serialNumber()
-                               << ":"
-                               << mixxx::convertWCStringToQString(
-                                          hid_error(m_pHidDevice),
-                                          kMaxHidErrorMessageSize);
-    } else {
-        qCDebug(m_logOutput) << result << "bytes sent by sendFeatureReport to" << getName()
-                             << "serial #" << m_deviceInfo.serialNumber()
-                             << "(including report ID of" << reportID << ")";
-    }
-}
 
 ControllerJSProxy* HidController::jsProxy() {
     return new HidControllerJSProxy(this);
 }
 
-QByteArray HidController::getFeatureReport(
-        unsigned int reportID) {
-    QMutexLocker locker(&m_pHidIO->m_HidIoMutex);
-
-    unsigned char dataRead[kReportIdSize + kBufferSize];
-    dataRead[0] = reportID;
-
-    int bytesRead;
-    locker.relock();
-    bytesRead = hid_get_feature_report(m_pHidDevice,
-            dataRead,
-            kReportIdSize + kBufferSize);
-    locker.unlock();
-    if (bytesRead <= kReportIdSize) {
-        // -1 is the only error value according to hidapi documentation.
-        // Otherwise minimum possible value is 1, because 1 byte is for the reportID,
-        // the smallest report with data is therefore 2 bytes.
-        qCWarning(m_logInput) << "getFeatureReport is unable to get data from" << getName()
-                              << "serial #" << m_deviceInfo.serialNumber() << ":"
-                              << mixxx::convertWCStringToQString(
-                                         hid_error(m_pHidDevice),
-                                         kMaxHidErrorMessageSize);
-    } else {
-        qCDebug(m_logInput) << bytesRead
-                            << "bytes received by getFeatureReport from" << getName()
-                            << "serial #" << m_deviceInfo.serialNumber()
-                            << "(including one byte for the report ID:"
-                            << QString::number(static_cast<quint8>(reportID), 16)
-                                       .toUpper()
-                                       .rightJustified(2, QChar('0'))
-                            << ")";
-    }
-
-    // Convert array of bytes read in a JavaScript compatible return type
-    // For compatibility with input array HidController::sendFeatureReport, a reportID prefix is not added here
-    QByteArray byteArray;
-    byteArray.reserve(bytesRead - kReportIdSize);
-    auto featureReportStart = reinterpret_cast<const char*>(dataRead + kReportIdSize);
-    return QByteArray(featureReportStart, bytesRead);
-}
