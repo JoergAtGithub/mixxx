@@ -43,23 +43,28 @@ void HidIO::run() {
         // If no packet was available to be read within
         // the timeout period, this function returns 0.
         Trace hidio_run("HidIO read interupt based IO");
-        for (int i = 0; i < 512; i++) {
+        for (int i = 0; i < 5; i++) {
             int bytesRead = hid_read(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize);
             //int bytesRead = hid_read_timeout(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize, 1);
             Trace hidio_run2("HidIO process packet");
             if (bytesRead < 0) {
                 // -1 is the only error value according to hidapi documentation.
+                qCWarning(m_logOutput) << "Unable to read data from" << m_pHidDeviceName << ":"
+                                       << mixxx::convertWCStringToQString(
+                                                  hid_error(m_pHidDevice),
+                                                  kMaxHidErrorMessageSize);
                 DEBUG_ASSERT(bytesRead == -1);
             } else if (bytesRead == 0) {
                 // No packet was available to be read -> HID ring buffer completly read
                 // Ring buffer size differs by hidapi backend: libusb(30 reports), mac(30 report), windows(64 reports), hidraw(2048 bytes)
-                if (i >= 30)
-                    qWarning() << "HID controller: " << m_pHidDeviceName << " Serial #" << m_pHidDeviceSerialNumber << " HID Ring buffer critical filled -> InputReports might be popped off -> Events by state transitions might be missed in the mapping. (Ring buffers received: " << i << ")";
+                //if (i >= 30)
+                //    qWarning() << "HID controller: " << m_pHidDeviceName << " Serial #" << m_pHidDeviceSerialNumber << " HID Ring buffer critical filled -> InputReports might be popped off -> Events by state transitions might be missed in the mapping. (Ring buffers received: " << i << ")";
                 break;
             } else {
                 processInputReport(bytesRead);
             }
         }
+        //QCoreApplication::processEvents();
         usleep(500);
     }
 }
@@ -124,7 +129,7 @@ QByteArray HidIO::getInputReport(unsigned int reportID) {
 void HidIO::sendBytesReport(QByteArray data, unsigned int reportID) {
     // Append the Report ID to the beginning of data[] per the API..
     data.prepend(reportID);
-
+    auto startOfHidWrite = mixxx::Time::elapsed();
     int result = hid_write(m_pHidDevice, (unsigned char*)data.constData(), data.size());
     if (result == -1) {
         qCWarning(m_logOutput) << "Unable to send data to" << m_pHidDeviceName << ":"
@@ -132,9 +137,11 @@ void HidIO::sendBytesReport(QByteArray data, unsigned int reportID) {
                                           hid_error(m_pHidDevice),
                                           kMaxHidErrorMessageSize);
     } else {
-        qCDebug(m_logOutput) << result << "bytes sent to" << m_pHidDeviceName
+        qCDebug(m_logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit() << " "
+                             << result << "bytes sent to" << m_pHidDeviceName
                              << "serial #" << m_pHidDeviceSerialNumber
-                             << "(including report ID of" << reportID << ")";
+                             << "(including report ID of" << reportID << ") - Needed: "
+                             << (mixxx::Time::elapsed() - startOfHidWrite).formatMicrosWithUnit();
     }
 }
 
