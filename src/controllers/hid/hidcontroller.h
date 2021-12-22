@@ -114,7 +114,8 @@ class HidController final : public Controller {
   
     const mixxx::hid::DeviceInfo m_deviceInfo;
 
-    HidIO* m_pHidIO;
+    HidIO* m_pHidInteruptIn;
+    HidIO* m_pHidInteruptOut;
     hid_device* m_pHidDevice;
     std::shared_ptr<LegacyHidControllerMapping> m_pMapping;
 

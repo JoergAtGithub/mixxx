@@ -43,7 +43,7 @@ void HidIO::run() {
         // If no packet was available to be read within
         // the timeout period, this function returns 0.
         Trace hidio_run("HidIO read interupt based IO");
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 512; i++) {
             int bytesRead = hid_read(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize);
             //int bytesRead = hid_read_timeout(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize, 1);
             Trace hidio_run2("HidIO process packet");
@@ -224,7 +224,8 @@ HidController::HidController(
     setInputDevice(true);
     setOutputDevice(true);
 
-    m_pHidIO = NULL;
+    m_pHidInteruptIn = NULL;
+    m_pHidInteruptOut = NULL;
 }
 
 HidController::~HidController() {
@@ -307,45 +308,56 @@ int HidController::open() {
     setOpen(true);
     startEngine();
 
-    if (m_pHidIO != NULL) {
+    if (m_pHidInteruptIn != NULL) {
         qWarning() << "HidIO already present for" << getName();
     } else {
-        m_pHidIO = new HidIO(m_pHidDevice, getName(), m_deviceInfo.serialNumberRaw(),m_logBase,m_logInput,m_logOutput);
-        m_pHidIO->setObjectName(QString("HidIO %1").arg(getName()));
+        m_pHidInteruptIn = new HidIO(m_pHidDevice, getName(), m_deviceInfo.serialNumberRaw(), m_logBase, m_logInput, m_logOutput);
+        m_pHidInteruptIn->setObjectName(QString("HidIO %1").arg(getName()));
 
-        connect(m_pHidIO,
+        connect(m_pHidInteruptIn,
                 &HidIO::receive,
                 this,
                 &HidController::receive,
                 Qt::QueuedConnection);
-        connect(this,
-                &HidController::sendBytesReport,
-                m_pHidIO,
-                &HidIO::sendBytesReport,
-                Qt::QueuedConnection);
 
         connect(this,
                 &HidController::getInputReport,
-                m_pHidIO,
+                m_pHidInteruptIn,
                 &HidIO::getInputReport,
                 Qt::DirectConnection);
 
         connect(this,
                 &HidController::getFeatureReport,
-                m_pHidIO,
+                m_pHidInteruptIn,
                 &HidIO::getFeatureReport,
                 Qt::DirectConnection);
         connect(this,
                 &HidController::sendFeatureReport,
-                m_pHidIO,
+                m_pHidInteruptIn,
                 &HidIO::sendFeatureReport,
                 Qt::DirectConnection);
 
         // Controller input needs to be prioritized since it can affect the
         // audio directly, like when scratching
-        m_pHidIO->start(QThread::HighPriority);
+        m_pHidInteruptIn->start(QThread::HighPriority);
     }
 
+    if (m_pHidInteruptOut != NULL) {
+        qWarning() << "HidIO already present for" << getName();
+    } else {
+        m_pHidInteruptOut = new HidIO(m_pHidDevice, getName(), m_deviceInfo.serialNumberRaw(), m_logBase, m_logInput, m_logOutput);
+        m_pHidInteruptOut->setObjectName(QString("HidIO %1").arg(getName()));
+
+        connect(this,
+                &HidController::sendBytesReport,
+                m_pHidInteruptOut,
+                &HidIO::sendBytesReport,
+                Qt::QueuedConnection);
+
+        // Controller input needs to be prioritized since it can affect the
+        // audio directly, like when scratching
+        m_pHidInteruptOut->start(QThread::NormalPriority);
+    }
     return 0;
 }
 
@@ -357,51 +369,70 @@ int HidController::close() {
 
     qCInfo(m_logBase) << "Shutting down HID device" << getName();
 
+    
     // Stop the reading thread
-    if (m_pHidIO == NULL) {
+    if (m_pHidInteruptIn == NULL) {
         qWarning() << "HidIO not present for" << getName()
                    << "yet the device is open!";
     } else {
-        disconnect(m_pHidIO,
+        disconnect(m_pHidInteruptIn,
                 &HidIO::receive,
                 this,
                 &HidController::receive);
-        disconnect(this,
-                &HidController::sendBytesReport,
-                m_pHidIO,
-                &HidIO::sendBytesReport);
 
         disconnect(this,
                 &HidController::getInputReport,
-                m_pHidIO,
+                m_pHidInteruptIn,
                 &HidIO::getInputReport);
 
         disconnect(this,
                 &HidController::getFeatureReport,
-                m_pHidIO,
+                m_pHidInteruptIn,
                 &HidIO::getFeatureReport);
         disconnect(this,
                 &HidController::sendFeatureReport,
-                m_pHidIO,
+                m_pHidInteruptIn,
                 &HidIO::sendFeatureReport);
 
-        m_pHidIO->stop();
+        m_pHidInteruptIn->stop();
         hid_set_nonblocking(m_pHidDevice, 1); // Quit blocking
         qDebug() << "Waiting on IO thread to finish";
-        m_pHidIO->wait();
+        m_pHidInteruptIn->wait();
+    }
+
+    // Stop the writing thread
+    if (m_pHidInteruptOut == NULL) {
+        qWarning() << "HidIO not present for" << getName()
+                   << "yet the device is open!";
+    } else {
+        disconnect(this,
+                &HidController::sendBytesReport,
+                m_pHidInteruptOut,
+                &HidIO::sendBytesReport);
+
+        m_pHidInteruptOut->stop();
+        hid_set_nonblocking(m_pHidDevice, 1); // Quit blocking
+        qDebug() << "Waiting on IO thread to finish";
+        m_pHidInteruptOut->wait();
     }
 
     // Stop controller engine here to ensure it's done before the device is closed
-    //  in case it has any final parting messages
+    // in case it has any final parting messages
     stopEngine();
 
-    if (m_pHidIO != NULL) {
-        delete m_pHidIO;
-        m_pHidIO = NULL;
+    if (m_pHidInteruptIn != NULL) {
+        delete m_pHidInteruptIn;
+        m_pHidInteruptIn = NULL;
+    }
+    if (m_pHidInteruptOut != NULL) {
+        delete m_pHidInteruptOut;
+        m_pHidInteruptOut = NULL;
     }
 
     // Close device
     qCInfo(m_logBase) << "Closing device";
+    // hid_close is not thread safe
+    // All communication to this hid_device must be completed, before hid_close is called.
     hid_close(m_pHidDevice);
     setOpen(false);
     return 0;
