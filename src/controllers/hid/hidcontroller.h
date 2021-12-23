@@ -51,18 +51,16 @@ class HidIoReport : public QObject {
 };
 
 
-class HidIO : public QThread {
-        Q_OBJECT
-      public:
-        HidIO(hid_device* device, const QString, const wchar_t*, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput);
-        virtual ~HidIO();
+class HidIoIn : public QThread {
+    Q_OBJECT
+  public:
+    HidIoIn(hid_device* device, const QString, const wchar_t*, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput);
+    virtual ~HidIoIn();
 
     void stop() {
         m_stop = 1;
     }
     mutable QMutex m_HidIoMutex;
-    
-    std::unique_ptr<HidIoReport> m_outputReport[256];
 
     static constexpr int kNumBuffers = 2;
     unsigned char m_pPollData[kNumBuffers][kBufferSize];
@@ -72,20 +70,52 @@ class HidIO : public QThread {
     const RuntimeLoggingCategory m_logInput;
     const RuntimeLoggingCategory m_logOutput;
 
-signals:
+  signals:
     /// Signals that a HID InputReport received by Interupt triggered from HID device
-  void receive(const QByteArray& data, mixxx::Duration timestamp);
+    void receive(const QByteArray& data, mixxx::Duration timestamp);
 
-public slots:
-  QByteArray getInputReport(unsigned int reportID);
-  void sendFeatureReport(const QByteArray& reportData, unsigned int reportID);
-  QByteArray getFeatureReport(unsigned int reportID);
+  public slots:
+    QByteArray getInputReport(unsigned int reportID);
+    void sendFeatureReport(const QByteArray& reportData, unsigned int reportID);
+    QByteArray getFeatureReport(unsigned int reportID);
 
   protected:
     void run();
 
   private:
     void processInputReport(int bytesRead);
+    hid_device* m_pHidDevice;
+    const QString m_pHidDeviceName;
+    const wchar_t* m_pHidDeviceSerialNumber;
+    QAtomicInt m_stop;
+};
+
+
+class HidIoOut : public QThread {
+    Q_OBJECT
+  public:
+    HidIoOut(hid_device* device, const QString, const wchar_t*, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput);
+    virtual ~HidIoOut();
+
+    void stop() {
+        m_stop = 1;
+    }
+    mutable QMutex m_HidIoMutex;
+
+    std::unique_ptr<HidIoReport> m_outputReport[256];
+
+    const RuntimeLoggingCategory m_logBase;
+    const RuntimeLoggingCategory m_logInput;
+    const RuntimeLoggingCategory m_logOutput;
+
+  signals:
+   
+
+  public slots:
+
+  protected:
+
+  private:
     hid_device* m_pHidDevice;
     const QString m_pHidDeviceName;
     const wchar_t* m_pHidDeviceSerialNumber;
@@ -154,8 +184,8 @@ class HidController final : public Controller {
   
     const mixxx::hid::DeviceInfo m_deviceInfo;
 
-    HidIO* m_pHidInteruptIn;
-    HidIO* m_pHidInteruptOut;
+    HidIoIn* m_pHidInteruptIn;
+    HidIoOut* m_pHidInteruptOut;
     hid_device* m_pHidDevice;
     std::shared_ptr<LegacyHidControllerMapping> m_pMapping;
 
