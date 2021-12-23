@@ -13,17 +13,57 @@ namespace {
    static constexpr int kBufferSize = 255;
 } // namespace
 
-class HidIO : public QThread {
+
+class HidReport : public QObject {
     Q_OBJECT
   public:
-    HidIO(hid_device* device, const QString, const wchar_t*, const RuntimeLoggingCategory &logBase, const RuntimeLoggingCategory &logInput, const RuntimeLoggingCategory &logOutput);
-    virtual ~HidIO();
+    HidReport(const unsigned char& reportId, hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput);
+    virtual ~HidReport();
+
+    void sendOutputReport(QByteArray data, unsigned int reportID);
+  signals:
+    void sendBytesReport(QByteArray data, unsigned int reportID);
+
+  private:
+    const unsigned char m_reportId;
+    hid_device* m_pHidDevice;
+    const QString m_pHidDeviceName;
+    const wchar_t* m_pHidDeviceSerialNumber;
+    const RuntimeLoggingCategory m_logOutput;
+};
+
+class HidIoReport : public QObject {
+    Q_OBJECT
+  public:
+    HidIoReport(const unsigned char& reportId, hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput);
+    virtual ~HidIoReport();
+
+  public slots:
+    void sendBytesReport(QByteArray data, unsigned int reportID);
+
+  private:
+    const unsigned char m_reportId;
+    hid_device* m_pHidDevice;
+    const QString m_pHidDeviceName;
+    const wchar_t* m_pHidDeviceSerialNumber;
+    const RuntimeLoggingCategory m_logOutput;
+    const QObject* m_pParent;
+};
+
+
+class HidIO : public QThread {
+        Q_OBJECT
+      public:
+        HidIO(hid_device* device, const QString, const wchar_t*, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput);
+        virtual ~HidIO();
 
     void stop() {
         m_stop = 1;
     }
     mutable QMutex m_HidIoMutex;
-        
+    
+    std::unique_ptr<HidIoReport> m_outputReport[256];
+
     static constexpr int kNumBuffers = 2;
     unsigned char m_pPollData[kNumBuffers][kBufferSize];
     int m_lastPollSize;
@@ -37,7 +77,6 @@ signals:
   void receive(const QByteArray& data, mixxx::Duration timestamp);
 
 public slots:
-  void sendBytesReport(QByteArray data, unsigned int reportID);
   QByteArray getInputReport(unsigned int reportID);
   void sendFeatureReport(const QByteArray& reportData, unsigned int reportID);
   QByteArray getFeatureReport(unsigned int reportID);
@@ -63,6 +102,8 @@ class HidController final : public Controller {
 
     ControllerJSProxy* jsProxy() override;
 
+    std::unique_ptr<HidReport> m_outputReport[256];
+
     QString mappingExtension() override;
 
     virtual std::shared_ptr<LegacyControllerMapping> cloneMapping() override;
@@ -85,7 +126,6 @@ class HidController final : public Controller {
     int close() override;
 
   signals:
-    void sendBytesReport(QByteArray data, unsigned int reportID);
     // getInputReport receives an input report on request.
     // This can be used on startup to initialize the knob positions in Mixxx
     // to the physical position of the hardware knobs on the controller.

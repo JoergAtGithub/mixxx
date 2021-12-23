@@ -14,7 +14,30 @@ constexpr int kReportIdSize = 1;
 constexpr int kMaxHidErrorMessageSize = 512;
 } // namespace
 
-HidIO::HidIO(hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory &logBase, const RuntimeLoggingCategory &logInput, const RuntimeLoggingCategory &logOutput)
+HidIoReport::HidIoReport(const unsigned char& reportId, hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput)
+        : m_reportId(reportId),
+          m_pHidDevice(device),
+          m_pHidDeviceName(device_name),
+          m_pHidDeviceSerialNumber(device_serial_number),
+          m_logOutput(logOutput) {
+}
+
+HidIoReport::~HidIoReport() {
+}
+
+HidReport::HidReport(const unsigned char& reportId, hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput)
+        : m_reportId(reportId),
+          m_pHidDevice(device),
+          m_pHidDeviceName(device_name),
+          m_pHidDeviceSerialNumber(device_serial_number),
+          m_logOutput(logOutput) {
+}
+
+HidReport::~HidReport() {
+}
+
+
+HidIO::HidIO(hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput)
         : QThread(),
           m_pHidDevice(device),
           m_pHidDeviceName(device_name),
@@ -30,6 +53,10 @@ HidIO::HidIO(hid_device* device, const QString device_name, const wchar_t* devic
         memset(m_pPollData[i], 0, kBufferSize);
     }
     m_lastPollSize = 0;
+    
+    for (int i = 0; i <= 255; i++) {
+        m_outputReport[i] = std::make_unique<HidIoReport>(i, device, device_name, device_serial_number, logOutput);
+    }
 }
 
 HidIO::~HidIO() {
@@ -126,7 +153,7 @@ QByteArray HidIO::getInputReport(unsigned int reportID) {
             reinterpret_cast<char*>(m_pPollData[m_pollingBufferIndex]), bytesRead);
 }
 
-void HidIO::sendBytesReport(QByteArray data, unsigned int reportID) {
+void HidIoReport::sendBytesReport(QByteArray data, unsigned int reportID) {
     // Append the Report ID to the beginning of data[] per the API..
     data.prepend(reportID);
     auto startOfHidWrite = mixxx::Time::elapsed();
@@ -209,7 +236,7 @@ QByteArray HidIO::getFeatureReport(
     // For compatibility with input array HidController::sendFeatureReport, a reportID prefix is not added here
     QByteArray byteArray;
     byteArray.reserve(bytesRead - kReportIdSize);
-    auto featureReportStart = reinterpret_cast<const char*>(dataRead + kReportIdSize);
+    const auto featureReportStart = reinterpret_cast<const char*>(dataRead + kReportIdSize);
     return QByteArray(featureReportStart, bytesRead);
 }
 
@@ -224,8 +251,9 @@ HidController::HidController(
     setInputDevice(true);
     setOutputDevice(true);
 
-    m_pHidInteruptIn = NULL;
-    m_pHidInteruptOut = NULL;
+    m_pHidInteruptIn = nullptr;
+    m_pHidInteruptOut = nullptr;
+        
 }
 
 HidController::~HidController() {
@@ -308,7 +336,7 @@ int HidController::open() {
     setOpen(true);
     startEngine();
 
-    if (m_pHidInteruptIn != NULL) {
+    if (m_pHidInteruptIn != nullptr) {
         qWarning() << "HidIO already present for" << getName();
     } else {
         m_pHidInteruptIn = new HidIO(m_pHidDevice, getName(), m_deviceInfo.serialNumberRaw(), m_logBase, m_logInput, m_logOutput);
@@ -342,17 +370,24 @@ int HidController::open() {
         m_pHidInteruptIn->start(QThread::HighPriority);
     }
 
-    if (m_pHidInteruptOut != NULL) {
+    
+    for (int i = 0; i <= 255; i++) {
+        m_outputReport[i] = std::make_unique<HidReport>(i, m_pHidDevice, getName(), m_deviceInfo.serialNumberRaw(), m_logOutput);
+    }
+
+    if (m_pHidInteruptOut != nullptr) {
         qWarning() << "HidIO already present for" << getName();
     } else {
         m_pHidInteruptOut = new HidIO(m_pHidDevice, getName(), m_deviceInfo.serialNumberRaw(), m_logBase, m_logInput, m_logOutput);
         m_pHidInteruptOut->setObjectName(QString("HidIO %1").arg(getName()));
 
-        connect(this,
-                &HidController::sendBytesReport,
-                m_pHidInteruptOut,
-                &HidIO::sendBytesReport,
-                Qt::QueuedConnection);
+        for (int i = 0; i <= 255; i++) {
+            connect(m_outputReport[i].get(),
+                    &HidReport::sendBytesReport,
+                    m_pHidInteruptOut->m_outputReport[i].get(),
+                    &HidIoReport::sendBytesReport,
+                    Qt::QueuedConnection);                
+        }
 
         // Controller input needs to be prioritized since it can affect the
         // audio directly, like when scratching
@@ -371,7 +406,7 @@ int HidController::close() {
 
     
     // Stop the reading thread
-    if (m_pHidInteruptIn == NULL) {
+    if (m_pHidInteruptIn == nullptr) {
         qWarning() << "HidIO not present for" << getName()
                    << "yet the device is open!";
     } else {
@@ -401,14 +436,14 @@ int HidController::close() {
     }
 
     // Stop the writing thread
-    if (m_pHidInteruptOut == NULL) {
+    if (m_pHidInteruptOut == nullptr) {
         qWarning() << "HidIO not present for" << getName()
                    << "yet the device is open!";
     } else {
-        disconnect(this,
+        /* disconnect(this,
                 &HidController::sendBytesReport,
                 m_pHidInteruptOut,
-                &HidIO::sendBytesReport);
+                &HidIO::sendBytesReport);*/
 
         m_pHidInteruptOut->stop();
         hid_set_nonblocking(m_pHidDevice, 1); // Quit blocking
@@ -420,13 +455,13 @@ int HidController::close() {
     // in case it has any final parting messages
     stopEngine();
 
-    if (m_pHidInteruptIn != NULL) {
+    if (m_pHidInteruptIn != nullptr) {
         delete m_pHidInteruptIn;
-        m_pHidInteruptIn = NULL;
+        m_pHidInteruptIn = nullptr;
     }
-    if (m_pHidInteruptOut != NULL) {
+    if (m_pHidInteruptOut != nullptr) {
         delete m_pHidInteruptOut;
-        m_pHidInteruptOut = NULL;
+        m_pHidInteruptOut = nullptr;
     }
 
     // Close device
@@ -445,11 +480,15 @@ void HidController::sendReport(QList<int> data, unsigned int length, unsigned in
     foreach (int datum, data) {
         temp.append(datum);
     }
-    emit(sendBytesReport(temp, reportID));
+    m_outputReport[reportID]->sendOutputReport(temp, reportID);
 }
 
 void HidController::sendBytes(const QByteArray& data) {
-    emit(sendBytesReport(data, 0));
+    m_outputReport[0]->sendOutputReport(data, 0);
+}
+
+void HidReport::sendOutputReport(QByteArray data, unsigned int reportID) {
+    emit(sendBytesReport(data, reportID));
 }
 
 
