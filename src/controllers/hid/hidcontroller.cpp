@@ -19,10 +19,43 @@ HidIoReport::HidIoReport(const unsigned char& reportId, hid_device* device, cons
           m_pHidDevice(device),
           m_pHidDeviceName(device_name),
           m_pHidDeviceSerialNumber(device_serial_number),
-          m_logOutput(logOutput) {
+          m_logOutput(logOutput),
+          m_lastSentOutputreport("")
+          {
 }
 
 HidIoReport::~HidIoReport() {
+}
+
+void HidIoReport::sendBytesReport(QByteArray data, unsigned int reportID) {
+    auto startOfHidWrite = mixxx::Time::elapsed();
+    if (!m_lastSentOutputreport.compare(data)) {
+        qCDebug(m_logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit()
+                             << " Skipped identical Output Report for" << m_pHidDeviceName
+                             << "serial #" << m_pHidDeviceSerialNumber
+                             << "(Report ID" << reportID << ") - Needed: "
+                             << (mixxx::Time::elapsed() - startOfHidWrite).formatMicrosWithUnit();
+        return; // Same data sent last time
+    }
+    m_lastSentOutputreport.clear();
+    m_lastSentOutputreport.append(data);
+
+
+    // Prepend the Report ID to the beginning of data[] per the API..
+    data.prepend(reportID);
+    int result = hid_write(m_pHidDevice, (unsigned char*)data.constData(), data.size());
+    if (result == -1) {
+        qCWarning(m_logOutput) << "Unable to send data to" << m_pHidDeviceName << ":"
+                               << mixxx::convertWCStringToQString(
+                                          hid_error(m_pHidDevice),
+                                          kMaxHidErrorMessageSize);
+    } else {
+        qCDebug(m_logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit() << " "
+                             << result << "bytes sent to" << m_pHidDeviceName
+                             << "serial #" << m_pHidDeviceSerialNumber
+                             << "(including report ID of" << reportID << ") - Needed: "
+                             << (mixxx::Time::elapsed() - startOfHidWrite).formatMicrosWithUnit();
+    }
 }
 
 HidReport::HidReport(const unsigned char& reportId, hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput)
@@ -163,26 +196,6 @@ QByteArray HidIoIn::getInputReport(unsigned int reportID) {
     return QByteArray::fromRawData(
             reinterpret_cast<char*>(m_pPollData[m_pollingBufferIndex]), bytesRead);
 }
-
-void HidIoReport::sendBytesReport(QByteArray data, unsigned int reportID) {
-    // Append the Report ID to the beginning of data[] per the API..
-    data.prepend(reportID);
-    auto startOfHidWrite = mixxx::Time::elapsed();
-    int result = hid_write(m_pHidDevice, (unsigned char*)data.constData(), data.size());
-    if (result == -1) {
-        qCWarning(m_logOutput) << "Unable to send data to" << m_pHidDeviceName << ":"
-                               << mixxx::convertWCStringToQString(
-                                          hid_error(m_pHidDevice),
-                                          kMaxHidErrorMessageSize);
-    } else {
-        qCDebug(m_logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit() << " "
-                             << result << "bytes sent to" << m_pHidDeviceName
-                             << "serial #" << m_pHidDeviceSerialNumber
-                             << "(including report ID of" << reportID << ") - Needed: "
-                             << (mixxx::Time::elapsed() - startOfHidWrite).formatMicrosWithUnit();
-    }
-}
-
 
 void HidIoIn::sendFeatureReport(
         const QByteArray& reportData, unsigned int reportID) {

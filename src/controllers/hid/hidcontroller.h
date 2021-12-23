@@ -42,6 +42,7 @@ class HidIoReport : public QObject {
     void sendBytesReport(QByteArray data, unsigned int reportID);
 
   private:
+    QByteArray m_lastSentOutputreport;
     const unsigned char m_reportId;
     hid_device* m_pHidDevice;
     const QString m_pHidDeviceName;
