@@ -83,7 +83,7 @@ BulkController::BulkController(libusb_context* context,
 
     setInputDevice(true);
     setOutputDevice(true);
-    m_pHidInteruptIn = nullptr;
+    m_pReader = nullptr;
 }
 
 BulkController::~BulkController() {
@@ -170,17 +170,17 @@ int BulkController::open() {
     setOpen(true);
     startEngine();
 
-    if (m_pHidInteruptIn != nullptr) {
+    if (m_pReader != nullptr) {
         qCWarning(m_logBase) << "BulkReader already present for" << getName();
     } else {
-        m_pHidInteruptIn = new BulkReader(m_phandle, in_epaddr);
-        m_pHidInteruptIn->setObjectName(QString("BulkReader %1").arg(getName()));
+        m_pReader = new BulkReader(m_phandle, in_epaddr);
+        m_pReader->setObjectName(QString("BulkReader %1").arg(getName()));
 
-        connect(m_pHidInteruptIn, &BulkReader::incomingData, this, &BulkController::receive);
+        connect(m_pReader, &BulkReader::incomingData, this, &BulkController::receive);
 
         // Controller input needs to be prioritized since it can affect the
         // audio directly, like when scratching
-        m_pHidInteruptIn->start(QThread::HighPriority);
+        m_pReader->start(QThread::HighPriority);
     }
 
     return 0;
@@ -195,16 +195,16 @@ int BulkController::close() {
     qCInfo(m_logBase) << "Shutting down USB Bulk device" << getName();
 
     // Stop the reading thread
-    if (m_pHidInteruptIn == nullptr) {
+    if (m_pReader == nullptr) {
         qCWarning(m_logBase) << "BulkReader not present for" << getName()
                              << "yet the device is open!";
     } else {
-        disconnect(m_pHidInteruptIn, &BulkReader::incomingData, this, &BulkController::receive);
-        m_pHidInteruptIn->stop();
+        disconnect(m_pReader, &BulkReader::incomingData, this, &BulkController::receive);
+        m_pReader->stop();
         qCInfo(m_logBase) << "  Waiting on reader to finish";
-        m_pHidInteruptIn->wait();
-        delete m_pHidInteruptIn;
-        m_pHidInteruptIn = nullptr;
+        m_pReader->wait();
+        delete m_pReader;
+        m_pReader = nullptr;
     }
 
     // Stop controller engine here to ensure it's done before the device is
