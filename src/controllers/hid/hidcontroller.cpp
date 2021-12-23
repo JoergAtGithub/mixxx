@@ -413,8 +413,7 @@ int HidController::open() {
                     Qt::QueuedConnection);                
         }
 
-        // Controller input needs to be prioritized since it can affect the
-        // audio directly, like when scratching
+        // Controller output can't influence audio directly, therefore it doesn't need the same priority as the mapping and the input thread
         m_pHidInteruptOut->start(QThread::NormalPriority);
     }
     return 0;
