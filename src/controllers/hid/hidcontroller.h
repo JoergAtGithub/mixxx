@@ -52,16 +52,18 @@ class HidIoReport : public QObject {
 };
 
 
-class HidIoIn : public QThread {
+class HidIo : public QThread {
     Q_OBJECT
   public:
-    HidIoIn(hid_device* device, const QString, const wchar_t*, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput);
-    virtual ~HidIoIn();
+    HidIo(hid_device* device, const QString, const wchar_t*, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput);
+    virtual ~HidIo();
 
     void stop() {
         m_stop = 1;
     }
     mutable QMutex m_HidIoMutex;
+
+    std::unique_ptr<HidIoReport> m_outputReport[256];
 
     static constexpr int kNumBuffers = 2;
     unsigned char m_pPollData[kNumBuffers][kBufferSize];
@@ -85,38 +87,6 @@ class HidIoIn : public QThread {
 
   private:
     void processInputReport(int bytesRead);
-    hid_device* m_pHidDevice;
-    const QString m_pHidDeviceName;
-    const wchar_t* m_pHidDeviceSerialNumber;
-    QAtomicInt m_stop;
-};
-
-
-class HidIoOut : public QThread {
-    Q_OBJECT
-  public:
-    HidIoOut(hid_device* device, const QString, const wchar_t*, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput);
-    virtual ~HidIoOut();
-
-    void stop() {
-        m_stop = 1;
-    }
-    mutable QMutex m_HidIoMutex;
-
-    std::unique_ptr<HidIoReport> m_outputReport[256];
-
-    const RuntimeLoggingCategory m_logBase;
-    const RuntimeLoggingCategory m_logInput;
-    const RuntimeLoggingCategory m_logOutput;
-
-  signals:
-   
-
-  public slots:
-
-  protected:
-
-  private:
     hid_device* m_pHidDevice;
     const QString m_pHidDeviceName;
     const wchar_t* m_pHidDeviceSerialNumber;
@@ -185,8 +155,7 @@ class HidController final : public Controller {
   
     const mixxx::hid::DeviceInfo m_deviceInfo;
 
-    HidIoIn* m_pHidInteruptIn;
-    HidIoOut* m_pHidInteruptOut;
+    HidIo* m_pHidIo;
     hid_device* m_pHidDevice;
     std::shared_ptr<LegacyHidControllerMapping> m_pMapping;
 
