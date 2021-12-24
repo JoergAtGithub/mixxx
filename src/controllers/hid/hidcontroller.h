@@ -9,25 +9,6 @@
 #include "controllers/hid/legacyhidcontrollermapping.h"
 #include "util/duration.h"
 
-
-class HidReport : public QObject {
-    Q_OBJECT
-  public:
-    HidReport(const unsigned char& reportId, hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput);
-    virtual ~HidReport();
-
-    void sendOutputReport(QByteArray data, unsigned int reportID);
-  signals:
-    void sendBytesReport(QByteArray data, unsigned int reportID);
-
-  private:
-    const unsigned char m_reportId;
-    hid_device* m_pHidDevice;
-    const QString m_pHidDeviceName;
-    const wchar_t* m_pHidDeviceSerialNumber;
-    const RuntimeLoggingCategory m_logOutput;
-};
-
 /// HID controller backend
 class HidController final : public Controller {
     Q_OBJECT
@@ -37,8 +18,6 @@ class HidController final : public Controller {
     ~HidController() override;
 
     ControllerJSProxy* jsProxy() override;
-
-    std::unique_ptr<HidReport> m_outputReport[256];
 
     QString mappingExtension() override;
 
@@ -61,7 +40,7 @@ class HidController final : public Controller {
     int open() override;
     int close() override;
 
-  signals:
+signals:
     // getInputReport receives an input report on request.
     // This can be used on startup to initialize the knob positions in Mixxx
     // to the physical position of the hardware knobs on the controller.
@@ -70,6 +49,8 @@ class HidController final : public Controller {
     // The returned list can be used to call the incomingData
     // function of the common-hid-packet-parser.
     QByteArray getInputReport(unsigned int reportID);
+
+    void sendOutputReport(QByteArray data, unsigned int reportID);
 
     void sendFeatureReport(const QByteArray& reportData, unsigned int reportID);
 

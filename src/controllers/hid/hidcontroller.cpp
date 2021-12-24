@@ -9,22 +9,6 @@
 #include "util/time.h"
 #include "util/trace.h"
 
-namespace {
-constexpr int kReportIdSize = 1;
-constexpr int kMaxHidErrorMessageSize = 512;
-} // namespace
-
-HidReport::HidReport(const unsigned char& reportId, hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput)
-        : m_reportId(reportId),
-          m_pHidDevice(device),
-          m_pHidDeviceName(device_name),
-          m_pHidDeviceSerialNumber(device_serial_number),
-          m_logOutput(logOutput) {
-}
-
-HidReport::~HidReport() {
-}
-
 HidController::HidController(
         mixxx::hid::DeviceInfo&& deviceInfo)
         : Controller(deviceInfo.formatName()),
@@ -120,10 +104,6 @@ int HidController::open() {
     setOpen(true);
     startEngine();
 
-    for (int i = 0; i <= 255; i++) {
-        m_outputReport[i] = std::make_unique<HidReport>(i, m_pHidDevice, getName(), m_deviceInfo.serialNumberRaw(), m_logOutput);
-    }
-
     if (m_pHidIo != nullptr) {
         qWarning() << "HidIo already present for" << getName();
     } else {
@@ -143,6 +123,12 @@ int HidController::open() {
                 Qt::DirectConnection);
 
         connect(this,
+                &HidController::sendOutputReport,
+                m_pHidIo,
+                &HidIo::sendOutputReport,
+                Qt::QueuedConnection);
+
+        connect(this,
                 &HidController::getFeatureReport,
                 m_pHidIo,
                 &HidIo::getFeatureReport,
@@ -152,14 +138,6 @@ int HidController::open() {
                 m_pHidIo,
                 &HidIo::sendFeatureReport,
                 Qt::DirectConnection);
-
-        for (int i = 0; i <= 255; i++) {
-            connect(m_outputReport[i].get(),
-                    &HidReport::sendBytesReport,
-                    m_pHidIo->m_outputReport[i].get(),
-                    &HidIoReport::sendBytesReport,
-                    Qt::QueuedConnection);
-        }
 
         // Controller input needs to be prioritized since it can affect the
         // audio directly, like when scratching
@@ -193,6 +171,11 @@ int HidController::close() {
                 &HidIo::getInputReport);
 
         disconnect(this,
+                &HidController::sendOutputReport,
+                m_pHidIo,
+                &HidIo::sendOutputReport);
+
+        disconnect(this,
                 &HidController::getFeatureReport,
                 m_pHidIo,
                 &HidIo::getFeatureReport);
@@ -201,12 +184,6 @@ int HidController::close() {
                 m_pHidIo,
                 &HidIo::sendFeatureReport);
 
-        for (int i = 0; i <= 255; i++) {
-            disconnect(m_outputReport[i].get(),
-                    &HidReport::sendBytesReport,
-                    m_pHidIo->m_outputReport[i].get(),
-                    &HidIoReport::sendBytesReport);
-        }
 
         m_pHidIo->stop();
         hid_set_nonblocking(m_pHidDevice, 1); // Quit blocking
@@ -239,17 +216,12 @@ void HidController::sendReport(QList<int> data, unsigned int length, unsigned in
     foreach (int datum, data) {
         temp.append(datum);
     }
-    m_outputReport[reportID]->sendOutputReport(temp, reportID);
+    emit(sendOutputReport(temp, reportID));
 }
 
 void HidController::sendBytes(const QByteArray& data) {
-    m_outputReport[0]->sendOutputReport(data, 0);
+    emit(sendOutputReport(data, 0));
 }
-
-void HidReport::sendOutputReport(QByteArray data, unsigned int reportID) {
-    emit(sendBytesReport(data, reportID));
-}
-
 
 ControllerJSProxy* HidController::jsProxy() {
     return new HidControllerJSProxy(this);

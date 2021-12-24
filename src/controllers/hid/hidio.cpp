@@ -27,13 +27,13 @@ HidIoReport::HidIoReport(const unsigned char& reportId, hid_device* device, cons
 HidIoReport::~HidIoReport() {
 }
 
-void HidIoReport::sendBytesReport(QByteArray data, unsigned int reportID) {
+void HidIoReport::sendOutputReport(QByteArray data) {
     auto startOfHidWrite = mixxx::Time::elapsed();
     if (!m_lastSentOutputreport.compare(data)) {
         qCDebug(m_logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit()
                              << " Skipped identical Output Report for" << m_pHidDeviceName
                              << "serial #" << m_pHidDeviceSerialNumber
-                             << "(Report ID" << reportID << ") - Needed: "
+                             << "(Report ID" << m_reportId << ") - Needed: "
                              << (mixxx::Time::elapsed() - startOfHidWrite).formatMicrosWithUnit();
         return; // Same data sent last time
     }
@@ -41,7 +41,7 @@ void HidIoReport::sendBytesReport(QByteArray data, unsigned int reportID) {
     m_lastSentOutputreport.append(data);
 
     // Prepend the Report ID to the beginning of data[] per the API..
-    data.prepend(reportID);
+    data.prepend(m_reportId);
     int result = hid_write(m_pHidDevice, (unsigned char*)data.constData(), data.size());
     if (result == -1) {
         qCWarning(m_logOutput) << "Unable to send data to" << m_pHidDeviceName << ":"
@@ -52,7 +52,7 @@ void HidIoReport::sendBytesReport(QByteArray data, unsigned int reportID) {
         qCDebug(m_logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit() << " "
                              << result << "bytes sent to" << m_pHidDeviceName
                              << "serial #" << m_pHidDeviceSerialNumber
-                             << "(including report ID of" << reportID << ") - Needed: "
+                             << "(including report ID of" << m_reportId << ") - Needed: "
                              << (mixxx::Time::elapsed() - startOfHidWrite).formatMicrosWithUnit();
     }
 }
@@ -71,9 +71,6 @@ HidIo::HidIo(hid_device* device, const QString device_name, const wchar_t* devic
         memset(m_pPollData[i], 0, kBufferSize);
     }
     m_lastPollSize = 0;
-    for (int i = 0; i <= 255; i++) {
-        m_outputReport[i] = std::make_unique<HidIoReport>(i, device, device_name, device_serial_number, logOutput);
-    }
 }
 
 HidIo::~HidIo() {
@@ -168,6 +165,14 @@ QByteArray HidIo::getInputReport(unsigned int reportID) {
 
     return QByteArray::fromRawData(
             reinterpret_cast<char*>(m_pPollData[m_pollingBufferIndex]), bytesRead);
+}
+
+void HidIo::sendOutputReport(QByteArray data, unsigned int reportID) {
+    if (m_outputReports.find(reportID) == m_outputReports.end()) {
+        std::unique_ptr<HidIoReport> pNewOutputReport;
+        m_outputReports[reportID] = std::make_unique<HidIoReport>(reportID, m_pHidDevice, m_pHidDeviceName, m_pHidDeviceSerialNumber, m_logOutput);
+    }
+    m_outputReports[reportID]->sendOutputReport(data);
 }
 
 void HidIo::sendFeatureReport(
