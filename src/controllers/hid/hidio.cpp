@@ -78,35 +78,37 @@ HidIo::~HidIo() {
 
 void HidIo::run() {
     m_stop = 0;
-
     while (m_stop.loadRelaxed() == 0) {
-        // hid_read_timeout reads an Input Report from a HID device.
-        // If no packet was available to be read within
-        // the timeout period, this function returns 0.
-        Trace hidio_run("HidIO read interupt based IO");
-        for (int i = 0; i < 512; i++) {
-            int bytesRead = hid_read(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize);
-            //int bytesRead = hid_read_timeout(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize, 1);
-            Trace hidio_run2("HidIO process packet");
-            if (bytesRead < 0) {
-                // -1 is the only error value according to hidapi documentation.
-                qCWarning(m_logOutput) << "Unable to read data from" << m_pHidDeviceName << ":"
-                                       << mixxx::convertWCStringToQString(
-                                                  hid_error(m_pHidDevice),
-                                                  kMaxHidErrorMessageSize);
-                DEBUG_ASSERT(bytesRead == -1);
-            } else if (bytesRead == 0) {
-                // No packet was available to be read -> HID ring buffer completly read
-                // Ring buffer size differs by hidapi backend: libusb(30 reports), mac(30 report), windows(64 reports), hidraw(2048 bytes)
-                //if (i >= 30)
-                //    qWarning() << "HID controller: " << m_pHidDeviceName << " Serial #" << m_pHidDeviceSerialNumber << " HID Ring buffer critical filled -> InputReports might be popped off -> Events by state transitions might be missed in the mapping. (Ring buffers received: " << i << ")";
-                break;
-            } else {
-                processInputReport(bytesRead);
-            }
-        }
-        //QCoreApplication::processEvents();
+        poll();
         usleep(500);
+    }
+}
+
+void HidIo::poll() {
+    // hid_read_timeout reads an Input Report from a HID device.
+    // If no packet was available to be read within
+    // the timeout period, this function returns 0.
+    Trace hidio_run("HidIO read interupt based IO");
+    for (int i = 0; i < 512; i++) {
+        int bytesRead = hid_read(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize);
+        //int bytesRead = hid_read_timeout(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize, 1);
+        Trace hidio_run2("HidIO process packet");
+        if (bytesRead < 0) {
+            // -1 is the only error value according to hidapi documentation.
+            qCWarning(m_logOutput) << "Unable to read data from" << m_pHidDeviceName << ":"
+                                   << mixxx::convertWCStringToQString(
+                                              hid_error(m_pHidDevice),
+                                              kMaxHidErrorMessageSize);
+            DEBUG_ASSERT(bytesRead == -1);
+        } else if (bytesRead == 0) {
+            // No packet was available to be read -> HID ring buffer completly read
+            // Ring buffer size differs by hidapi backend: libusb(30 reports), mac(30 report), windows(64 reports), hidraw(2048 bytes)
+            //if (i >= 30)
+            //    qWarning() << "HID controller: " << m_pHidDeviceName << " Serial #" << m_pHidDeviceSerialNumber << " HID Ring buffer critical filled -> InputReports might be popped off -> Events by state transitions might be missed in the mapping. (Ring buffers received: " << i << ")";
+            break;
+        } else {
+            processInputReport(bytesRead);
+        }
     }
 }
 
@@ -173,6 +175,9 @@ void HidIo::sendOutputReport(QByteArray data, unsigned int reportID) {
         m_outputReports[reportID] = std::make_unique<HidIoReport>(reportID, m_pHidDevice, m_pHidDeviceName, m_pHidDeviceSerialNumber, m_logOutput);
     }
     m_outputReports[reportID]->sendOutputReport(data);
+
+    // Ensure that all InputReports are read from the ring buffer, before the next OutputReport blocks the IO again
+    poll();
 }
 
 void HidIo::sendFeatureReport(

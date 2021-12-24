@@ -65,6 +65,7 @@ class HidIo : public QThread {
     void run();
 
   private:
+    void poll();
     void processInputReport(int bytesRead);
     hid_device* m_pHidDevice;
     const QString m_pHidDeviceName;
