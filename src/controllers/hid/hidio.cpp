@@ -80,7 +80,7 @@ void HidIo::run() {
     m_stop = 0;
     while (atomicLoadRelaxed(m_stop) == 0) {
         poll();
-        usleep(500);
+        usleep(1000);
     }
 }
 

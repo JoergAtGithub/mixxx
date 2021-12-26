@@ -25,7 +25,6 @@ class HidIoReport : public QObject {
     const QString m_pHidDeviceName;
     const wchar_t* m_pHidDeviceSerialNumber;
     const RuntimeLoggingCategory m_logOutput;
-    const QObject* m_pParent;
     QByteArray m_lastSentOutputreport;
 };
 
