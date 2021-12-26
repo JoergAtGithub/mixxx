@@ -14,7 +14,7 @@ constexpr int kReportIdSize = 1;
 constexpr int kMaxHidErrorMessageSize = 512;
 } // namespace
 
-HidIoReport::HidIoReport(const unsigned char& reportId, hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput)
+HidIoReport::HidIoReport(const unsigned char& reportId, hid_device* device, const QString& device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput)
         : m_reportId(reportId),
           m_pHidDevice(device),
           m_pHidDeviceName(device_name),
@@ -57,7 +57,7 @@ void HidIoReport::sendOutputReport(QByteArray data) {
     }
 }
 
-HidIo::HidIo(hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput)
+HidIo::HidIo(hid_device* device, const QString& device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput)
         : QThread(),
           m_pollingBufferIndex(0),
           m_logBase(logBase),
@@ -169,7 +169,7 @@ QByteArray HidIo::getInputReport(unsigned int reportID) {
             reinterpret_cast<char*>(m_pPollData[m_pollingBufferIndex]), bytesRead);
 }
 
-void HidIo::sendOutputReport(QByteArray data, unsigned int reportID) {
+void HidIo::sendOutputReport(const QByteArray &data, unsigned int reportID) {
     if (m_outputReports.find(reportID) == m_outputReports.end()) {
         std::unique_ptr<HidIoReport> pNewOutputReport;
         m_outputReports[reportID] = std::make_unique<HidIoReport>(reportID, m_pHidDevice, m_pHidDeviceName, m_pHidDeviceSerialNumber, m_logOutput);

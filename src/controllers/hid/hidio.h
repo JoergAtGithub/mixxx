@@ -8,7 +8,6 @@
 #include "util/compatibility/qatomic.h"
 #include "util/duration.h"
 
-
 namespace {
    static constexpr int kBufferSize = 255;
 } // namespace
@@ -16,7 +15,7 @@ namespace {
 class HidIoReport : public QObject {
     Q_OBJECT
   public:
-    HidIoReport(const unsigned char& reportId, hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput);
+    HidIoReport(const unsigned char& reportId, hid_device* device, const QString& device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput);
     ~HidIoReport();
     void sendOutputReport(QByteArray data);
 
@@ -34,7 +33,7 @@ class HidIoReport : public QObject {
 class HidIo : public QThread {
     Q_OBJECT
   public:
-    HidIo(hid_device* device, const QString, const wchar_t*, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput);
+    HidIo(hid_device* device, const QString& device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput);
     ~HidIo();
 
     void stop() {
@@ -55,7 +54,7 @@ class HidIo : public QThread {
 
   public slots:
     QByteArray getInputReport(unsigned int reportID);
-    void sendOutputReport(QByteArray data, unsigned int reportID);
+    void sendOutputReport(const QByteArray& reportData, unsigned int reportID);
     void sendFeatureReport(const QByteArray& reportData, unsigned int reportID);
     QByteArray getFeatureReport(unsigned int reportID);
 
