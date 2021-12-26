@@ -60,12 +60,12 @@ void HidIoReport::sendOutputReport(QByteArray data) {
 HidIo::HidIo(hid_device* device, const QString device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput)
         : QThread(),
           m_pollingBufferIndex(0),
-          m_pHidDevice(device),
-          m_pHidDeviceName(device_name),
-          m_pHidDeviceSerialNumber(device_serial_number),
           m_logBase(logBase),
           m_logInput(logInput),
-          m_logOutput(logOutput) {
+          m_logOutput(logOutput),
+          m_pHidDevice(device),
+          m_pHidDeviceName(device_name),
+          m_pHidDeviceSerialNumber(device_serial_number) {
     // This isn't strictly necessary but is good practice.
     for (int i = 0; i < kNumBuffers; i++) {
         memset(m_pPollData[i], 0, kBufferSize);
