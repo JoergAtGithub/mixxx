@@ -96,17 +96,17 @@ class HidControllerJSProxy : public ControllerJSProxy {
 
     Q_INVOKABLE QByteArray getInputReport(
             unsigned int reportID) {
-        return emit(m_pHidController->getInputReport(reportID));
+        return emit m_pHidController->getInputReport(reportID);
     }
 
     Q_INVOKABLE void sendFeatureReport(
             const QByteArray& reportData, unsigned int reportID) {
-        emit(m_pHidController->sendFeatureReport(reportData, reportID));
+        emit m_pHidController->sendFeatureReport(reportData, reportID);
     }
 
     Q_INVOKABLE QByteArray getFeatureReport(
             unsigned int reportID) {
-        return emit(m_pHidController->getFeatureReport(reportID));
+        return emit m_pHidController->getFeatureReport(reportID);
     }
 
   private:
