@@ -2,11 +2,10 @@
 
 #include <QThread>
 #include <map>
-#include <QMutexLocker>
 
 #include "controllers/controller.h"
 #include "controllers/hid/hiddevice.h"
-#include "controllers/hid/legacyhidcontrollermapping.h"
+#include "util/compatibility/qatomic.h"
 #include "util/duration.h"
 
 
@@ -41,7 +40,6 @@ class HidIo : public QThread {
     void stop() {
         m_stop = 1;
     }
-    mutable QMutex m_HidIoMutex;
 
     static constexpr int kNumBuffers = 2;
     unsigned char m_pPollData[kNumBuffers][kBufferSize];

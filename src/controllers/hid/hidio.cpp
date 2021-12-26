@@ -78,7 +78,7 @@ HidIo::~HidIo() {
 
 void HidIo::run() {
     m_stop = 0;
-    while (m_stop.loadRelaxed() == 0) {
+    while (atomicLoadRelaxed(m_stop) == 0) {
         poll();
         usleep(500);
     }
