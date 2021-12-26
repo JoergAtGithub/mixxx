@@ -136,7 +136,7 @@ void HidIo::processInputReport(int bytesRead) {
 
     // Execute callback function in JavaScript mapping
     // and print to stdout in case of --controllerDebug
-    emit(receive(incomingData, mixxx::Time::elapsed()));
+    emit receive(incomingData, mixxx::Time::elapsed());
 }
 
 QByteArray HidIo::getInputReport(unsigned int reportID) {

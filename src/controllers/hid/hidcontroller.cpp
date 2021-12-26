@@ -216,11 +216,11 @@ void HidController::sendReport(QList<int> data, unsigned int length, unsigned in
     foreach (int datum, data) {
         temp.append(datum);
     }
-    emit(sendOutputReport(temp, reportID));
+    emit sendOutputReport(temp, reportID);
 }
 
 void HidController::sendBytes(const QByteArray& data) {
-    emit(sendOutputReport(data, 0));
+    emit sendOutputReport(data, 0);
 }
 
 ControllerJSProxy* HidController::jsProxy() {
