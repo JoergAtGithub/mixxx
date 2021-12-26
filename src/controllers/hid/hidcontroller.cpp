@@ -226,4 +226,3 @@ void HidController::sendBytes(const QByteArray& data) {
 ControllerJSProxy* HidController::jsProxy() {
     return new HidControllerJSProxy(this);
 }
-
