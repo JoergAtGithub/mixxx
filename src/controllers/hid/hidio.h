@@ -22,13 +22,13 @@ class HidIoReport : public QObject {
     void sendOutputReport(QByteArray data);
 
   private:
-    QByteArray m_lastSentOutputreport;
     const unsigned char m_reportId;
     hid_device* m_pHidDevice;
     const QString m_pHidDeviceName;
     const wchar_t* m_pHidDeviceSerialNumber;
     const RuntimeLoggingCategory m_logOutput;
     const QObject* m_pParent;
+    QByteArray m_lastSentOutputreport;
 };
 
 

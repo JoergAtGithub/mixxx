@@ -61,8 +61,8 @@ HidIo::HidIo(hid_device* device, const QString device_name, const wchar_t* devic
         : QThread(),
           m_pHidDevice(device),
           m_pHidDeviceName(device_name),
-          m_pHidDeviceSerialNumber(device_serial_number),
           m_pollingBufferIndex(0),
+          m_pHidDeviceSerialNumber(device_serial_number),
           m_logBase(logBase),
           m_logInput(logInput),
           m_logOutput(logOutput) {
