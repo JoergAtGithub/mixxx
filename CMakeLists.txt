@@ -167,7 +167,6 @@ if(PROFILING)
   add_link_options(-pg)
 endif()
 
-
 #
 # Optimizations
 #
@@ -281,8 +280,7 @@ if(MSVC)
       # Define the target processor instruction and other compiler optimization flags here:
       # https://docs.microsoft.com/en-us/cpp/build/reference/arch-x64?view=msvc-160
       # add_compile_options(/arch:AVX512)
-      add_compile_options(/GL- /arch:AVX)
-      #message(FATAL_ERROR "User need to set the MSVC compiler flags for the native processor here!")
+      message(FATAL_ERROR "User need to set the MSVC compiler flags for the native processor here!")
       add_compile_options("/favor:${CMAKE_SYSTEM_PROCESSOR}")
     elseif(OPTIMIZE STREQUAL "legacy")
       if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -1259,15 +1257,6 @@ add_executable(mixxx WIN32 src/main.cpp)
 target_include_directories(mixxx PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/mixxx-lib_autogen/include")
 set_target_properties(mixxx-lib PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY}")
 target_link_libraries(mixxx PRIVATE mixxx-lib mixxx-gitinfostore)
-
-if(WIN32)
-  # Visual Studio Debugger
-  #(affects Debug builds only, not Release, RelWithDebInfo or MinSizeRel )
-  # Build as console application to show stdout/stderr, which can't be visualized otherwise,
-  # if the executable is started from a debugger
-  set_target_properties(mixxx PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
-  set_target_properties(mixxx PROPERTIES COMPILE_DEFINITIONS_DEBUG "_CONSOLE")
-endif()
 
 #
 # Installation and Packaging
