@@ -19,8 +19,7 @@ HidIoReport::HidIoReport(const unsigned char& reportId, hid_device* device, cons
           m_pHidDevice(device),
           m_deviceInfo(std::move(deviceInfo)),
           m_logOutput(logOutput),
-          m_lastSentOutputreport("")
-          {
+          m_lastSentOutputreport("") {
 }
 
 HidIoReport::~HidIoReport() {
@@ -40,6 +39,8 @@ void HidIoReport::sendOutputReport(QByteArray data) {
 
     // Prepend the Report ID to the beginning of data[] per the API..
     data.prepend(m_reportId);
+
+    // hid_write can take several milliseconds, because hidapi syncronizes the asyncron HID communcation from the OS
     int result = hid_write(m_pHidDevice, (unsigned char*)data.constData(), data.size());
     if (result == -1) {
         qCWarning(m_logOutput) << "Unable to send data to" << m_deviceInfo.formatName() << ":"
@@ -131,7 +132,7 @@ void HidIo::processInputReport(int bytesRead) {
 }
 
 QByteArray HidIo::getInputReport(unsigned int reportID) {
-    Trace hidRead("HidIO getInputReport");
+    auto startOfHidGetInputReport = mixxx::Time::elapsed();
     int bytesRead;
 
     m_pPollData[m_pollingBufferIndex][0] = reportID;
@@ -145,7 +146,8 @@ QByteArray HidIo::getInputReport(unsigned int reportID) {
                         << QString::number(static_cast<quint8>(reportID), 16)
                                    .toUpper()
                                    .rightJustified(2, QChar('0'))
-                        << ")";
+                        << ") - Needed: "
+                        << (mixxx::Time::elapsed() - startOfHidGetInputReport).formatMicrosWithUnit();
 
     if (bytesRead <= kReportIdSize) {
         // -1 is the only error value according to hidapi documentation.
@@ -159,7 +161,7 @@ QByteArray HidIo::getInputReport(unsigned int reportID) {
             reinterpret_cast<char*>(m_pPollData[m_pollingBufferIndex]), bytesRead);
 }
 
-void HidIo::sendOutputReport(const QByteArray &data, unsigned int reportID) {
+void HidIo::sendOutputReport(const QByteArray& data, unsigned int reportID) {
     if (m_outputReports.find(reportID) == m_outputReports.end()) {
         std::unique_ptr<HidIoReport> pNewOutputReport;
         m_outputReports[reportID] = std::make_unique<HidIoReport>(reportID, m_pHidDevice, std::move(m_deviceInfo), m_logOutput);
@@ -173,6 +175,7 @@ void HidIo::sendOutputReport(const QByteArray &data, unsigned int reportID) {
 
 void HidIo::sendFeatureReport(
         const QByteArray& reportData, unsigned int reportID) {
+    auto startOfHidSendFeatureReport = mixxx::Time::elapsed();
     QByteArray dataArray;
     dataArray.reserve(kReportIdSize + reportData.size());
 
@@ -196,13 +199,14 @@ void HidIo::sendFeatureReport(
     } else {
         qCDebug(m_logOutput) << result << "bytes sent by sendFeatureReport to" << m_deviceInfo.formatName()
                              << "serial #" << m_deviceInfo.serialNumber()
-                             << "(including report ID of" << reportID << ")";
+                             << "(including report ID of" << reportID << ") - Needed: "
+                             << (mixxx::Time::elapsed() - startOfHidSendFeatureReport).formatMicrosWithUnit();
     }
 }
 
-
 QByteArray HidIo::getFeatureReport(
         unsigned int reportID) {
+    auto startOfHidGetFeatureReport = mixxx::Time::elapsed();
     unsigned char dataRead[kReportIdSize + kBufferSize];
     dataRead[0] = reportID;
 
@@ -227,7 +231,8 @@ QByteArray HidIo::getFeatureReport(
                             << QString::number(static_cast<quint8>(reportID), 16)
                                        .toUpper()
                                        .rightJustified(2, QChar('0'))
-                            << ")";
+                            << ") - Needed: "
+                            << (mixxx::Time::elapsed() - startOfHidGetFeatureReport).formatMicrosWithUnit();
     }
 
     // Convert array of bytes read in a JavaScript compatible return type

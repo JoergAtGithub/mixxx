@@ -9,7 +9,7 @@
 #include "util/duration.h"
 
 namespace {
-   static constexpr int kBufferSize = 255;
+static constexpr int kBufferSize = 255;
 } // namespace
 
 class HidIoReport : public QObject {
@@ -26,7 +26,6 @@ class HidIoReport : public QObject {
     const RuntimeLoggingCategory m_logOutput;
     QByteArray m_lastSentOutputreport;
 };
-
 
 class HidIo : public QThread {
     Q_OBJECT
