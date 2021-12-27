@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QThread>
-#include <QMutexLocker>
 
 #include "controllers/controller.h"
 #include "controllers/hid/hiddevice.h"
