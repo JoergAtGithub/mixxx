@@ -14,11 +14,10 @@ constexpr int kReportIdSize = 1;
 constexpr int kMaxHidErrorMessageSize = 512;
 } // namespace
 
-HidIoReport::HidIoReport(const unsigned char& reportId, hid_device* device, const QString& device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput)
+HidIoReport::HidIoReport(const unsigned char& reportId, hid_device* device, const mixxx::hid::DeviceInfo&& deviceInfo, const RuntimeLoggingCategory& logOutput)
         : m_reportId(reportId),
           m_pHidDevice(device),
-          m_pHidDeviceName(device_name),
-          m_pHidDeviceSerialNumber(device_serial_number),
+          m_deviceInfo(std::move(deviceInfo)),
           m_logOutput(logOutput),
           m_lastSentOutputreport("")
           {
@@ -31,10 +30,9 @@ void HidIoReport::sendOutputReport(QByteArray data) {
     auto startOfHidWrite = mixxx::Time::elapsed();
     if (!m_lastSentOutputreport.compare(data)) {
         qCDebug(m_logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit()
-                             << " Skipped identical Output Report for" << m_pHidDeviceName
-                             << "serial #" << m_pHidDeviceSerialNumber
-                             << "(Report ID" << m_reportId << ") - Needed: "
-                             << (mixxx::Time::elapsed() - startOfHidWrite).formatMicrosWithUnit();
+                             << " Skipped identical Output Report for" << m_deviceInfo.formatName()
+                             << "serial #" << m_deviceInfo.serialNumberRaw()
+                             << "(Report ID" << m_reportId << ")";
         return; // Same data sent last time
     }
     m_lastSentOutputreport.clear();
@@ -44,28 +42,27 @@ void HidIoReport::sendOutputReport(QByteArray data) {
     data.prepend(m_reportId);
     int result = hid_write(m_pHidDevice, (unsigned char*)data.constData(), data.size());
     if (result == -1) {
-        qCWarning(m_logOutput) << "Unable to send data to" << m_pHidDeviceName << ":"
+        qCWarning(m_logOutput) << "Unable to send data to" << m_deviceInfo.formatName() << ":"
                                << mixxx::convertWCStringToQString(
                                           hid_error(m_pHidDevice),
                                           kMaxHidErrorMessageSize);
     } else {
         qCDebug(m_logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit() << " "
-                             << result << "bytes sent to" << m_pHidDeviceName
-                             << "serial #" << m_pHidDeviceSerialNumber
+                             << result << "bytes sent to" << m_deviceInfo.formatName()
+                             << "serial #" << m_deviceInfo.serialNumberRaw()
                              << "(including report ID of" << m_reportId << ") - Needed: "
                              << (mixxx::Time::elapsed() - startOfHidWrite).formatMicrosWithUnit();
     }
 }
 
-HidIo::HidIo(hid_device* device, const QString& device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput)
+HidIo::HidIo(hid_device* device, const mixxx::hid::DeviceInfo&& deviceInfo, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput)
         : QThread(),
           m_pollingBufferIndex(0),
           m_logBase(logBase),
           m_logInput(logInput),
           m_logOutput(logOutput),
           m_pHidDevice(device),
-          m_pHidDeviceName(device_name),
-          m_pHidDeviceSerialNumber(device_serial_number) {
+          m_deviceInfo(std::move(deviceInfo)) {
     // This isn't strictly necessary but is good practice.
     for (int i = 0; i < kNumBuffers; i++) {
         memset(m_pPollData[i], 0, kBufferSize);
@@ -85,30 +82,24 @@ void HidIo::run() {
 }
 
 void HidIo::poll() {
-    // hid_read_timeout reads an Input Report from a HID device.
-    // If no packet was available to be read within
-    // the timeout period, this function returns 0.
-    Trace hidio_run("HidIO read interupt based IO");
-    for (int i = 0; i < 512; i++) {
+    Trace hidRead("HidIo poll");
+
+    // This loop risks becoming a high priority endless loop in case processing
+    // the mapping JS code takes longer than the controller polling rate.
+    // This could stall other low priority tasks.
+    // There is no safety net for this because it has not been demonstrated to be
+    // a problem in practice.
+    while (true) {
         int bytesRead = hid_read(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize);
-        //int bytesRead = hid_read_timeout(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize, 1);
-        Trace hidio_run2("HidIO process packet");
         if (bytesRead < 0) {
             // -1 is the only error value according to hidapi documentation.
-            qCWarning(m_logOutput) << "Unable to read data from" << m_pHidDeviceName << ":"
-                                   << mixxx::convertWCStringToQString(
-                                              hid_error(m_pHidDevice),
-                                              kMaxHidErrorMessageSize);
             DEBUG_ASSERT(bytesRead == -1);
-        } else if (bytesRead == 0) {
-            // No packet was available to be read -> HID ring buffer completly read
-            // Ring buffer size differs by hidapi backend: libusb(30 reports), mac(30 report), windows(64 reports), hidraw(2048 bytes)
-            //if (i >= 30)
-            //    qWarning() << "HID controller: " << m_pHidDeviceName << " Serial #" << m_pHidDeviceSerialNumber << " HID Ring buffer critical filled -> InputReports might be popped off -> Events by state transitions might be missed in the mapping. (Ring buffers received: " << i << ")";
             break;
-        } else {
-            processInputReport(bytesRead);
+        } else if (bytesRead == 0) {
+            // No packet was available to be read
+            break;
         }
+        processInputReport(bytesRead);
     }
 }
 
@@ -141,22 +132,21 @@ void HidIo::processInputReport(int bytesRead) {
 
 QByteArray HidIo::getInputReport(unsigned int reportID) {
     Trace hidRead("HidIO getInputReport");
-
-    int bytesRead = 0;
+    int bytesRead;
 
     m_pPollData[m_pollingBufferIndex][0] = reportID;
-
     // FIXME: implement upstream for hidraw backend on Linux
     // https://github.com/libusb/hidapi/issues/259
     bytesRead = hid_get_input_report(m_pHidDevice, m_pPollData[m_pollingBufferIndex], kBufferSize);
     qCDebug(m_logInput) << bytesRead
-                        << "bytes received by hid_get_input_report" << m_pHidDeviceName
-                        << "serial #" << m_pHidDeviceSerialNumber
+                        << "bytes received by hid_get_input_report" << m_deviceInfo.formatName()
+                        << "serial #" << m_deviceInfo.serialNumber()
                         << "(including one byte for the report ID:"
                         << QString::number(static_cast<quint8>(reportID), 16)
                                    .toUpper()
                                    .rightJustified(2, QChar('0'))
                         << ")";
+
     if (bytesRead <= kReportIdSize) {
         // -1 is the only error value according to hidapi documentation.
         // Otherwise minimum possible value is 1, because 1 byte is for the reportID,
@@ -172,12 +162,13 @@ QByteArray HidIo::getInputReport(unsigned int reportID) {
 void HidIo::sendOutputReport(const QByteArray &data, unsigned int reportID) {
     if (m_outputReports.find(reportID) == m_outputReports.end()) {
         std::unique_ptr<HidIoReport> pNewOutputReport;
-        m_outputReports[reportID] = std::make_unique<HidIoReport>(reportID, m_pHidDevice, m_pHidDeviceName, m_pHidDeviceSerialNumber, m_logOutput);
+        m_outputReports[reportID] = std::make_unique<HidIoReport>(reportID, m_pHidDevice, std::move(m_deviceInfo), m_logOutput);
     }
+    // SendOutputReports executes a hardware operation, which take several milliseconds
     m_outputReports[reportID]->sendOutputReport(data);
 
     // Ensure that all InputReports are read from the ring buffer, before the next OutputReport blocks the IO again
-    poll();
+    poll(); // Polling available Input-Reports is a cheap software only operation, which takes insignificiant time
 }
 
 void HidIo::sendFeatureReport(
@@ -197,14 +188,14 @@ void HidIo::sendFeatureReport(
             dataArray.size());
     if (result == -1) {
         qCWarning(m_logOutput) << "sendFeatureReport is unable to send data to"
-                               << m_pHidDeviceName << "serial #" << m_pHidDeviceSerialNumber
+                               << m_deviceInfo.formatName() << "serial #" << m_deviceInfo.serialNumber()
                                << ":"
                                << mixxx::convertWCStringToQString(
                                           hid_error(m_pHidDevice),
                                           kMaxHidErrorMessageSize);
     } else {
-        qCDebug(m_logOutput) << result << "bytes sent by sendFeatureReport to" << m_pHidDeviceName
-                             << "serial #" << m_pHidDeviceSerialNumber
+        qCDebug(m_logOutput) << result << "bytes sent by sendFeatureReport to" << m_deviceInfo.formatName()
+                             << "serial #" << m_deviceInfo.serialNumber()
                              << "(including report ID of" << reportID << ")";
     }
 }
@@ -224,14 +215,14 @@ QByteArray HidIo::getFeatureReport(
         // Otherwise minimum possible value is 1, because 1 byte is for the reportID,
         // the smallest report with data is therefore 2 bytes.
         qCWarning(m_logInput) << "getFeatureReport is unable to get data from" << m_pHidDeviceName
-                              << "serial #" << m_pHidDeviceSerialNumber << ":"
+                              << "serial #" << m_deviceInfo.serialNumber() << ":"
                               << mixxx::convertWCStringToQString(
                                          hid_error(m_pHidDevice),
                                          kMaxHidErrorMessageSize);
     } else {
         qCDebug(m_logInput) << bytesRead
                             << "bytes received by getFeatureReport from" << m_pHidDeviceName
-                            << "serial #" << m_pHidDeviceSerialNumber
+                            << "serial #" << m_deviceInfo.serialNumber()
                             << "(including one byte for the report ID:"
                             << QString::number(static_cast<quint8>(reportID), 16)
                                        .toUpper()

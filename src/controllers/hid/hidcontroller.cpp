@@ -107,7 +107,7 @@ int HidController::open() {
     if (m_pHidIo != nullptr) {
         qWarning() << "HidIo already present for" << getName();
     } else {
-        m_pHidIo = new HidIo(m_pHidDevice, getName(), m_deviceInfo.serialNumberRaw(), m_logBase, m_logInput, m_logOutput);
+        m_pHidIo = new HidIo(m_pHidDevice, std::move(m_deviceInfo), m_logBase, m_logInput, m_logOutput);
         m_pHidIo->setObjectName(QString("HidIo %1").arg(getName()));
 
         connect(m_pHidIo,
@@ -120,7 +120,7 @@ int HidController::open() {
                 &HidController::getInputReport,
                 m_pHidIo,
                 &HidIo::getInputReport,
-                Qt::DirectConnection);
+                Qt::DirectConnection); // Enforces syncronisation of mapping and IO thread
 
         connect(this,
                 &HidController::sendOutputReport,
@@ -132,12 +132,12 @@ int HidController::open() {
                 &HidController::getFeatureReport,
                 m_pHidIo,
                 &HidIo::getFeatureReport,
-                Qt::DirectConnection);
+                Qt::DirectConnection); // Enforces syncronisation of mapping and IO thread
         connect(this,
                 &HidController::sendFeatureReport,
                 m_pHidIo,
                 &HidIo::sendFeatureReport,
-                Qt::DirectConnection);
+                Qt::DirectConnection); // Enforces syncronisation of mapping and IO thread
 
         // Controller input needs to be prioritized since it can affect the
         // audio directly, like when scratching

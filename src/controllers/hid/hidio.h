@@ -15,15 +15,14 @@ namespace {
 class HidIoReport : public QObject {
     Q_OBJECT
   public:
-    HidIoReport(const unsigned char& reportId, hid_device* device, const QString& device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logOutput);
+    HidIoReport(const unsigned char& reportId, hid_device* device, const mixxx::hid::DeviceInfo&& deviceInfo, const RuntimeLoggingCategory& logOutput);
     ~HidIoReport();
     void sendOutputReport(QByteArray data);
 
   private:
     const unsigned char m_reportId;
     hid_device* m_pHidDevice;
-    const QString m_pHidDeviceName;
-    const wchar_t* m_pHidDeviceSerialNumber;
+    const mixxx::hid::DeviceInfo m_deviceInfo;
     const RuntimeLoggingCategory m_logOutput;
     QByteArray m_lastSentOutputreport;
 };
@@ -32,7 +31,7 @@ class HidIoReport : public QObject {
 class HidIo : public QThread {
     Q_OBJECT
   public:
-    HidIo(hid_device* device, const QString& device_name, const wchar_t* device_serial_number, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput);
+    HidIo(hid_device* device, const mixxx::hid::DeviceInfo&& deviceInfo, const RuntimeLoggingCategory& logBase, const RuntimeLoggingCategory& logInput, const RuntimeLoggingCategory& logOutput);
     ~HidIo();
 
     void stop() {
@@ -64,6 +63,7 @@ class HidIo : public QThread {
     void poll();
     void processInputReport(int bytesRead);
     hid_device* m_pHidDevice;
+    const mixxx::hid::DeviceInfo m_deviceInfo;
     const QString m_pHidDeviceName;
     const wchar_t* m_pHidDeviceSerialNumber;
     QAtomicInt m_stop;
