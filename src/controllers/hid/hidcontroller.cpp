@@ -210,6 +210,11 @@ int HidController::close() {
 }
 
 
+
+bool HidController::isPolling() const {
+    return isOpen();
+}
+
 void HidController::sendReport(QList<int> data, unsigned int length, unsigned int reportID) {
     Q_UNUSED(length);
     QByteArray temp;

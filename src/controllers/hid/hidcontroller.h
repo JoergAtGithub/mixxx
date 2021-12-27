@@ -39,6 +39,9 @@ class HidController final : public Controller {
     int open() override;
     int close() override;
 
+  private:
+    bool isPolling() const override;
+
 signals:
     // getInputReport receives an input report on request.
     // This can be used on startup to initialize the knob positions in Mixxx
