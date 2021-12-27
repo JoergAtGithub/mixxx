@@ -64,8 +64,6 @@ class HidIo : public QThread {
     void processInputReport(int bytesRead);
     hid_device* m_pHidDevice;
     const mixxx::hid::DeviceInfo m_deviceInfo;
-    const QString m_pHidDeviceName;
-    const wchar_t* m_pHidDeviceSerialNumber;
     QAtomicInt m_stop;
     std::map<unsigned char, std::unique_ptr<HidIoReport>> m_outputReports;
 };

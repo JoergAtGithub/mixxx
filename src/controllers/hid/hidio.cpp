@@ -214,14 +214,14 @@ QByteArray HidIo::getFeatureReport(
         // -1 is the only error value according to hidapi documentation.
         // Otherwise minimum possible value is 1, because 1 byte is for the reportID,
         // the smallest report with data is therefore 2 bytes.
-        qCWarning(m_logInput) << "getFeatureReport is unable to get data from" << m_pHidDeviceName
+        qCWarning(m_logInput) << "getFeatureReport is unable to get data from" << m_deviceInfo.formatName()
                               << "serial #" << m_deviceInfo.serialNumber() << ":"
                               << mixxx::convertWCStringToQString(
                                          hid_error(m_pHidDevice),
                                          kMaxHidErrorMessageSize);
     } else {
         qCDebug(m_logInput) << bytesRead
-                            << "bytes received by getFeatureReport from" << m_pHidDeviceName
+                            << "bytes received by getFeatureReport from" << m_deviceInfo.formatName()
                             << "serial #" << m_deviceInfo.serialNumber()
                             << "(including one byte for the report ID:"
                             << QString::number(static_cast<quint8>(reportID), 16)
