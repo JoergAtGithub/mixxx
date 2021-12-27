@@ -8,10 +8,6 @@
 #include "util/compatibility/qatomic.h"
 #include "util/duration.h"
 
-namespace {
-static constexpr int kBufferSize = 255;
-} // namespace
-
 class HidIoReport : public QObject {
     Q_OBJECT
   public:
@@ -38,6 +34,7 @@ class HidIo : public QThread {
     }
 
     static constexpr int kNumBuffers = 2;
+    static constexpr int kBufferSize = 255;
     unsigned char m_pPollData[kNumBuffers][kBufferSize];
     int m_lastPollSize;
     int m_pollingBufferIndex;
