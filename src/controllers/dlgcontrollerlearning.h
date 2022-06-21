@@ -66,7 +66,7 @@ class DlgControllerLearning : public QDialog,
     void showControlMenu();
 #ifdef CONTROLLERLESSTESTING
     void DEBUGFakeMidiMessage();
-    void DEBUGFakeMidiMessage2();
+    void DEBUGFakeMidiMessage();
 #endif
 
   private:
@@ -82,6 +82,6 @@ class DlgControllerLearning : public QDialog,
     bool m_messagesLearned;
     QTimer m_firstMessageTimer;
     QTimer m_lastMessageTimer;
-    QList<QPair<MidiKey, unsigned char> > m_messages;
+    QList<QPair<MidiKey, unsigned char>> m_messages;
     MidiInputMappings m_mappings;
 };

@@ -48,7 +48,7 @@ class AbletonLink : public QObject, public Syncable {
     void setSyncMode(SyncMode mode) override;
 
     // Notify a Syncable that it is now the only currently-playing syncable.
-    void notifyOnlyPlayingSyncable() override;
+    void notifyUniquePlaying() override;
 
     // Notify a Syncable that they should sync phase.
     void requestSync() override;
@@ -59,36 +59,40 @@ class AbletonLink : public QObject, public Syncable {
 
     // Only relevant for player Syncables.
     bool isPlaying() const override;
+    bool isAudible() const override;
+    bool isQuantized() const override;
 
     // Gets the current speed of the syncable in bpm (bpm * rate slider), doesn't
     // include scratch or FF/REW values.
-    double getBpm() const override;
+    mixxx::Bpm getBpm() const override;
 
     // Gets the beat distance as a fraction from 0 to 1
     double getBeatDistance() const override;
 
     // Gets the speed of the syncable if it was playing at 1.0 rate.
-    double getBaseBpm() const override;
+    mixxx::Bpm getBaseBpm() const override;
 
     // The following functions are used to tell syncables about the state of the
     // current Sync Master.
     // Must never result in a call to
     // SyncableListener::notifyBeatDistanceChanged or signal loops could occur.
-    void setMasterBeatDistance(double beatDistance) override;
+    void updateLeaderBeatDistance(double beatDistance) override;
 
     // Must never result in a call to SyncableListener::notifyBpmChanged or
     // signal loops could occur.
-    void setMasterBpm(double bpm) override;
+    void updateLeaderBpm(mixxx::Bpm bpm) override;
+
+    void notifyLeaderParamSource() override;
 
     // Combines the above three calls into one, since they are often set
     // simultaneously.  Avoids redundant recalculation that would occur by
     // using the three calls separately.
-    void setMasterParams(double beatDistance, double baseBpm, double bpm) override;
+    void reinitLeaderParams(double beatDistance, mixxx::Bpm baseBpm, mixxx::Bpm bpm) override;
 
     // Must never result in a call to
     // SyncableListener::notifyInstantaneousBpmChanged or signal loops could
     // occur.
-    void setInstantaneousBpm(double bpm) override;
+    void updateInstantaneousBpm(mixxx::Bpm bpm) override;
 
     void onCallbackStart(int sampleRate, int bufferSize);
     void onCallbackEnd(int sampleRate, int bufferSize);

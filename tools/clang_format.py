@@ -21,7 +21,7 @@ BREAK_BEFORE = 80
 
 def get_clang_format_config_with_columnlimit(rootdir, limit):
     """Create a temporary config with ColumnLimit set to 80."""
-    cpp_file = os.path.join(rootdir, "src/mixxx.cpp")
+    cpp_file = os.path.join(rootdir, "src/main.cpp")
     proc = subprocess.run(
         ["clang-format", "--dump-config", cpp_file],
         capture_output=True,
@@ -53,8 +53,8 @@ def run_clang_format_on_lines(rootdir, file_to_format, stylepath=None):
         "clang-format",
         "--style=file",
         # The --assume-filename argument sets the path for the .clang-format
-        # config file implcitly by assuming a different location of the file to
-        # format
+        # config file implicitly by assuming a different location of the file
+        # to format
         "--assume-filename={}".format(
             os.path.join(
                 stylepath if stylepath else rootdir, file_to_format.filename

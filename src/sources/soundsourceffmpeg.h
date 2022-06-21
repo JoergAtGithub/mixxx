@@ -40,7 +40,6 @@ class SoundSourceFFmpeg : public SoundSource {
             SINT startIndex);
 
     bool consumeNextAVPacket(
-            AVPacket* pavPacket,
             AVPacket** ppavNextPacket);
 
     // Takes ownership of an input format context and ensures that
@@ -178,6 +177,8 @@ class SoundSourceFFmpeg : public SoundSource {
     uint64_t m_avStreamChannelLayout;
     uint64_t m_avResampledChannelLayout;
 
+    AVPacket* m_pavPacket;
+
     AVFrame* m_pavDecodedFrame;
     AVFrame* m_pavResampledFrame;
 
@@ -196,10 +197,10 @@ class SoundSourceProviderFFmpeg : public SoundSourceProvider {
         return kDisplayName;
     }
 
-    QStringList getSupportedFileExtensions() const override;
+    QStringList getSupportedFileTypes() const override;
 
     SoundSourceProviderPriority getPriorityHint(
-            const QString& supportedFileExtension) const override;
+            const QString& supportedFileType) const override;
 
     SoundSourcePointer newSoundSource(const QUrl& url) override {
         return newSoundSourceFromUrl<SoundSourceFFmpeg>(url);

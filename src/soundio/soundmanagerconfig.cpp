@@ -54,11 +54,6 @@ SoundManagerConfig::SoundManagerConfig(SoundManager* pSoundManager)
     m_configFile = QFileInfo(QDir(CmdlineArgs::Instance().getSettingsPath()).filePath(SOUNDMANAGERCONFIG_FILENAME));
 }
 
-SoundManagerConfig::~SoundManagerConfig() {
-    // don't write to disk here, it's SoundManager's responsibility
-    // to save its own configuration -- bkgood
-}
-
 /**
  * Read the SoundManagerConfig xml serialization at the predetermined
  * path
@@ -85,7 +80,8 @@ bool SoundManagerConfig::readFromDisk() {
     setForceNetworkClock(rootElement.attribute(xmlAttributeForceNetworkClock,
             "0").toUInt() != 0);
     setDeckCount(rootElement.attribute(xmlAttributeDeckCount,
-            QString(kDefaultDeckCount)).toUInt());
+                                    QString::number(kDefaultDeckCount))
+                         .toUInt());
     clearOutputs();
     clearInputs();
     QDomNodeList devElements(rootElement.elementsByTagName(xmlElementSoundDevice));
@@ -125,6 +121,9 @@ bool SoundManagerConfig::readFromDisk() {
             }
         }
 
+        QDomNodeList outElements(devElement.elementsByTagName(xmlElementOutput));
+        QDomNodeList inElements(devElement.elementsByTagName(xmlElementInput));
+
         if (devicesMatchingByName == 0) {
             continue;
         } else if (devicesMatchingByName == 1) {
@@ -157,13 +156,25 @@ bool SoundManagerConfig::readFromDisk() {
                     if (hardwareDeviceId.name == deviceIdFromFile.name
                             && hardwareDeviceId.alsaHwDevice == deviceIdFromFile.alsaHwDevice) {
                         deviceIdFromFile.portAudioIndex = hardwareDeviceId.portAudioIndex;
+                        break;
+                    }
+                }
+            } else {
+                // Check if the one of the matching devices has the configured in and output channels
+                for (const auto& soundDevice : soundDevices) {
+                    SoundDeviceId hardwareDeviceId = soundDevice->getDeviceId();
+                    if (hardwareDeviceId.name == deviceIdFromFile.name &&
+                            soundDevice->getNumOutputChannels() >=
+                                    outElements.count() &&
+                            soundDevice->getNumInputChannels() >=
+                                    inElements.count()) {
+                        deviceIdFromFile.portAudioIndex = hardwareDeviceId.portAudioIndex;
+                        break;
                     }
                 }
             }
         }
 
-        QDomNodeList outElements(devElement.elementsByTagName(xmlElementOutput));
-        QDomNodeList inElements(devElement.elementsByTagName(xmlElementInput));
         for (int j = 0; j < outElements.count(); ++j) {
             QDomElement outElement(outElements.at(j).toElement());
             if (outElement.isNull()) {

@@ -13,7 +13,7 @@ const mixxx::Logger kLogger("AbletonLink");
 } // namespace
 
 AbletonLink::AbletonLink(const QString& group, SyncableListener* pEngineSync)
-        : m_link(120.), m_group(group), m_pEngineSync(pEngineSync), m_mode(SYNC_NONE) {
+        : m_link(120.), m_group(group), m_pEngineSync(pEngineSync), m_mode(SyncMode::None) {
     nonAudioSet();
     audioSafeSet();
     nonAudioPrint();
@@ -26,7 +26,7 @@ void AbletonLink::setSyncMode(SyncMode mode) {
     m_mode = mode;
 }
 
-void AbletonLink::notifyOnlyPlayingSyncable() {
+void AbletonLink::notifyUniquePlaying() {
 }
 
 void AbletonLink::requestSync() {
@@ -39,8 +39,14 @@ SyncMode AbletonLink::getSyncMode() const {
 bool AbletonLink::isPlaying() const {
     return false;
 }
+bool AbletonLink::isAudible() const {
+    return false;
+}
+bool AbletonLink::isQuantized() const {
+    return false; //TODO: Check this
+}
 
-double AbletonLink::getBpm() const {
+mixxx::Bpm AbletonLink::getBpm() const {
     return getBaseBpm();
 }
 
@@ -50,12 +56,13 @@ double AbletonLink::getBeatDistance() const {
     return std::fmod(beats, 1.);
 }
 
-double AbletonLink::getBaseBpm() const {
+mixxx::Bpm AbletonLink::getBaseBpm() const {
     ableton::Link::SessionState sessionState = m_link.captureAudioSessionState();
-    return sessionState.tempo();
+    mixxx::Bpm tempo(sessionState.tempo());
+    return tempo;
 }
 
-void AbletonLink::setMasterBeatDistance(double beatDistance) {
+void AbletonLink::updateLeaderBeatDistance(double beatDistance) {
     ableton::Link::SessionState sessionState = m_link.captureAudioSessionState();
 
     auto currentBeat = sessionState.beatAtTime(getCurrentBufferPlayTime(), getQuantum());
@@ -65,20 +72,24 @@ void AbletonLink::setMasterBeatDistance(double beatDistance) {
     m_link.commitAudioSessionState(sessionState);
 }
 
-void AbletonLink::setMasterBpm(double bpm) {
+void AbletonLink::updateLeaderBpm(mixxx::Bpm bpm) {
     ableton::Link::SessionState sessionState = m_link.captureAudioSessionState();
-    sessionState.setTempo(bpm, getCurrentBufferPlayTime());
+    sessionState.setTempo(bpm.value(), getCurrentBufferPlayTime());
     m_link.commitAudioSessionState(sessionState);
 }
 
-void AbletonLink::setMasterParams(double beatDistance, double baseBpm, double bpm) {
-    Q_UNUSED(baseBpm)
-    setMasterBeatDistance(beatDistance);
-    setMasterBpm(bpm);
+void AbletonLink::notifyLeaderParamSource() {
+    //TODO: Not implemented yet
 }
 
-void AbletonLink::setInstantaneousBpm(double bpm) {
-    setMasterBpm(bpm);
+void AbletonLink::reinitLeaderParams(double beatDistance, mixxx::Bpm baseBpm, mixxx::Bpm bpm) {
+    Q_UNUSED(baseBpm)
+    updateLeaderBeatDistance(beatDistance);
+    updateLeaderBpm(bpm);
+}
+
+void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
+    updateLeaderBpm(bpm);
 }
 
 void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {

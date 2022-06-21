@@ -13,9 +13,8 @@
 #include "library/coverartutils.h"
 #include "moc_wspinny.cpp"
 #include "track/track.h"
-#include "util/compatibility.h"
 #include "util/dnd.h"
-#include "util/math.h"
+#include "util/fpclassify.h"
 #include "vinylcontrol/vinylcontrol.h"
 #include "vinylcontrol/vinylcontrolmanager.h"
 #include "waveform/sharedglcontext.h"
@@ -147,7 +146,9 @@ void WSpinny::onVinylSignalQualityUpdate(const VinylSignalQualityReport& report)
 #endif
 }
 
-void WSpinny::setup(const QDomNode& node, const SkinContext& context) {
+void WSpinny::setup(const QDomNode& node,
+        const SkinContext& context,
+        const ConfigKey& showCoverConfigKey) {
     // Set images
     QDomElement backPathElement = context.selectElement(node, "PathBackground");
     m_pBgImage = WImageStore::getImage(context.getPixmapSource(backPathElement),
@@ -177,7 +178,19 @@ void WSpinny::setup(const QDomNode& node, const SkinContext& context) {
                 size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
 
-    m_bShowCover = context.selectBool(node, "ShowCover", false);
+    // Dynamic skin option, set in WSpinny's <ShowCoverControl> node.
+    if (showCoverConfigKey.isValid()) {
+        m_pShowCoverProxy = new ControlProxy(
+                showCoverConfigKey, this);
+        m_pShowCoverProxy->connectValueChanged(
+                this,
+                [this](double v) {
+                    m_bShowCover = v > 0.0;
+                });
+        m_bShowCover = m_pShowCoverProxy->get() > 0.0;
+    } else {
+        m_bShowCover = context.selectBool(node, "ShowCover", false);
+    }
 
 #ifdef __VINYLCONTROL__
     // Find the vinyl input we should listen to reports about.
@@ -305,7 +318,9 @@ void WSpinny::slotReloadCoverArt() {
     if (!m_loadedTrack) {
         return;
     }
-    guessTrackCoverInfoConcurrently(m_loadedTrack);
+    const auto future = guessTrackCoverInfoConcurrently(m_loadedTrack);
+    // Don't wait for the result and keep running in the background
+    Q_UNUSED(future)
 }
 
 void WSpinny::paintEvent(QPaintEvent *e) {
@@ -329,7 +344,7 @@ void WSpinny::render(VSyncThread* vSyncThread) {
                 &m_dGhostAngleCurrentPlaypos);
     }
 
-    double scaleFactor = getDevicePixelRatioF(this);
+    double scaleFactor = devicePixelRatioF();
 
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
@@ -413,14 +428,14 @@ void WSpinny::swap() {
     swapBuffers();
 }
 
-
 QPixmap WSpinny::scaledCoverArt(const QPixmap& normal) {
     if (normal.isNull()) {
         return QPixmap();
     }
-    QPixmap scaled = normal.scaled(size() * getDevicePixelRatioF(this),
-            Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    scaled.setDevicePixelRatio(getDevicePixelRatioF(this));
+    QPixmap scaled = normal.scaled(size() * devicePixelRatioF(),
+            Qt::KeepAspectRatio,
+            Qt::SmoothTransformation);
+    scaled.setDevicePixelRatio(devicePixelRatioF());
     return scaled;
 }
 
@@ -442,8 +457,8 @@ void WSpinny::resizeEvent(QResizeEvent* /*unused*/) {
 double WSpinny::calculateAngle(double playpos) {
     double trackFrames = m_pTrackSamples->get() / 2;
     double trackSampleRate = m_pTrackSampleRate->get();
-    if (isnan(playpos) || isnan(trackFrames) || isnan(trackSampleRate) ||
-        trackFrames <= 0 || trackSampleRate <= 0) {
+    if (util_isnan(playpos) || util_isnan(trackFrames) || util_isnan(trackSampleRate) ||
+            trackFrames <= 0 || trackSampleRate <= 0) {
         return 0.0;
     }
 
@@ -451,7 +466,7 @@ double WSpinny::calculateAngle(double playpos) {
     double t = playpos * trackFrames / trackSampleRate;
 
     // Bad samplerate or number of track samples.
-    if (isnan(t)) {
+    if (util_isnan(t)) {
         return 0.0;
     }
 
@@ -488,7 +503,7 @@ double WSpinny::calculateAngle(double playpos) {
 /** Given a normalized playpos, calculate the integer number of rotations
     that it would take to wind the vinyl to that position. */
 int WSpinny::calculateFullRotations(double playpos) {
-    if (isnan(playpos)) {
+    if (util_isnan(playpos)) {
         return 0;
     }
     //Convert playpos to seconds.
@@ -504,7 +519,7 @@ int WSpinny::calculateFullRotations(double playpos) {
 
 //Inverse of calculateAngle()
 double WSpinny::calculatePositionFromAngle(double angle) {
-    if (isnan(angle)) {
+    if (util_isnan(angle)) {
         return 0.0;
     }
 
@@ -513,14 +528,14 @@ double WSpinny::calculatePositionFromAngle(double angle) {
 
     double trackFrames = m_pTrackSamples->get() / 2;
     double trackSampleRate = m_pTrackSampleRate->get();
-    if (isnan(trackFrames) || isnan(trackSampleRate) ||
-        trackFrames <= 0 || trackSampleRate <= 0) {
+    if (util_isnan(trackFrames) || util_isnan(trackSampleRate) ||
+            trackFrames <= 0 || trackSampleRate <= 0) {
         return 0.0;
     }
 
     // Convert t from seconds into a normalized playposition value.
     double playpos = t * trackSampleRate / trackFrames;
-    if (isnan(playpos)) {
+    if (util_isnan(playpos)) {
         return 0.0;
     }
     return playpos;
@@ -558,8 +573,13 @@ void WSpinny::updateSlipEnabled(double enabled) {
 }
 
 void WSpinny::mouseMoveEvent(QMouseEvent * e) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    int y = e->position().y();
+    int x = e->position().x();
+#else
     int y = e->y();
     int x = e->x();
+#endif
 
     // Keeping these around in case we want to switch to control relative
     // to the original mouse position.
@@ -651,7 +671,11 @@ void WSpinny::mousePressEvent(QMouseEvent * e) {
         if (!m_loadedCover.isNull()) {
             m_pDlgCoverArt->init(m_loadedTrack);
         } else if (!m_pDlgCoverArt->isVisible() && m_bShowCover) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            m_pCoverMenu->popup(e->globalPosition().toPoint());
+#else
             m_pCoverMenu->popup(e->globalPos());
+#endif
         }
     }
 }

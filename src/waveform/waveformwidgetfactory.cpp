@@ -646,7 +646,7 @@ void WaveformWidgetFactory::render() {
                 // Don't bother doing the pre-render work if we aren't going to
                 // render this widget.
                 bool shouldRender = shouldRenderWaveform(pWaveformWidget);
-                shouldRenderWaveforms[i] = shouldRender;
+                shouldRenderWaveforms[static_cast<int>(i)] = shouldRender;
                 if (!shouldRender) {
                     continue;
                 }
@@ -662,7 +662,7 @@ void WaveformWidgetFactory::render() {
                     i < m_waveformWidgetHolders.size();
                     i++) {
                 WaveformWidgetAbstract* pWaveformWidget = m_waveformWidgetHolders[i].m_waveformWidget;
-                if (!shouldRenderWaveforms[i]) {
+                if (!shouldRenderWaveforms[static_cast<int>(i)]) {
                     continue;
                 }
                 pWaveformWidget->render();
@@ -765,26 +765,42 @@ void WaveformWidgetFactory::evaluateWidgets() {
         case WaveformWidgetType::SoftwareSimpleWaveform:
             continue; // //TODO(vrince):
         case WaveformWidgetType::SoftwareWaveform:
+#ifdef __APPLE__
+            // Don't offer the simple renderers on macOS, they do not work with skins
+            // that load GL widgets (spinnies, waveforms) in singletons.
+            // Also excluded in enum WaveformWidgetType
+            // https://bugs.launchpad.net/bugs/1928772
+            continue;
+#else
             widgetName = SoftwareWaveformWidget::getWaveformWidgetName();
             useOpenGl = SoftwareWaveformWidget::useOpenGl();
             useOpenGles = SoftwareWaveformWidget::useOpenGles();
             useOpenGLShaders = SoftwareWaveformWidget::useOpenGLShaders();
             developerOnly = SoftwareWaveformWidget::developerOnly();
             break;
+#endif
         case WaveformWidgetType::HSVWaveform:
+#ifdef __APPLE__
+            continue;
+#else
             widgetName = HSVWaveformWidget::getWaveformWidgetName();
             useOpenGl = HSVWaveformWidget::useOpenGl();
             useOpenGles = HSVWaveformWidget::useOpenGles();
             useOpenGLShaders = HSVWaveformWidget::useOpenGLShaders();
             developerOnly = HSVWaveformWidget::developerOnly();
             break;
+#endif
         case WaveformWidgetType::RGBWaveform:
+#ifdef __APPLE__
+            continue;
+#else
             widgetName = RGBWaveformWidget::getWaveformWidgetName();
             useOpenGl = RGBWaveformWidget::useOpenGl();
             useOpenGles = RGBWaveformWidget::useOpenGles();
             useOpenGLShaders = RGBWaveformWidget::useOpenGLShaders();
             developerOnly = RGBWaveformWidget::developerOnly();
             break;
+#endif
         case WaveformWidgetType::QtSimpleWaveform:
             widgetName = QtSimpleWaveformWidget::getWaveformWidgetName();
             useOpenGl = QtSimpleWaveformWidget::useOpenGl();
@@ -900,7 +916,7 @@ void WaveformWidgetFactory::evaluateWidgets() {
                 }
             }
         } else {
-            // No sufficiant GL supptor
+            // No sufficient GL supptor
             if (useOpenGles || useOpenGl || useOpenGLShaders) {
                 active = false;
             }
@@ -1026,7 +1042,7 @@ void WaveformWidgetFactory::startVSync(GuiTick* pGuiTick, VisualsManager* pVisua
     m_vsyncThread->start(QThread::NormalPriority);
 }
 
-void WaveformWidgetFactory::getAvailableVSyncTypes(QList<QPair<int, QString > >* pList) {
+void WaveformWidgetFactory::getAvailableVSyncTypes(QList<QPair<int, QString>>* pList) {
     m_vsyncThread->getAvailableVSyncTypes(pList);
 }
 

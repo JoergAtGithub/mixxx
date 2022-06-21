@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "preferences/usersettings.h"
-#include "skin/skincontext.h"
+#include "skin/legacy/skincontext.h"
 #include "util/performancetimer.h"
 #include "util/singleton.h"
 #include "waveform/waveform.h"
@@ -92,6 +92,10 @@ class WaveformWidgetFactory : public QObject, public Singleton<WaveformWidgetFac
     /// dialog.
     bool setWidgetTypeFromHandle(int handleIndex, bool force = false);
     WaveformWidgetType::Type getType() const { return m_type;}
+    int getHandleIndex() {
+        return findHandleIndexFromType(m_type);
+    }
+    int findHandleIndexFromType(WaveformWidgetType::Type type);
 
   protected:
     bool setWidgetType(
@@ -115,7 +119,7 @@ class WaveformWidgetFactory : public QObject, public Singleton<WaveformWidgetFac
     int isOverviewNormalized() const { return m_overviewNormalized;}
 
     const QVector<WaveformWidgetAbstractHandle> getAvailableTypes() const { return m_waveformWidgetHandles;}
-    void getAvailableVSyncTypes(QList<QPair<int, QString > >* list);
+    void getAvailableVSyncTypes(QList<QPair<int, QString>>* list);
     void destroyWidgets();
 
     void addTimerListener(WVuMeter* pWidget);
@@ -156,7 +160,6 @@ class WaveformWidgetFactory : public QObject, public Singleton<WaveformWidgetFac
     int findIndexOf(WWaveformViewer* viewer) const;
 
     WaveformWidgetType::Type findTypeFromHandleIndex(int index);
-    int findHandleIndexFromType(WaveformWidgetType::Type type);
 
     //All type of available widgets
 

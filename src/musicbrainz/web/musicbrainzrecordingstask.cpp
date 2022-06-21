@@ -9,10 +9,9 @@
 #include "musicbrainz/musicbrainzxml.h"
 #include "network/httpstatuscode.h"
 #include "util/assert.h"
-#include "util/compatibility.h"
 #include "util/logger.h"
 #include "util/thread_affinity.h"
-#include "util/version.h"
+#include "util/versionstore.h"
 
 namespace mixxx {
 
@@ -27,11 +26,12 @@ const QString kRequestPath = QStringLiteral("/ws/2/recording/");
 const QByteArray kUserAgentRawHeaderKey = "User-Agent";
 
 QString userAgentRawHeaderValue() {
-    return Version::applicationName() +
+    return VersionStore::applicationName() +
             QStringLiteral("/") +
-            Version::version() +
+            VersionStore::version() +
             QStringLiteral(" ( ") +
-            QStringLiteral(MIXXX_WEBSITE_URL) +
+            // QStringLiteral(MIXXX_WEBSITE_URL) fails to compile on Fedora 36 with GCC 12.0.x
+            MIXXX_WEBSITE_URL +
             QStringLiteral(" )");
 }
 
@@ -50,7 +50,7 @@ QNetworkRequest createNetworkRequest(
     DEBUG_ASSERT(kBaseUrl.isValid());
     DEBUG_ASSERT(!recordingId.isNull());
     QUrl url = kBaseUrl;
-    url.setPath(kRequestPath + uuidToStringWithoutBraces(recordingId));
+    url.setPath(kRequestPath + recordingId.toString(QUuid::WithoutBraces));
     url.setQuery(createUrlQuery());
     DEBUG_ASSERT(url.isValid());
     QNetworkRequest networkRequest(url);
