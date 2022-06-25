@@ -15,8 +15,8 @@
 #include <QTimer>
 #include <iostream>
 
-#include "ableton/Link.hpp"
-#include "ableton/link/HostTimeFilter.hpp"
+#include <ableton/Link.hpp>
+#include <ableton/link/HostTimeFilter.hpp>
 #include "engine/channels/enginechannel.h"
 #include "engine/sync/syncable.h"
 
