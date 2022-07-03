@@ -569,7 +569,7 @@ void EngineSync::onCallbackStart(mixxx::audio::SampleRate sampleRate, int buffer
 
 void EngineSync::onCallbackEnd(mixxx::audio::SampleRate sampleRate, int bufferSize) {
     m_pInternalClock->onCallbackEnd(sampleRate, bufferSize);
-    m_pAbletonLink->onCallbackStart(sampleRate, bufferSize);
+    m_pAbletonLink->onCallbackEnd(sampleRate, bufferSize);
 }
 
 EngineChannel* EngineSync::getLeaderChannel() const {
