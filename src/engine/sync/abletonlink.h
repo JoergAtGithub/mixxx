@@ -2,8 +2,10 @@
 
 #include <ableton/Link.hpp>
 #include <ableton/link/HostTimeFilter.hpp>
+#include "engine/enginebuffer.h"
 #include "engine/channels/enginechannel.h"
 #include "engine/sync/syncable.h"
+#include "engine/sync/synccontrol.h"
 
 /// This class manages a link session. 
 /// Read & update (get & set) this session for Mixxx to be a synced Link participant (bpm & phase)
@@ -18,7 +20,7 @@
 class AbletonLink : public QObject, public Syncable {
     Q_OBJECT
   public:
-    AbletonLink(const QString& group, SyncableListener* pEngineSync);
+    AbletonLink(const QString& group, EngineSync* pEngineSync);
 
     const QString& getGroup() const override {
         return m_group;
@@ -91,22 +93,18 @@ class AbletonLink : public QObject, public Syncable {
     ableton::Link m_link;
     ableton::link::HostTimeFilter<ableton::link::platform::Clock> m_hostTimeFilter;
     const QString m_group;
-    SyncableListener* m_pEngineSync;
+    EngineSync* m_pEngineSync;
     SyncMode m_mode;
     long m_sampleTime;
-    std::chrono::microseconds m_currentLatency{0};
-    std::chrono::microseconds m_hostTime{0};
+    std::chrono::microseconds m_currentLatency;
+    std::chrono::microseconds m_hostTime;
 
     /// Uses ableton's HostTimeFilter class to create a smooth linear regression between sample time and system time
     void updateHostTime(size_t sampleTime) {
         m_hostTime = m_hostTimeFilter.sampleTimeToHostTime(static_cast<double>(sampleTime));
     }
-
-    // Approximate the system time when the first sample in the current audio buffer will hit the speakers
-    std::chrono::microseconds getCurrentBufferPlayTime() const {
-        return m_hostTime + m_currentLatency;
-        // return m_link.clock().micros() + m_currentLatency;
-    }
+    void readAudioBufferMicros();
+    std::chrono::microseconds getHostTimeAtSpeaker() const;
 
     double getQuantum() const {
         return 4.0;
@@ -132,7 +130,7 @@ class AbletonLink : public QObject, public Syncable {
         qDebug() << "sessionState.timeForIsPlaying()" << sessionState.timeForIsPlaying().count();
 
         // Est. Delay (micro-seconds) between onCallbackStart() and buffer's first audio sample reaching speakers
-        qDebug() << "Est. Delay (us)" << (getCurrentBufferPlayTime() - m_link.clock().micros()).count();
+        qDebug() << "Est. Delay (us)" << (getHostTimeAtSpeaker() - m_link.clock().micros()).count();
     }
 
     /// Link getters to call from non-audio thread.

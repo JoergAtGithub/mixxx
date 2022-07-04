@@ -62,6 +62,10 @@ class VisualPlayPosition : public QObject {
     // This is called by SoundDevicePortAudio just after the callback starts.
     static void setCallbackEntryToDacSecs(double secs, const PerformanceTimer& time);
 
+    int getAudioBufferMicros() {
+        return m_audioBufferMicros;
+    }
+
     void setInvalid() { m_valid = false; };
     bool isValid() const {
         return m_valid;

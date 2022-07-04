@@ -1476,6 +1476,10 @@ double EngineBuffer::getVisualPlayPos() const {
     return m_visualPlayPos->getEnginePlayPos();
 }
 
+int EngineBuffer::getAudioBufferMicros() const {
+    return m_visualPlayPos->getAudioBufferMicros();
+}
+
 mixxx::audio::FramePos EngineBuffer::getTrackEndPosition() const {
     return mixxx::audio::FramePos::fromEngineSamplePosMaybeInvalid(m_pTrackSamples->get());
 }
