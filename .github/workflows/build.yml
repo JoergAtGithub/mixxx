@@ -149,7 +149,7 @@ jobs:
       run: git fetch origin --force --tags
 
     - name: "[macOS] Set up cmake"
-      uses: jwlawson/actions-setup-cmake@v1.9
+      uses: jwlawson/actions-setup-cmake@v1.12
       # Ubuntu 20.04 should use the CMake version from the repos, and Visual
       # Studio on Windows comes with its own CMake version anyway.
       if: runner.os == 'macOS'
@@ -160,7 +160,7 @@ jobs:
 
     - name: "[Windows] Set up MSVC Developer Command Prompt"
       if: runner.os == 'Windows'
-      uses: seanmiddleditch/gha-setup-vsdevenv@v3
+      uses: seanmiddleditch/gha-setup-vsdevenv@v4
 
     - name: "[macOS] install ccache and make"
       if: runner.os == 'macOS'
@@ -343,7 +343,7 @@ jobs:
 
     - name: "[Windows] Sign Package"
       if: runner.os == 'Windows' && env.WINDOWS_CODESIGN_CERTIFICATE_PATH != null && env.WINDOWS_CODESIGN_CERTIFICATE_PASSWORD != null
-      run: signtool sign /f $Env:WINDOWS_CODESIGN_CERTIFICATE_PATH /p $Env:WINDOWS_CODESIGN_CERTIFICATE_PASSWORD *.msi
+      run: signtool sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /f $Env:WINDOWS_CODESIGN_CERTIFICATE_PATH /p $Env:WINDOWS_CODESIGN_CERTIFICATE_PASSWORD *.msi
       working-directory: build
 
     - name: "Prepare for deployment"
@@ -433,7 +433,7 @@ jobs:
 
     - name: "Upload GitHub Actions artifacts"
       if: matrix.artifacts_path != null
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.artifacts_name }}
         path: ${{ matrix.artifacts_path }}
