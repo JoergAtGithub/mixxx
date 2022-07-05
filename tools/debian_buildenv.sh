@@ -36,7 +36,8 @@ case "$1" in
 
 
         sudo apt-get install -y --no-install-recommends -- \
-            ableton-link-dev \
+            #Debian Bug#993999 AbletonLink CMake package has broken include path: https://salsa.debian.org/multimedia-team/ableton-link/-/commit/047f75abeeb6494256cb8d498995c17afd2a17e8
+            #ableton-link-dev \
             ccache \
             cmake \
             clazy \

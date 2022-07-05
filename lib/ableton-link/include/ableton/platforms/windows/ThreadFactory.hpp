@@ -1,4 +1,4 @@
-/* Copyright 2019, Ableton AG, Berlin. All rights reserved.
+/* Copyright 2021, Ableton AG, Berlin. All rights reserved.
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,33 +19,34 @@
 
 #pragma once
 
-#include <random>
+#include <processthreadsapi.h>
+#include <thread>
+#include <utility>
 
 namespace ableton
 {
 namespace platforms
 {
-namespace stl
+namespace windows
 {
 
-struct Random
+struct ThreadFactory
 {
-  Random()
-    : gen(rd())
-    , dist(33, 126) // printable ascii chars
+  template <typename Callable, typename... Args>
+  static std::thread makeThread(std::string name, Callable&& f, Args&&... args)
   {
+    return std::thread(
+      [](std::string name, Callable&& f, Args&&... args) {
+        assert(name.length() < 20);
+        wchar_t nativeName[20];
+        mbstowcs(nativeName, name.c_str(), name.length() + 1);
+        SetThreadDescription(GetCurrentThread(), nativeName);
+        f(args...);
+      },
+      std::move(name), std::forward<Callable>(f), std::forward<Args>(args)...);
   }
-
-  uint8_t operator()()
-  {
-    return static_cast<uint8_t>(dist(gen));
-  }
-
-  std::random_device rd;
-  std::mt19937 gen;
-  std::uniform_int_distribution<unsigned> dist;
 };
 
-} // namespace stl
+} // namespace windows
 } // namespace platforms
 } // namespace ableton

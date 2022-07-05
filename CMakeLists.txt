@@ -1859,21 +1859,16 @@ endif()
 
 # Ableton Link
 find_package(AbletonLink NAMES AbletonLink ableton ableton-link ableton-link-dev)
+# Note Debian Bug#993999 - Wrong CMake include path: https://salsa.debian.org/multimedia-team/ableton-link/-/commit/047f75abeeb6494256cb8d498995c17afd2a17e8
 
 if (AbletonLink_FOUND)
-  message(STATUS "Ableton Link installation found")
-
-  #Debian Bug#993999 requires hardcoded include path: https://salsa.debian.org/multimedia-team/ableton-link/-/commit/047f75abeeb6494256cb8d498995c17afd2a17e8
+  message(STATUS "Using existing system installation of Ableton Link")
   target_link_libraries(mixxx-lib PRIVATE Ableton::Link)
 else()
-
-
-message(STATUS "Using internal Ableton Link")
-include(${CMAKE_CURRENT_SOURCE_DIR}/lib/ableton-link/AbletonLinkConfig.cmake)
-target_link_libraries(mixxx-lib PUBLIC Ableton::Link)
-# target_include_directories(mixxx-lib PUBLIC ${link_HEADERS})
-target_include_directories(mixxx-lib SYSTEM PUBLIC lib/ableton-link/include)
-
+  message(STATUS "Using internal Ableton Link")
+  include(${CMAKE_CURRENT_SOURCE_DIR}/lib/ableton-link/share/ableton/AbletonLinkConfig.cmake)
+  target_link_libraries(mixxx-lib PUBLIC Ableton::Link)
+  target_include_directories(mixxx-lib SYSTEM PUBLIC lib/ableton-link/include/ableton)
 endif()
 
 # Chromaprint

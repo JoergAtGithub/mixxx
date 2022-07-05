@@ -1,4 +1,4 @@
-/* Copyright 2019, Ableton AG, Berlin. All rights reserved.
+/* Copyright 2021, Ableton AG, Berlin. All rights reserved.
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,33 +19,32 @@
 
 #pragma once
 
-#include <random>
+#include <algorithm>
+#include <cassert>
+#include <vector>
 
 namespace ableton
 {
-namespace platforms
-{
-namespace stl
+namespace link
 {
 
-struct Random
+template <typename It>
+double median(It begin, It end)
 {
-  Random()
-    : gen(rd())
-    , dist(33, 126) // printable ascii chars
+  const auto n = std::distance(begin, end);
+  assert(n > 2);
+  if (n % 2 == 0)
   {
+    std::nth_element(begin, begin + n / 2, end);
+    std::nth_element(begin, begin + (n - 1) / 2, end);
+    return (*(begin + (n / 2)) + *(begin + (n - 1) / 2)) / 2.0;
   }
-
-  uint8_t operator()()
+  else
   {
-    return static_cast<uint8_t>(dist(gen));
+    std::nth_element(begin, begin + n / 2, end);
+    return *(begin + (n / 2));
   }
-
-  std::random_device rd;
-  std::mt19937 gen;
-  std::uniform_int_distribution<unsigned> dist;
 };
 
-} // namespace stl
-} // namespace platforms
+} // namespace link
 } // namespace ableton
