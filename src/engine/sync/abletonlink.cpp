@@ -133,7 +133,6 @@ void AbletonLink::notifyLeaderParamSource() {
 
 void AbletonLink::reinitLeaderParams(double beatDistance, mixxx::Bpm baseBpm, mixxx::Bpm bpm) {
     Q_UNUSED(baseBpm)
-    readAudioBufferMicros();
     updateLeaderBeatDistance(beatDistance);
     updateLeaderBpm(bpm);
 }
@@ -143,13 +142,8 @@ void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
 }
 
 void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
-    int samplesPerChannel = bufferSize / 2;
-    double samplesPerMicrosecond = static_cast<double>(sampleRate) / 1000000.;
-    double currentLatency = static_cast<double>(samplesPerChannel) / samplesPerMicrosecond;
-    m_currentLatency = std::chrono::microseconds{static_cast<long>(currentLatency)};
-
     updateHostTime(m_sampleTime);
-    m_sampleTime += samplesPerChannel;
+    readAudioBufferMicros();
 
     m_pNumLinkPeers->forceSet(m_link.numPeers());
 
