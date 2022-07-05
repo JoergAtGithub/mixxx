@@ -1868,7 +1868,7 @@ else()
   message(STATUS "Using internal Ableton Link")
   include(${CMAKE_CURRENT_SOURCE_DIR}/lib/ableton-link/share/ableton/AbletonLinkConfig.cmake)
   target_link_libraries(mixxx-lib PUBLIC Ableton::Link)
-  target_include_directories(mixxx-lib SYSTEM PUBLIC lib/ableton-link/include/ableton)
+  target_include_directories(mixxx-lib SYSTEM PUBLIC lib/ableton-link/include/)
 endif()
 
 # Chromaprint
