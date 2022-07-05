@@ -38,6 +38,7 @@ case "$1" in
         #ableton-link-dev
         
         sudo apt-get install -y --no-install-recommends -- \
+            asio \
             ccache \
             cmake \
             clazy \
@@ -49,6 +50,7 @@ case "$1" in
             fonts-open-sans \
             fonts-ubuntu \
             g++ \
+            libasio-dev \
             lcov \
             libchromaprint-dev \
             libdistro-info-perl \
