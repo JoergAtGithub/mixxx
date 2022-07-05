@@ -21,6 +21,7 @@ class AbletonLink : public QObject, public Syncable {
     Q_OBJECT
   public:
     AbletonLink(const QString& group, EngineSync* pEngineSync);
+    ~AbletonLink();
 
     const QString& getGroup() const override {
         return m_group;
@@ -99,6 +100,11 @@ class AbletonLink : public QObject, public Syncable {
     std::chrono::microseconds m_currentLatency;
     std::chrono::microseconds m_hostTime;
 
+    ControlPushButton* m_pLinkButton;
+    std::unique_ptr<ControlObject> m_pNumLinkPeers;
+
+    void slotControlSyncEnabled(double value);
+
     /// Uses ableton's HostTimeFilter class to create a smooth linear regression between sample time and system time
     void updateHostTime(size_t sampleTime) {
         m_hostTime = m_hostTimeFilter.sampleTimeToHostTime(static_cast<double>(sampleTime));
@@ -151,12 +157,6 @@ class AbletonLink : public QObject, public Syncable {
         sessionState.setIsPlayingAndRequestBeatAtTime(true, m_link.clock().micros(), beat, getQuantum());
 
         m_link.commitAudioSessionState(sessionState);
-    }
-
-    /// Link setters to call from non-audio thread.
-    void nonAudioSet() {
-        m_link.enable(true);
-        m_link.enableStartStopSync(true);
     }
 
     void initTestTimer(size_t ms, bool isRepeating) {

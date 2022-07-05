@@ -3,6 +3,8 @@
 #include <QtDebug>
 #include <cmath>
 
+#include "control/controlobject.h"
+#include "control/controlpushbutton.h"
 #include "engine/sync/enginesync.h"
 #include "preferences/usersettings.h"
 #include "util/logger.h"
@@ -14,12 +16,43 @@ const mixxx::Logger kLogger("AbletonLink");
 
 AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
         : m_link(120.), m_group(group), m_pEngineSync(pEngineSync), m_mode(SyncMode::None), m_currentLatency(0), m_hostTime(0) {
-    nonAudioSet();
-    audioSafeSet();
+
+    m_pLinkButton = new ControlPushButton(ConfigKey(group, "sync_enabled"));
+    m_pLinkButton->setButtonMode(ControlPushButton::TOGGLE);
+    m_pLinkButton->setStates(2);
+
+    connect(m_pLinkButton,
+            &ControlObject::valueChanged,
+            this,
+            &AbletonLink::slotControlSyncEnabled,
+            Qt::DirectConnection);
+
+    m_pNumLinkPeers = std::make_unique<ControlObject>(ConfigKey(m_group, "num_peers"));
+    m_pNumLinkPeers->setReadOnly();
+    m_pNumLinkPeers->forceSet(0);
+
+    m_link.enable(false);
+    m_link.enableStartStopSync(false);
+
     nonAudioPrint();
     audioSafePrint();
 
     initTestTimer(1000, true);
+}
+
+AbletonLink::~AbletonLink() {
+    delete m_pLinkButton;
+}
+
+void AbletonLink::slotControlSyncEnabled(double value) {
+    qDebug() << "AbletonLink::slotControlSyncEnabled" << value;
+    if (value > 0) {
+        m_link.enable(true);
+        m_link.enableStartStopSync(true);
+    } else {
+        m_link.enable(false);
+        m_link.enableStartStopSync(false);
+    }
 }
 
 void AbletonLink::setSyncMode(SyncMode mode) {
@@ -117,6 +150,9 @@ void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
 
     updateHostTime(m_sampleTime);
     m_sampleTime += samplesPerChannel;
+
+    m_pNumLinkPeers->forceSet(m_link.numPeers());
+
 }
 
 void AbletonLink::onCallbackEnd(int sampleRate, int bufferSize) {
