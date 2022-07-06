@@ -31,6 +31,13 @@ AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
     m_pNumLinkPeers->setReadOnly();
     m_pNumLinkPeers->forceSet(0);
 
+    // The callback is invoked on a Link - managed thread.
+    // The callback is the only entity, which access m_pNumLinkPeers
+    m_link.setNumPeersCallback([this](std::size_t numPeers) {
+        m_pNumLinkPeers->forceSet(numPeers);
+        });
+
+
     m_link.enable(false);
     m_link.enableStartStopSync(false);
 
@@ -145,11 +152,58 @@ void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
     updateHostTime(m_sampleTime);
     readAudioBufferMicros();
 
-    m_pNumLinkPeers->forceSet(m_link.numPeers());
+    //m_pNumLinkPeers->forceSet(m_link.numPeers());
 
 }
 
 void AbletonLink::onCallbackEnd(int sampleRate, int bufferSize) {
     Q_UNUSED(sampleRate)
     Q_UNUSED(bufferSize)
+}
+
+
+// **************************
+// Debug ouput functions only
+// **************************
+
+void AbletonLink::audioSafePrint() {
+    qDebug() << "isEnabled()" << m_link.isEnabled();
+    qDebug() << "numPeers()" << m_link.numPeers();
+
+    ableton::Link::SessionState sessionState = m_link.captureAudioSessionState();
+
+    qDebug() << "sessionState.tempo()" << sessionState.tempo();
+    qDebug() << "sessionState.beatAtTime()" << sessionState.beatAtTime(m_link.clock().micros(), getQuantum());
+    qDebug() << "sessionState.phaseAtTime()" << sessionState.phaseAtTime(m_link.clock().micros(), getQuantum());
+    qDebug() << "sessionState.timeAtBeat(0)" << sessionState.timeAtBeat(0.0, getQuantum()).count();
+    qDebug() << "sessionState.isPlaying()" << sessionState.isPlaying();
+    qDebug() << "sessionState.timeForIsPlaying()" << sessionState.timeForIsPlaying().count();
+
+    // Est. Delay (micro-seconds) between onCallbackStart() and buffer's first audio sample reaching speakers
+    qDebug() << "Est. Delay (us)" << (getHostTimeAtSpeaker() - m_link.clock().micros()).count();
+}
+
+void AbletonLink::nonAudioPrint() {
+    qDebug() << "isStartStopSyncEnabled()" << m_link.isStartStopSyncEnabled();
+}
+
+void AbletonLink::audioSafeSet() {
+    ableton::Link::SessionState sessionState = m_link.captureAudioSessionState();
+
+    sessionState.setTempo(120, m_link.clock().micros());
+    sessionState.requestBeatAtTime(beat, m_link.clock().micros(), getQuantum());
+    sessionState.setIsPlaying(true, m_link.clock().micros());
+
+    // convenience functions
+    sessionState.requestBeatAtStartPlayingTime(beat, getQuantum());
+    sessionState.setIsPlayingAndRequestBeatAtTime(true, m_link.clock().micros(), beat, getQuantum());
+
+    m_link.commitAudioSessionState(sessionState);
+}
+
+void AbletonLink::initTestTimer(int ms, bool isRepeating) {
+    m_pTestTimer = new QTimer(this);
+    connect(m_pTestTimer, &QTimer::timeout, this, QOverload<>::of(&AbletonLink::testPrint));
+    m_pTestTimer->setSingleShot(!isRepeating);
+    m_pTestTimer->start(ms);
 }
