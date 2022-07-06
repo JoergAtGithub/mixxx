@@ -1857,6 +1857,18 @@ if(WIN32)
   target_include_directories(mixxx PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
 
+list(APPEND CMAKE_REQUIRED_FLAGS -std=c++0x)
+check_cxx_source_compiles("
+    #include <atomic>
+    std::atomic<double> x(1.0);
+    int main() {return x;}"
+    NATIVE_ATOMICS_SUPPORT
+    )
+if(NOT NATIVE_ATOMICS_SUPPORT)
+    find_package(ATOMIC REQUIRED)
+    target_link_libraries(mixxx-lib PUBLIC -latomic)
+endif()
+
 # Ableton Link
 find_package(AbletonLink NAMES AbletonLink ableton ableton-link ableton-link-dev)
 # Note Debian Bug#993999 - Wrong CMake include path: https://salsa.debian.org/multimedia-team/ableton-link/-/commit/047f75abeeb6494256cb8d498995c17afd2a17e8
@@ -1867,7 +1879,7 @@ if (AbletonLink_FOUND)
 else()
   message(STATUS "Using internal Ableton Link")
   include(${CMAKE_CURRENT_SOURCE_DIR}/lib/ableton-link/share/ableton/AbletonLinkConfig.cmake)
-  target_link_libraries(mixxx-lib PUBLIC Ableton::Link -latomic)
+  target_link_libraries(mixxx-lib PUBLIC Ableton::Link)
   target_include_directories(mixxx-lib SYSTEM PUBLIC lib/ableton-link/include/)
 endif()
 
