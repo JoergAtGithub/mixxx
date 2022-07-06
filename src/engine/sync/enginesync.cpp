@@ -620,7 +620,9 @@ void EngineSync::updateLeaderBpm(Syncable* pSource, mixxx::Bpm bpm) {
     if (pSource != m_pInternalClock) {
         m_pInternalClock->updateLeaderBpm(bpm);
     }
-    m_pAbletonLink->updateLeaderBpm(bpm);
+    if (pSource != m_pAbletonLink) {
+        m_pAbletonLink->updateLeaderBpm(bpm);
+    }
     foreach (Syncable* pSyncable, m_syncables) {
         if (pSyncable == pSource ||
                 !pSyncable->isSynchronized()) {
@@ -634,7 +636,9 @@ void EngineSync::updateLeaderInstantaneousBpm(Syncable* pSource, mixxx::Bpm bpm)
     if (pSource != m_pInternalClock) {
         m_pInternalClock->updateInstantaneousBpm(bpm);
     }
-    m_pAbletonLink->updateInstantaneousBpm(bpm);
+    if (pSource != m_pAbletonLink) {
+        m_pAbletonLink->updateInstantaneousBpm(bpm);
+    }
     foreach (Syncable* pSyncable, m_syncables) {
         if (pSyncable == pSource ||
                 !pSyncable->isSynchronized()) {
@@ -653,7 +657,9 @@ void EngineSync::updateLeaderBeatDistance(Syncable* pSource, double beatDistance
     if (pSource != m_pInternalClock) {
         m_pInternalClock->updateLeaderBeatDistance(beatDistance);
     }
-    m_pAbletonLink->updateLeaderBeatDistance(beatDistance);
+    if (pSource != m_pAbletonLink) {
+        m_pAbletonLink->updateLeaderBeatDistance(beatDistance);
+    };
     foreach (Syncable* pSyncable, m_syncables) {
         if (pSyncable == pSource ||
                 !pSyncable->isSynchronized()) {
@@ -708,7 +714,9 @@ void EngineSync::reinitLeaderParams(Syncable* pSource) {
     if (pSource != m_pInternalClock) {
         m_pInternalClock->reinitLeaderParams(beatDistance, baseBpm, bpm);
     }
-    m_pAbletonLink->reinitLeaderParams(beatDistance, baseBpm, bpm);
+    if (pSource != m_pAbletonLink) {
+        m_pAbletonLink->reinitLeaderParams(beatDistance, baseBpm, bpm);
+    }
     foreach (Syncable* pSyncable, m_syncables) {
         if (!pSyncable->isSynchronized()) {
             continue;
