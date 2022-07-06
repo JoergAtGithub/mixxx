@@ -157,7 +157,7 @@ set(CMAKE_CXX_STANDARD 20)
 if(MSVC)
   # Ensure MSVC populates __cplusplus correctly.
   # _HAS_DEPRECATED_RESULT_OF=1 is needed to compile AbletonLink with MSVC in C++20 mode
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /D_HAS_DEPRECATED_RESULT_OF=1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /D_HAS_DEPRECATED_RESULT_OF=1 /D_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING=1")
 endif()
 
 # Speed up builds on HDDs and prevent wearing of SDDs
@@ -1857,16 +1857,11 @@ if(WIN32)
   target_include_directories(mixxx PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
 
-list(APPEND CMAKE_REQUIRED_FLAGS -std=c++0x)
-check_cxx_source_compiles("
-    #include <atomic>
-    std::atomic<double> x(1.0);
-    int main() {return x;}"
-    NATIVE_ATOMICS_SUPPORT
-    )
-if(NOT NATIVE_ATOMICS_SUPPORT)
-    find_package(ATOMIC REQUIRED)
-    target_link_libraries(mixxx-lib PUBLIC -latomic)
+# ASIO (included in Ableton Link) requires atomic on clang to link `std::__atomic_base<unsigned int>::is_lock_free() const'
+include(CheckAtomic)
+if(HAVE_CXX_ATOMICS_WITH_LIB OR HAVE_CXX_ATOMICS64_WITH_LIB)  
+  message(STATUS "Linking libatomic is needed for atomic support on this platform")
+  target_link_libraries(mixxx-lib PUBLIC atomic)
 endif()
 
 # Ableton Link
