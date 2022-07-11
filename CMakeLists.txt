@@ -157,7 +157,7 @@ set(CMAKE_CXX_STANDARD 20)
 if(MSVC)
   # Ensure MSVC populates __cplusplus correctly.
   # _HAS_DEPRECATED_RESULT_OF=1 is needed to compile AbletonLink with MSVC in C++20 mode
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /D_HAS_DEPRECATED_RESULT_OF=1 /D_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING=1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
 endif()
 
 # Speed up builds on HDDs and prevent wearing of SDDs
@@ -1865,7 +1865,7 @@ if(HAVE_CXX_ATOMICS_WITH_LIB OR HAVE_CXX_ATOMICS64_WITH_LIB)
 endif()
 
 # Ableton Link
-find_package(AbletonLink NAMES AbletonLink ableton ableton-link ableton-link-dev)
+#find_package(AbletonLink NAMES AbletonLink ableton ableton-link ableton-link-dev)
 # Note Debian Bug#993999 - Wrong CMake include path: https://salsa.debian.org/multimedia-team/ableton-link/-/commit/047f75abeeb6494256cb8d498995c17afd2a17e8
 
 if (AbletonLink_FOUND)
