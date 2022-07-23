@@ -1870,7 +1870,7 @@ if(HAVE_CXX_ATOMICS_WITH_LIB OR HAVE_CXX_ATOMICS64_WITH_LIB)
 endif()
 
 # Ableton Link
-#find_package(AbletonLink NAMES AbletonLink ableton ableton-link ableton-link-dev)
+find_package(AbletonLink NAMES AbletonLink ableton ableton-link ableton-link-dev)
 # Note Debian Bug#993999 - Wrong CMake include path: https://salsa.debian.org/multimedia-team/ableton-link/-/commit/047f75abeeb6494256cb8d498995c17afd2a17e8
 
 if (AbletonLink_FOUND)
