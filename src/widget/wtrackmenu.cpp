@@ -34,9 +34,11 @@
 #include "util/parented_ptr.h"
 #include "util/qt.h"
 #include "util/widgethelper.h"
+#include "widget/findonwebmenufactory.h"
 #include "widget/wcolorpickeraction.h"
 #include "widget/wcoverartlabel.h"
 #include "widget/wcoverartmenu.h"
+#include "widget/wfindonwebmenu.h"
 #include "widget/wsearchrelatedtracksmenu.h"
 #include "widget/wskincolor.h"
 #include "widget/wstarrating.h"
@@ -182,6 +184,25 @@ void WTrackMenu::createMenus() {
                 this,
                 [this](const QString& searchQuery) {
                     m_pLibrary->searchTracksInCollection(searchQuery);
+                });
+    }
+
+    if (featureIsEnabled(Feature::FindOnWeb)) {
+        DEBUG_ASSERT(!m_pFindOnWebMenu);
+        m_pFindOnWebMenu = make_parented<WFindOnWebMenu>(this);
+        connect(m_pFindOnWebMenu,
+                &QMenu::aboutToShow,
+                this,
+                [this] {
+                    m_pFindOnWebMenu->clear();
+                    const auto pTrack = getFirstTrackPointer();
+                    if (pTrack) {
+                        mixxx::library::createFindOnWebSubmenus(
+                                m_pFindOnWebMenu,
+                                *pTrack);
+                    }
+                    m_pFindOnWebMenu->setEnabled(
+                            !m_pFindOnWebMenu->isEmpty());
                 });
     }
 
@@ -542,6 +563,10 @@ void WTrackMenu::setupActions() {
         }
 
         m_pMetadataMenu->addMenu(m_pCoverMenu);
+        if (featureIsEnabled(Feature::FindOnWeb)) {
+            m_pMetadataMenu->addMenu(m_pFindOnWebMenu);
+        }
+        addSeparator();
         addMenu(m_pMetadataMenu);
     }
 
@@ -864,6 +889,12 @@ void WTrackMenu::updateMenus() {
 
     if (featureIsEnabled(Feature::Properties)) {
         m_pPropertiesAct->setEnabled(singleTrackSelected);
+    }
+
+    if (featureIsEnabled(Feature::FindOnWeb)) {
+        const auto pTrack = getFirstTrackPointer();
+        const bool enableMenu = pTrack ? WFindOnWebMenu::hasEntriesForTrack(*pTrack) : false;
+        m_pFindOnWebMenu->setEnabled(enableMenu);
     }
 }
 
@@ -2206,6 +2237,8 @@ bool WTrackMenu::featureIsEnabled(Feature flag) const {
     case Feature::RemoveFromDisk:
         return m_pTrackModel->hasCapabilities(TrackModel::Capability::RemoveFromDisk);
     case Feature::FileBrowser:
+        return true;
+    case Feature::FindOnWeb:
         return true;
     case Feature::Properties:
         return m_pTrackModel->hasCapabilities(TrackModel::Capability::EditMetadata);
