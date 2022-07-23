@@ -38,6 +38,7 @@ case "$1" in
         #ableton-link-dev
 
         sudo apt-get install -y --no-install-recommends -- \
+            ableton-link-dev \
             ccache \
             cmake \
             clazy \
