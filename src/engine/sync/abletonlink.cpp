@@ -145,14 +145,18 @@ void AbletonLink::reinitLeaderParams(double beatDistance, mixxx::Bpm baseBpm, mi
 }
 
 void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
-    updateLeaderBpm(bpm);
+
 }
 
 void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
     updateHostTime(m_sampleTime);
     readAudioBufferMicros();
 
-    //m_pNumLinkPeers->forceSet(m_link.numPeers());
+    
+    ableton::Link::SessionState sessionState = m_link.captureAudioSessionState();
+    const mixxx::Bpm tempo(sessionState.tempo());
+    m_pEngineSync->notifyRateChanged(this, tempo);
+    m_pEngineSync->notifyBeatDistanceChanged(this, getBeatDistance());
 
 }
 
@@ -162,9 +166,9 @@ void AbletonLink::onCallbackEnd(int sampleRate, int bufferSize) {
 }
 
 
-// **************************
-// Debug ouput functions only
-// **************************
+// ***************************
+// Debug output functions only
+// ***************************
 
 void AbletonLink::audioSafePrint() {
     qDebug() << "isEnabled()" << m_link.isEnabled();

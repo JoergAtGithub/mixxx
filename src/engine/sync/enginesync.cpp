@@ -399,6 +399,7 @@ void EngineSync::notifyScratching(Syncable* pSyncable, bool scratching) {
             // reinit the beat distance.
             pOnlyPlayer->notifyUniquePlaying();
             updateLeaderBeatDistance(pOnlyPlayer, pOnlyPlayer->getBeatDistance());
+            m_pAbletonLink->updateLeaderBeatDistance(pOnlyPlayer->getBeatDistance());
         } else {
             // If the Leader isn't the only player, then it will need to sync
             // phase like followers do.
@@ -414,6 +415,7 @@ void EngineSync::notifySeek(Syncable* pSyncable, mixxx::audio::FramePos position
         // the sync control, but that's ok because that's intrinsic to how the
         // controls are constructed (see the constructor of enginebuffer).
         updateLeaderBeatDistance(pSyncable, pSyncable->getBeatDistance());
+        m_pAbletonLink->updateLeaderBeatDistance(pSyncable->getBeatDistance());
     }
 }
 
@@ -452,6 +454,7 @@ void EngineSync::requestBpmUpdate(Syncable* pSyncable, mixxx::Bpm bpm) {
     if (leaderBaseBpm.isValid()) {
         // update from current leader
         pSyncable->updateLeaderBeatDistance(beatDistance);
+        m_pAbletonLink->updateLeaderBeatDistance(beatDistance);
         pSyncable->updateLeaderBpm(leaderBpm);
     } else {
         // There is no leader, adopt this bpm as leader value
@@ -657,9 +660,6 @@ void EngineSync::updateLeaderBeatDistance(Syncable* pSource, double beatDistance
     if (pSource != m_pInternalClock) {
         m_pInternalClock->updateLeaderBeatDistance(beatDistance);
     }
-    if (pSource != m_pAbletonLink) {
-        m_pAbletonLink->updateLeaderBeatDistance(beatDistance);
-    };
     foreach (Syncable* pSyncable, m_syncables) {
         if (pSyncable == pSource ||
                 !pSyncable->isSynchronized()) {
