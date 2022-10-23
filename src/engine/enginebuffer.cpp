@@ -175,10 +175,6 @@ EngineBuffer::EngineBuffer(const QString& group,
 
     m_pSampleRate = new ControlProxy("[Master]", "samplerate", this);
 
-    m_pKeylockEngine = new ControlProxy("[Master]", "keylock_engine", this);
-    m_pKeylockEngine->connectValueChanged(this, &EngineBuffer::slotKeylockEngineChanged,
-                                          Qt::DirectConnection);
-
     m_pTrackSamples = new ControlObject(ConfigKey(m_group, "track_samples"));
     m_pTrackSampleRate = new ControlObject(ConfigKey(m_group, "track_samplerate"));
 
@@ -264,15 +260,15 @@ EngineBuffer::EngineBuffer(const QString& group,
                                                m_pLoopingControl);
     m_pReadAheadManager->addRateControl(m_pRateControl);
 
+    m_pKeylockEngine = new ControlProxy("[Master]", "keylock_engine", this);
+    m_pKeylockEngine->connectValueChanged(this,
+            &EngineBuffer::slotKeylockEngineChanged,
+            Qt::DirectConnection);
     // Construct scaling objects
     m_pScaleLinear = new EngineBufferScaleLinear(m_pReadAheadManager);
     m_pScaleST = new EngineBufferScaleST(m_pReadAheadManager);
     m_pScaleRB = new EngineBufferScaleRubberBand(m_pReadAheadManager);
-    if (m_pKeylockEngine->get() == static_cast<double>(SOUNDTOUCH)) {
-        m_pScaleKeylock = m_pScaleST;
-    } else {
-        m_pScaleKeylock = m_pScaleRB;
-    }
+    slotKeylockEngineChanged(m_pKeylockEngine->get());
     m_pScaleVinyl = m_pScaleLinear;
     m_pScale = m_pScaleVinyl;
     m_pScale->clear();
@@ -802,13 +798,23 @@ void EngineBuffer::slotKeylockEngineChanged(double dIndex) {
     if (m_bScalerOverride) {
         return;
     }
-    // static_cast<KeylockEngine>(dIndex); direct cast produces a "not used" warning with gcc
-    int iEngine = static_cast<int>(dIndex);
-    KeylockEngine engine = static_cast<KeylockEngine>(iEngine);
-    if (engine == SOUNDTOUCH) {
+    const KeylockEngine engine = static_cast<KeylockEngine>(dIndex);
+    switch (engine) {
+    case KeylockEngine::SoundTouch:
         m_pScaleKeylock = m_pScaleST;
-    } else {
+        break;
+    case KeylockEngine::RubberBandFaster:
+        m_pScaleRB->useEngineFiner(false);
         m_pScaleKeylock = m_pScaleRB;
+        break;
+    case KeylockEngine::RubberBandFiner:
+        m_pScaleRB->useEngineFiner(
+                true); // in case of Rubberband V2 it falls back to RUBBERBAND_FASTER
+        m_pScaleKeylock = m_pScaleRB;
+        break;
+    default:
+        slotKeylockEngineChanged(static_cast<double>(defaultKeylockEngine()));
+        break;
     }
 }
 
@@ -1348,17 +1354,10 @@ mixxx::audio::FramePos EngineBuffer::queuedSeekPosition() const {
 }
 
 void EngineBuffer::updateIndicators(double speed, int iBufferSize) {
-    // Explicitly invalidate the visual playposition so waveformwidgetrenderer
-    // clears the visual when passthrough was activated while a track was loaded.
-    // TODO(ronso0) Check if postProcess() needs to be called at all when passthrough
-    // is active -- if no, remove this hack.
-    if (m_pPassthroughEnabled->toBool()) {
-        m_visualPlayPos->setInvalid();
-        return;
-    }
     if (!m_playPosition.isValid() ||
             !m_trackSampleRateOld.isValid() ||
-            m_tempo_ratio_old == 0) {
+            m_tempo_ratio_old == 0 ||
+            m_pPassthroughEnabled->toBool()) {
         // Skip indicator updates with invalid values to prevent undefined behavior,
         // e.g. in WaveformRenderBeat::draw().
         //
@@ -1374,7 +1373,7 @@ void EngineBuffer::updateIndicators(double speed, int iBufferSize) {
     const double fFractionalPlaypos = fractionalPlayposFromAbsolute(m_playPosition);
 
     const double tempoTrackSeconds = m_trackEndPositionOld.value() /
-            m_trackSampleRateOld / m_tempo_ratio_old;
+            m_trackSampleRateOld / getRateRatio();
     if (speed > 0 && fFractionalPlaypos == 1.0) {
         // At Track end
         speed = 0;
