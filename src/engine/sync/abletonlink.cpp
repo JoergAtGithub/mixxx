@@ -15,9 +15,14 @@ const mixxx::Logger kLogger("AbletonLink");
 } // namespace
 
 AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
-        : m_link(120.), m_group(group), m_pEngineSync(pEngineSync), m_mode(SyncMode::None), m_currentLatency(0), m_hostTimeAtStartCallback(0), m_sampleTimeAtStartCallback(0) {
-
-    m_timeAtStartCallback = m_link.clock().micros();   
+        : m_link(120.),
+          m_group(group),
+          m_pEngineSync(pEngineSync),
+          m_mode(SyncMode::None),
+          m_currentLatency(0),
+          m_hostTimeAtStartCallback(0),
+          m_sampleTimeAtStartCallback(0) {
+    m_timeAtStartCallback = m_link.clock().micros();
 
     m_pLinkButton = new ControlPushButton(ConfigKey(group, "sync_enabled"));
     m_pLinkButton->setButtonMode(ControlPushButton::TOGGLE);
@@ -37,8 +42,7 @@ AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
     // The callback is the only entity, which access m_pNumLinkPeers
     m_link.setNumPeersCallback([this](std::size_t numPeers) {
         m_pNumLinkPeers->forceSet(numPeers);
-        });
-
+    });
 
     m_link.enable(false);
     m_link.enableStartStopSync(false);
@@ -119,7 +123,6 @@ std::chrono::microseconds AbletonLink::getHostTime() const {
 
 // Approximate the system time when the first sample in the current audio buffer will hit the speakers
 std::chrono::microseconds AbletonLink::getHostTimeAtSpeaker(const std::chrono::microseconds hostTime) const {
-
     return hostTime - m_currentLatency;
 }
 
@@ -150,16 +153,14 @@ void AbletonLink::reinitLeaderParams(double beatDistance, mixxx::Bpm baseBpm, mi
 }
 
 void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
-
 }
 
 void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
-        
     /// Uses ableton's HostTimeFilter class to create a smooth linear regression between absolute sample time and system time
     m_sampleTimeAtStartCallback += std::chrono::microseconds((bufferSize * 1000000) / sampleRate);
     m_hostTimeAtStartCallback = m_hostTimeFilter.sampleTimeToHostTime(static_cast<double>(m_sampleTimeAtStartCallback.count()));
 
-    m_timeAtStartCallback = m_link.clock().micros();    
+    m_timeAtStartCallback = m_link.clock().micros();
     readAudioBufferMicros();
 
     if (m_link.isEnabled()) {
@@ -177,7 +178,6 @@ void AbletonLink::onCallbackEnd(int sampleRate, int bufferSize) {
     Q_UNUSED(sampleRate)
     Q_UNUSED(bufferSize)
 }
-
 
 // ***************************
 // Debug output functions only
@@ -197,7 +197,9 @@ void AbletonLink::audioSafePrint() {
     qDebug() << "sessionState.timeForIsPlaying()" << sessionState.timeForIsPlaying().count();
 
     // Est. Delay (micro-seconds) between onCallbackStart() and buffer's first audio sample reaching speakers
-    qDebug() << "Est. Delay (us)" << (getHostTimeAtSpeaker(getHostTime()) - m_link.clock().micros()).count();
+    qDebug() << "Est. Delay (us)"
+             << (getHostTimeAtSpeaker(getHostTime()) - m_link.clock().micros())
+                        .count();
 }
 
 void AbletonLink::nonAudioPrint() {

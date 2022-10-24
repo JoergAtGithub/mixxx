@@ -2,19 +2,20 @@
 
 #include <ableton/Link.hpp>
 #include <ableton/link/HostTimeFilter.hpp>
-#include "engine/enginebuffer.h"
+
 #include "engine/channels/enginechannel.h"
+#include "engine/enginebuffer.h"
 #include "engine/sync/syncable.h"
 #include "engine/sync/synccontrol.h"
 
-/// This class manages a link session. 
+/// This class manages a link session.
 /// Read & update (get & set) this session for Mixxx to be a synced Link participant (bpm & phase)
 ///
 /// Ableton Link Readme (lib/ableton-link/README.md)
 /// Documentation in the header (lib/ableton-link/include/ableton/Link.hpp)
 /// Ableton provides a command line tool (LinkHut) for debugging Link programs (instructions in the Readme)
-/// 
-/// Ableton recommends getting/setting the link session from the audio thread for maximum timing accuracy. 
+///
+/// Ableton recommends getting/setting the link session from the audio thread for maximum timing accuracy.
 /// Call the appropriate, realtime-safe functions from the audio callback to do this.
 
 class AbletonLink : public QObject, public Syncable {
