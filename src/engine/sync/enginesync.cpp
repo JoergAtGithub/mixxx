@@ -20,7 +20,8 @@ constexpr mixxx::Bpm kDefaultBpm = mixxx::Bpm(124.0);
 EngineSync::EngineSync(UserSettingsPointer pConfig)
         : m_pConfig(pConfig),
           m_pInternalClock(new InternalClock(kInternalClockGroup, this)),
-          m_pAbletonLink(new AbletonLink(kAbletonLinkGroup, this)),          m_pLeaderSyncable(nullptr) {
+          m_pAbletonLink(new AbletonLink(kAbletonLinkGroup, this)),
+          m_pLeaderSyncable(nullptr) {
     qRegisterMetaType<SyncMode>("SyncMode");
     m_pInternalClock->updateLeaderBpm(kDefaultBpm);
 }
@@ -454,7 +455,6 @@ void EngineSync::requestBpmUpdate(Syncable* pSyncable, mixxx::Bpm bpm) {
     if (leaderBaseBpm.isValid()) {
         // update from current leader
         pSyncable->updateLeaderBeatDistance(beatDistance);
-        m_pAbletonLink->updateLeaderBeatDistance(beatDistance);
         pSyncable->updateLeaderBpm(leaderBpm);
     } else {
         // There is no leader, adopt this bpm as leader value
@@ -638,9 +638,6 @@ void EngineSync::updateLeaderBpm(Syncable* pSource, mixxx::Bpm bpm) {
 void EngineSync::updateLeaderInstantaneousBpm(Syncable* pSource, mixxx::Bpm bpm) {
     if (pSource != m_pInternalClock) {
         m_pInternalClock->updateInstantaneousBpm(bpm);
-    }
-    if (pSource != m_pAbletonLink) {
-        m_pAbletonLink->updateInstantaneousBpm(bpm);
     }
     foreach (Syncable* pSyncable, m_syncables) {
         if (pSyncable == pSource ||

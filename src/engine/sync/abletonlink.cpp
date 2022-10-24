@@ -15,7 +15,7 @@ const mixxx::Logger kLogger("AbletonLink");
 } // namespace
 
 AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
-        : m_link(120.), m_group(group), m_pEngineSync(pEngineSync), m_mode(SyncMode::None), m_currentLatency(0), m_hostTime(0) {
+        : m_link(120.), m_group(group), m_pEngineSync(pEngineSync), m_mode(SyncMode::None), m_currentLatency(0), m_hostTimeAtStartCallback(0), m_sampleTimeAtStartCallback(0) {
 
     m_pLinkButton = new ControlPushButton(ConfigKey(group, "sync_enabled"));
     m_pLinkButton->setButtonMode(ControlPushButton::TOGGLE);
@@ -92,7 +92,7 @@ mixxx::Bpm AbletonLink::getBpm() const {
 
 double AbletonLink::getBeatDistance() const {
     ableton::Link::SessionState sessionState = m_link.captureAudioSessionState();
-    auto beats = sessionState.beatAtTime(getHostTimeAtSpeaker(), getQuantum());
+    auto beats = sessionState.beatAtTime(getHostTimeAtSpeaker(getHostTime()), getQuantum());
     return std::fmod(beats, 1.);
 }
 
@@ -111,26 +111,29 @@ void AbletonLink::readAudioBufferMicros() {
     };
 }
 
-// Approximate the system time when the first sample in the current audio buffer will hit the speakers
-std::chrono::microseconds AbletonLink::getHostTimeAtSpeaker() const {
+std::chrono::microseconds AbletonLink::getHostTime() const {
+    return m_hostTimeAtStartCallback + m_link.clock().micros() - m_timeAtStartCallback;
+}
 
-    return m_hostTime - m_currentLatency;
-    // return m_link.clock().micros() + m_currentLatency;
+// Approximate the system time when the first sample in the current audio buffer will hit the speakers
+std::chrono::microseconds AbletonLink::getHostTimeAtSpeaker(const std::chrono::microseconds hostTime) const {
+
+    return hostTime - m_currentLatency;
 }
 
 void AbletonLink::updateLeaderBeatDistance(double beatDistance) {
     ableton::Link::SessionState sessionState = m_link.captureAudioSessionState();
-
-    auto currentBeat = sessionState.beatAtTime(getHostTimeAtSpeaker(), getQuantum());
+    auto hostTime = getHostTime();
+    auto currentBeat = sessionState.beatAtTime(getHostTimeAtSpeaker(hostTime), getQuantum());
     auto newBeat = currentBeat - std::fmod(currentBeat, 1.0) + beatDistance;
-    sessionState.requestBeatAtTime(newBeat, getHostTimeAtSpeaker(), getQuantum());
+    sessionState.requestBeatAtTime(newBeat, getHostTimeAtSpeaker(hostTime), getQuantum());
 
     m_link.commitAudioSessionState(sessionState);
 }
 
 void AbletonLink::updateLeaderBpm(mixxx::Bpm bpm) {
     ableton::Link::SessionState sessionState = m_link.captureAudioSessionState();
-    sessionState.setTempo(bpm.value(), getHostTimeAtSpeaker());
+    sessionState.setTempo(bpm.value(), getHostTimeAtSpeaker(getHostTime()));
     m_link.commitAudioSessionState(sessionState);
 }
 
@@ -149,15 +152,23 @@ void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
 }
 
 void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
-    updateHostTime(m_sampleTime);
+        
+    /// Uses ableton's HostTimeFilter class to create a smooth linear regression between absolute sample time and system time
+    m_sampleTimeAtStartCallback += std::chrono::microseconds((bufferSize * 1000000) / sampleRate);
+    m_hostTimeAtStartCallback = m_hostTimeFilter.sampleTimeToHostTime(static_cast<double>(m_sampleTimeAtStartCallback.count()));
+
+    m_timeAtStartCallback = m_link.clock().micros();    
     readAudioBufferMicros();
 
-    
-    ableton::Link::SessionState sessionState = m_link.captureAudioSessionState();
-    const mixxx::Bpm tempo(sessionState.tempo());
-    m_pEngineSync->notifyRateChanged(this, tempo);
-    m_pEngineSync->notifyBeatDistanceChanged(this, getBeatDistance());
+    if (m_link.isEnabled()) {
+        ableton::Link::SessionState sessionState = m_link.captureAudioSessionState();
+        const mixxx::Bpm tempo(sessionState.tempo());
+        m_pEngineSync->notifyRateChanged(this, tempo);
 
+        auto beats = sessionState.beatAtTime(getHostTimeAtSpeaker(m_hostTimeAtStartCallback), getQuantum());
+        auto beatDistance = std::fmod(beats, 1.);
+        m_pEngineSync->notifyBeatDistanceChanged(this, beatDistance);
+    }
 }
 
 void AbletonLink::onCallbackEnd(int sampleRate, int bufferSize) {
@@ -184,7 +195,7 @@ void AbletonLink::audioSafePrint() {
     qDebug() << "sessionState.timeForIsPlaying()" << sessionState.timeForIsPlaying().count();
 
     // Est. Delay (micro-seconds) between onCallbackStart() and buffer's first audio sample reaching speakers
-    qDebug() << "Est. Delay (us)" << (getHostTimeAtSpeaker() - m_link.clock().micros()).count();
+    qDebug() << "Est. Delay (us)" << (getHostTimeAtSpeaker(getHostTime()) - m_link.clock().micros()).count();
 }
 
 void AbletonLink::nonAudioPrint() {

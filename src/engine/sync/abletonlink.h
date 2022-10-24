@@ -96,21 +96,19 @@ class AbletonLink : public QObject, public Syncable {
     const QString m_group;
     EngineSync* m_pEngineSync;
     SyncMode m_mode;
-    long m_sampleTime;
+    std::chrono::microseconds m_sampleTimeAtStartCallback;
     std::chrono::microseconds m_currentLatency;
-    std::chrono::microseconds m_hostTime;
+    std::chrono::microseconds m_timeAtStartCallback;
+    std::chrono::microseconds m_hostTimeAtStartCallback;
 
     ControlPushButton* m_pLinkButton;
     std::unique_ptr<ControlObject> m_pNumLinkPeers;
 
     void slotControlSyncEnabled(double value);
 
-    /// Uses ableton's HostTimeFilter class to create a smooth linear regression between sample time and system time
-    void updateHostTime(size_t sampleTime) {
-        m_hostTime = m_hostTimeFilter.sampleTimeToHostTime(static_cast<double>(sampleTime));
-    }
     void readAudioBufferMicros();
-    std::chrono::microseconds getHostTimeAtSpeaker() const;
+    std::chrono::microseconds getHostTime() const;
+    std::chrono::microseconds getHostTimeAtSpeaker(std::chrono::microseconds hostTime) const;
 
     double getQuantum() const {
         return 4.0;
