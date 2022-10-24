@@ -96,10 +96,10 @@ class AbletonLink : public QObject, public Syncable {
     const QString m_group;
     EngineSync* m_pEngineSync;
     SyncMode m_mode;
-    std::chrono::microseconds m_sampleTimeAtStartCallback;
     std::chrono::microseconds m_currentLatency;
-    std::chrono::microseconds m_timeAtStartCallback;
     std::chrono::microseconds m_hostTimeAtStartCallback;
+    std::chrono::microseconds m_sampleTimeAtStartCallback;
+    std::chrono::microseconds m_timeAtStartCallback;
 
     ControlPushButton* m_pLinkButton;
     std::unique_ptr<ControlObject> m_pNumLinkPeers;

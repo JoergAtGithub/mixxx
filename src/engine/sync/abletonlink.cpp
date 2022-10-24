@@ -17,6 +17,8 @@ const mixxx::Logger kLogger("AbletonLink");
 AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
         : m_link(120.), m_group(group), m_pEngineSync(pEngineSync), m_mode(SyncMode::None), m_currentLatency(0), m_hostTimeAtStartCallback(0), m_sampleTimeAtStartCallback(0) {
 
+    m_timeAtStartCallback = m_link.clock().micros();   
+
     m_pLinkButton = new ControlPushButton(ConfigKey(group, "sync_enabled"));
     m_pLinkButton->setButtonMode(ControlPushButton::TOGGLE);
     m_pLinkButton->setStates(2);
