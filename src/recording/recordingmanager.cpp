@@ -22,7 +22,8 @@
 // one gibibyte
 #define MIN_DISK_FREE 1024 * 1024 * 1024ll
 
-RecordingManager::RecordingManager(UserSettingsPointer pConfig, EngineMaster* pEngine)
+RecordingManager::RecordingManager(
+        UserSettingsPointer pConfig, EngineMaster* pEngine)
         : m_pConfig(pConfig),
           m_recordingDir(""),
           m_recording_base_file(""),
@@ -160,9 +161,7 @@ void RecordingManager::splitContinueRecording()
     m_secondsRecordedSplit=0;
 
     QString encodingType = m_pConfig->getValueString(ConfigKey(RECORDING_PREF_KEY, "Encoding"));
-    QString fileExtension = EncoderFactory::getFactory()
-                                    .getFormatFor(encodingType)
-                                    .fileExtension;
+    QString fileExtension = EncoderFactory::getFactory().getFormatFor(encodingType).fileExtension;
 
     QString new_base_filename = m_recording_base_file + QStringLiteral("part") + QString::number(m_iNumberSplits);
     m_recordingLocation = new_base_filename + QChar('.') + fileExtension;
