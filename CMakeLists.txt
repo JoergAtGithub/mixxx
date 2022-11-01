@@ -180,7 +180,6 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 if(MSVC)
   # Ensure MSVC populates __cplusplus correctly.
-  # _HAS_DEPRECATED_RESULT_OF=1 is needed to compile AbletonLink with MSVC in C++20 mode
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
 endif()
 
@@ -1198,7 +1197,8 @@ if(MSVC)
     target_compile_options(mixxx-lib PUBLIC /W4)
   else()
     target_compile_options(mixxx-lib PUBLIC /W3)
-    target_compile_definitions(mixxx-lib PUBLIC _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING _CRT_SECURE_NO_WARNINGS)
+    # _HAS_DEPRECATED_RESULT_OF is needed to compile AbletonLink with MSVC in C++20 mode (upstream fix is expected in AbletonLink 3.0.6: https://github.com/Ableton/link/issues/119)
+    target_compile_definitions(mixxx-lib PUBLIC _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING _HAS_DEPRECATED_RESULT_OF _CRT_SECURE_NO_WARNINGS)
   endif()
 else()
   # TODO: Add -Wtrampolines, not yet supported by clazy
