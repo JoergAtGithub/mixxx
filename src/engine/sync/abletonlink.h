@@ -92,7 +92,7 @@ class AbletonLink : public QObject, public Syncable {
     }
 
   private:
-    ableton::Link m_link;
+    std::unique_ptr<ableton::Link> m_pLink;
     ableton::link::HostTimeFilter<ableton::link::platform::Clock> m_hostTimeFilter;
     const QString m_group;
     EngineSync* m_pEngineSync;

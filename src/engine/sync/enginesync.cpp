@@ -31,8 +31,8 @@ EngineSync::~EngineSync() {
     const mixxx::Bpm bpm = m_pInternalClock->getBpm();
     m_pConfig->setValue(ConfigKey(kInternalClockGroup, "bpm"),
             bpm.isValid() ? bpm.value() : mixxx::Bpm::kValueUndefined);
-    delete m_pInternalClock;
     delete m_pAbletonLink;
+    delete m_pInternalClock;
 }
 
 void EngineSync::requestSyncMode(Syncable* pSyncable, SyncMode mode) {
