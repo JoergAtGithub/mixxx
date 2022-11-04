@@ -399,8 +399,9 @@ void EngineSync::notifyScratching(Syncable* pSyncable, bool scratching) {
             // Even if we didn't change leader, if there is only one player (us), then we should
             // reinit the beat distance.
             pOnlyPlayer->notifyUniquePlaying();
-            updateLeaderBeatDistance(pOnlyPlayer, pOnlyPlayer->getBeatDistance());
-            m_pAbletonLink->updateLeaderBeatDistance(pOnlyPlayer->getBeatDistance());
+            double beatDistance = pOnlyPlayer->getBeatDistance();
+            updateLeaderBeatDistance(pOnlyPlayer, beatDistance);
+            m_pAbletonLink->updateLeaderBeatDistance(beatDistance);
         } else {
             // If the Leader isn't the only player, then it will need to sync
             // phase like followers do.
@@ -415,8 +416,9 @@ void EngineSync::notifySeek(Syncable* pSyncable, mixxx::audio::FramePos position
         // This relies on the bpmcontrol being notified about the seek before
         // the sync control, but that's ok because that's intrinsic to how the
         // controls are constructed (see the constructor of enginebuffer).
-        updateLeaderBeatDistance(pSyncable, pSyncable->getBeatDistance());
-        m_pAbletonLink->updateLeaderBeatDistance(pSyncable->getBeatDistance());
+        double beatDistance = pSyncable->getBeatDistance();
+        updateLeaderBeatDistance(pSyncable, beatDistance);
+        m_pAbletonLink->updateLeaderBeatDistance(beatDistance);
     }
 }
 
