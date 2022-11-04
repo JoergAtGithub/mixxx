@@ -21,7 +21,6 @@ AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
           m_currentLatency(0),
           m_hostTimeAtStartCallback(0),
           m_sampleTimeAtStartCallback(0) {
-
     m_pLink = std::make_unique<ableton::Link>(120.);
     m_timeAtStartCallback = m_pLink->clock().micros();
 
@@ -163,7 +162,8 @@ void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
 
 void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
     /// Uses ableton's HostTimeFilter class to create a smooth linear regression between absolute sample time and system time
-    m_sampleTimeAtStartCallback += std::chrono::microseconds((bufferSize * 1000000) / sampleRate);
+    m_sampleTimeAtStartCallback +=
+            std::chrono::microseconds((bufferSize * 1000000) / sampleRate);
     m_hostTimeAtStartCallback = m_hostTimeFilter.sampleTimeToHostTime(
             static_cast<double>(m_sampleTimeAtStartCallback.count()));
 
@@ -208,7 +208,8 @@ void AbletonLink::audioSafePrint() {
 
     // Est. Delay (micro-seconds) between onCallbackStart() and buffer's first audio sample reaching speakers
     qDebug() << "Est. Delay (us)"
-             << (getHostTimeAtSpeaker(getHostTime()) - m_pLink->clock().micros())
+             << (getHostTimeAtSpeaker(getHostTime()) -
+                        m_pLink->clock().micros())
                         .count();
 }
 
