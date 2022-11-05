@@ -420,12 +420,20 @@ void EngineSync::notifyScratching(Syncable* pSyncable, bool scratching) {
             // phase to the beat distance from Ableton Link.
 
             auto playPos = pSyncable->getChannel()->getEngineBuffer()->getVisualPlayPos();
-            auto trackEnd = pSyncable->getChannel()->getEngineBuffer()->getTrackEndPosition().value();
+            auto trackEnd = pSyncable->getChannel()
+                                    ->getEngineBuffer()
+                                    ->getTrackEndPosition()
+                                    .value();
             auto trackSampleRate = pSyncable->getChannel()->getEngineBuffer()->getTrackSampleRate();
-            auto chBeatDistance = (pSyncable->getBeatDistance() / pSyncable->getBpm().value() * 60 * trackSampleRate / trackEnd);
-            auto abletonBeatDistance = (m_pAbletonLink->getBeatDistance() / m_pAbletonLink->getBpm().value() * 60 * trackSampleRate / trackEnd);
+            auto chBeatDistance = (pSyncable->getBeatDistance() /
+                    pSyncable->getBpm().value() * 60 * trackSampleRate /
+                    trackEnd);
+            auto abletonBeatDistance = (m_pAbletonLink->getBeatDistance() /
+                    m_pAbletonLink->getBpm().value() * 60 * trackSampleRate /
+                    trackEnd);
 
-            pSyncable->getChannel()->getEngineBuffer()->slotControlSeek(playPos - chBeatDistance + abletonBeatDistance);
+            pSyncable->getChannel()->getEngineBuffer()->slotControlSeek(
+                    playPos - chBeatDistance + abletonBeatDistance);
             pSyncable->getChannel()->getEngineBuffer()->requestSyncPhase();
         } else {
             // If the Leader isn't the only player, then it will need to sync

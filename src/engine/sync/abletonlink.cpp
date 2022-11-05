@@ -88,10 +88,10 @@ bool AbletonLink::isPlaying() const {
     if (!m_pLink->isEnabled()) {
         return false;
     }
-    if (m_pLink->numPeers()<1) {
+    if (m_pLink->numPeers() < 1) {
         return false;
     }
-    
+
     ableton::Link::SessionState sessionState = m_pLink->captureAudioSessionState();
     return sessionState.isPlaying();
 }
