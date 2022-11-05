@@ -139,6 +139,7 @@ class EngineBuffer : public EngineObject {
     double getVisualPlayPos() const;
     int getAudioBufferMicros() const;
     mixxx::audio::FramePos getTrackEndPosition() const;
+    double getTrackSampleRate() const;
     void setTrackEndPosition(mixxx::audio::FramePos position);
     double getUserOffset() const;
 

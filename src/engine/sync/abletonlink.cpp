@@ -11,13 +11,14 @@
 
 namespace {
 const mixxx::Logger kLogger("AbletonLink");
-
+constexpr mixxx::Bpm kDefaultBpm(9999.9);
 } // namespace
 
 AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
         : m_group(group),
           m_pEngineSync(pEngineSync),
           m_mode(SyncMode::None),
+          m_oldTempo(kDefaultBpm),
           m_currentLatency(0),
           m_hostTimeAtStartCallback(0),
           m_sampleTimeAtStartCallback(0) {
@@ -84,13 +85,21 @@ SyncMode AbletonLink::getSyncMode() const {
 }
 
 bool AbletonLink::isPlaying() const {
-    return false;
+    if (!m_pLink->isEnabled()) {
+        return false;
+    }
+    if (m_pLink->numPeers()<1) {
+        return false;
+    }
+    
+    ableton::Link::SessionState sessionState = m_pLink->captureAudioSessionState();
+    return sessionState.isPlaying();
 }
 bool AbletonLink::isAudible() const {
     return false;
 }
 bool AbletonLink::isQuantized() const {
-    return false; //TODO: Check this
+    return true;
 }
 
 mixxx::Bpm AbletonLink::getBpm() const {
@@ -141,6 +150,17 @@ void AbletonLink::updateLeaderBeatDistance(double beatDistance) {
     m_pLink->commitAudioSessionState(sessionState);
 }
 
+void AbletonLink::forceUpdateLeaderBeatDistance(double beatDistance) {
+    ableton::Link::SessionState sessionState = m_pLink->captureAudioSessionState();
+    auto hostTime = getHostTime();
+    auto currentBeat = sessionState.beatAtTime(getHostTimeAtSpeaker(hostTime), getQuantum());
+    auto newBeat = currentBeat - std::fmod(currentBeat, 1.0) + beatDistance;
+
+    sessionState.forceBeatAtTime(newBeat, getHostTimeAtSpeaker(hostTime), getQuantum());
+
+    m_pLink->commitAudioSessionState(sessionState);
+}
+
 void AbletonLink::updateLeaderBpm(mixxx::Bpm bpm) {
     ableton::Link::SessionState sessionState = m_pLink->captureAudioSessionState();
     sessionState.setTempo(bpm.value(), getHostTimeAtSpeaker(getHostTime()));
@@ -173,7 +193,10 @@ void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
     if (m_pLink->isEnabled()) {
         ableton::Link::SessionState sessionState = m_pLink->captureAudioSessionState();
         const mixxx::Bpm tempo(sessionState.tempo());
-        m_pEngineSync->notifyRateChanged(this, tempo);
+        if (m_oldTempo != tempo) {
+            m_oldTempo = tempo;
+            m_pEngineSync->notifyRateChanged(this, tempo);
+        }
 
         auto beats = sessionState.beatAtTime(
                 getHostTimeAtSpeaker(m_hostTimeAtStartCallback), getQuantum());
@@ -215,21 +238,6 @@ void AbletonLink::audioSafePrint() {
 
 void AbletonLink::nonAudioPrint() {
     qDebug() << "isStartStopSyncEnabled()" << m_pLink->isStartStopSyncEnabled();
-}
-
-void AbletonLink::audioSafeSet() {
-    ableton::Link::SessionState sessionState = m_pLink->captureAudioSessionState();
-
-    sessionState.setTempo(120, m_pLink->clock().micros());
-    sessionState.requestBeatAtTime(beat, m_pLink->clock().micros(), getQuantum());
-    sessionState.setIsPlaying(true, m_pLink->clock().micros());
-
-    // convenience functions
-    sessionState.requestBeatAtStartPlayingTime(beat, getQuantum());
-    sessionState.setIsPlayingAndRequestBeatAtTime(
-            true, m_pLink->clock().micros(), beat, getQuantum());
-
-    m_pLink->commitAudioSessionState(sessionState);
 }
 
 void AbletonLink::initTestTimer(int ms, bool isRepeating) {

@@ -1483,6 +1483,10 @@ mixxx::audio::FramePos EngineBuffer::getTrackEndPosition() const {
     return mixxx::audio::FramePos::fromEngineSamplePosMaybeInvalid(m_pTrackSamples->get());
 }
 
+double EngineBuffer::getTrackSampleRate() const {
+    return m_pTrackSampleRate->get();
+}
+
 void EngineBuffer::setTrackEndPosition(mixxx::audio::FramePos position) {
     m_pTrackSamples->set(position.toEngineSamplePosMaybeInvalid());
 }

@@ -66,6 +66,9 @@ class AbletonLink : public QObject, public Syncable {
     /// SyncableListener::notifyBeatDistanceChanged or signal loops could occur.
     void updateLeaderBeatDistance(double beatDistance) override;
 
+    /// Enforces the immediate change of the beat distance of all Link peers
+    void forceUpdateLeaderBeatDistance(double beatDistance);
+
     /// Must never result in a call to SyncableListener::notifyBpmChanged or
     /// signal loops could occur.
     void updateLeaderBpm(mixxx::Bpm bpm) override;
@@ -97,6 +100,9 @@ class AbletonLink : public QObject, public Syncable {
     const QString m_group;
     EngineSync* m_pEngineSync;
     SyncMode m_mode;
+
+    mixxx::Bpm m_oldTempo;
+
     std::chrono::microseconds m_currentLatency;
     std::chrono::microseconds m_hostTimeAtStartCallback;
     std::chrono::microseconds m_sampleTimeAtStartCallback;
@@ -112,7 +118,8 @@ class AbletonLink : public QObject, public Syncable {
     std::chrono::microseconds getHostTimeAtSpeaker(std::chrono::microseconds hostTime) const;
 
     double getQuantum() const {
-        return 4.0;
+        // Mixxx doesn't know about bars/time-signatures yet - phase syncronisation can't be implemented therefore yet
+        return 1.0;
     }
 
     // -----------     Test/DEBUG stuff below     ----------------
@@ -125,9 +132,6 @@ class AbletonLink : public QObject, public Syncable {
 
     /// Link getters to call from non-audio thread.
     void nonAudioPrint();
-
-    /// Link setters to call from audio thread.
-    void audioSafeSet();
 
     void initTestTimer(int ms, bool isRepeating);
 };
