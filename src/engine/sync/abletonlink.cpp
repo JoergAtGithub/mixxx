@@ -181,7 +181,7 @@ void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
 }
 
 void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
-    /// Uses ableton's HostTimeFilter class to create a smooth linear regression between absolute sample time and system time
+    /// Uses Ableton's HostTimeFilter class to create a smooth linear regression between absolute sample time and system time
     m_sampleTimeAtStartCallback +=
             std::chrono::microseconds((bufferSize * 1000000) / sampleRate);
     m_hostTimeAtStartCallback = m_hostTimeFilter.sampleTimeToHostTime(
