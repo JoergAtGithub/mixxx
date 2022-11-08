@@ -481,6 +481,18 @@ void SoundDeviceNetwork::updateCallbackEntryToDacTime() {
     m_targetTime += m_audioBufferTime.toIntegerMicros();
     double callbackEntrytoDacSecs = (m_targetTime - currentTime) / 1000000.0;
     callbackEntrytoDacSecs = math_max(callbackEntrytoDacSecs, 0.0001);
+
+
+      /// Absolute time at callback start
+    m_timeAtAudioCallbackStart = ableton::link::platform::Clock().micros();
+
+    m_accumulatedSampleDuration +=
+            std::chrono::microseconds((m_framesPerBuffer * 1000000) / static_cast<int>(m_dSampleRate));
+
+    m_filteredOutputBufferDacTime = m_hostTimeFilter.sampleTimeToHostTime(
+            static_cast<double>(m_accumulatedSampleDuration.count()) + callbackEntrytoDacSecs * 1000000);
+
+
     VisualPlayPosition::setCallbackEntryToDacSecs(callbackEntrytoDacSecs, m_clkRefTimer);
     //qDebug() << callbackEntrytoDacSecs << timeSinceLastCbSecs;
 }
