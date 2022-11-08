@@ -17,7 +17,9 @@ SoundDevice::SoundDevice(UserSettingsPointer config, SoundManager* sm)
           m_iNumInputChannels(2),
           m_dSampleRate(44100.0),
           m_hostAPI("Unknown API"),
-          m_framesPerBuffer(0) {
+          m_framesPerBuffer(0),
+          m_timeAtAudioCallbackStart(0),
+          m_accumulatedSampleDuration(0) {
 }
 
 int SoundDevice::getNumInputChannels() const {

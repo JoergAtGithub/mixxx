@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 #include <QList>
 #include <QString>
 
@@ -55,8 +57,13 @@ class SoundDevice {
     void clearInputs();
     bool operator==(const SoundDevice &other) const;
     bool operator==(const QString &other) const;
+    
+    std::chrono::microseconds m_timeAtAudioCallbackStart;
+    std::chrono::microseconds m_accumulatedSampleDuration;
+    std::chrono::microseconds m_filteredOutputBufferDacTime;
 
-  protected:
+
+    protected:
     void composeOutputBuffer(CSAMPLE* outputBuffer,
                              const SINT iFramesPerBuffer,
                              const SINT readOffset,
