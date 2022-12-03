@@ -32,7 +32,7 @@ class VSyncThread : public QThread {
     void setVSyncType(int mode);
     int droppedFrames();
     void setSwapWait(int sw);
-    int fromTimerToNextSyncMicros(const PerformanceTimer& timer);
+    int fromTimerToNextSyncMicros(const std::chrono::microseconds filteredOutputBufferDacTime);
     void vsyncSlotFinished();
     void getAvailableVSyncTypes(QList<QPair<int, QString>>* list);
     void setupSync(WGLWidget* glw, int index);

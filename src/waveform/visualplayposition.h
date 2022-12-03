@@ -1,11 +1,14 @@
 #pragma once
 
+#include <chrono>
+
 #include <QTime>
 #include <QMap>
 #include <QAtomicPointer>
 
 #include "util/performancetimer.h"
 #include "control/controlvalue.h"
+
 
 class ControlProxy;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -30,8 +33,8 @@ class VSyncThread;
 
 class VisualPlayPositionData {
   public:
-    PerformanceTimer m_referenceTime;
-    int m_callbackEntrytoDac; // Time from Audio Callback Entry to first sample of Buffer is transferred to DAC
+    // Time of first sample of Buffer is transferred to DAC
+    std::chrono::microseconds m_filteredOutputBufferDacTime;
     double m_enginePlayPos; // Play position of fist Sample in Buffer
     double m_rate;
     double m_positionStep;
@@ -60,7 +63,7 @@ class VisualPlayPosition : public QObject {
     static QSharedPointer<VisualPlayPosition> getVisualPlayPosition(const QString& group);
 
     // This is called by SoundDevicePortAudio just after the callback starts.
-    static void setCallbackEntryToDacSecs(double secs, const PerformanceTimer& time);
+    static void setCallbackEntryToDacSecs(std::chrono::microseconds filteredOutputBufferDacTime);
 
     void setInvalid() { m_valid = false; };
     bool isValid() const {
@@ -78,8 +81,7 @@ class VisualPlayPosition : public QObject {
     QString m_key;
 
     static QMap<QString, QWeakPointer<VisualPlayPosition>> m_listVisualPlayPosition;
-    // Time info from the Sound device, updated just after audio callback is called
-    static double m_dCallbackEntryToDacSecs;
-    // Time stamp for m_timeInfo in main CPU time
-    static PerformanceTimer m_timeInfoTime;
+
+    // Time of first sample of Buffer is transferred to DAC
+    static std::chrono::microseconds m_filteredOutputBufferDacTime;
 };

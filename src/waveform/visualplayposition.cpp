@@ -9,7 +9,7 @@
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include "waveform/vsyncthread.h"
 #endif
-
+#pragma optimize("", off)
 namespace {
 // The offset is limited to two callback intervals.
 // This should be sufficient to compensate jitter,
@@ -21,8 +21,7 @@ constexpr int kMicrosPerMillis = 1000; // 1 ms contains 1000 µs
 
 //static
 QMap<QString, QWeakPointer<VisualPlayPosition>> VisualPlayPosition::m_listVisualPlayPosition;
-PerformanceTimer VisualPlayPosition::m_timeInfoTime;
-double VisualPlayPosition::m_dCallbackEntryToDacSecs = 0;
+std::chrono::microseconds VisualPlayPosition::m_filteredOutputBufferDacTime(0);
 
 VisualPlayPosition::VisualPlayPosition(const QString& key)
         : m_valid(false),
@@ -40,8 +39,7 @@ VisualPlayPosition::~VisualPlayPosition() {
 void VisualPlayPosition::set(double playPos, double rate, double positionStep,
         double slipPosition, double tempoTrackSeconds) {
     VisualPlayPositionData data;
-    data.m_referenceTime = m_timeInfoTime;
-    data.m_callbackEntrytoDac = static_cast<int>(m_dCallbackEntryToDacSecs * 1000000); // s to µs
+    data.m_filteredOutputBufferDacTime = m_filteredOutputBufferDacTime;
     data.m_enginePlayPos = playPos;
     data.m_rate = rate;
     data.m_positionStep = positionStep;
@@ -64,9 +62,9 @@ double VisualPlayPosition::getAtNextVSync(VSyncThread* vSyncThread) {
         Q_UNUSED(vSyncThread);
         int refToVSync = 0;
 #else
-        int refToVSync = vSyncThread->fromTimerToNextSyncMicros(data.m_referenceTime);
+        int refToVSync = vSyncThread->fromTimerToNextSyncMicros(data.m_filteredOutputBufferDacTime);
 #endif
-        int offset = refToVSync - data.m_callbackEntrytoDac;
+        int offset = refToVSync;
         offset = math_min(offset, m_audioBufferMicros * kMaxOffsetBufferCnt);
         double playPos = data.m_enginePlayPos;  // load playPos for the first sample in Buffer
         // add the offset for the position of the sample that will be transferred to the DAC
@@ -89,9 +87,9 @@ void VisualPlayPosition::getPlaySlipAtNextVSync(VSyncThread* vSyncThread, double
         Q_UNUSED(vSyncThread);
         int refToVSync = 0;
 #else
-        int refToVSync = vSyncThread->fromTimerToNextSyncMicros(data.m_referenceTime);
+        int refToVSync = vSyncThread->fromTimerToNextSyncMicros(data.m_filteredOutputBufferDacTime);
 #endif
-        int offset = refToVSync - data.m_callbackEntrytoDac;
+        int offset = refToVSync;
         offset = math_min(offset, m_audioBufferMicros * kMaxOffsetBufferCnt);
         double playPos = data.m_enginePlayPos;  // load playPos for the first sample in Buffer
         playPos += data.m_positionStep * offset * data.m_rate / m_audioBufferMicros;
@@ -135,9 +133,6 @@ QSharedPointer<VisualPlayPosition> VisualPlayPosition::getVisualPlayPosition(con
 }
 
 //static
-void VisualPlayPosition::setCallbackEntryToDacSecs(double secs, const PerformanceTimer& time) {
-    // the time is valid only just NOW, so measure the time from NOW for
-    // later correction
-    m_timeInfoTime = time;
-    m_dCallbackEntryToDacSecs = secs;
+void VisualPlayPosition::setCallbackEntryToDacSecs(std::chrono::microseconds filteredOutputBufferDacTime) {
+    m_filteredOutputBufferDacTime = filteredOutputBufferDacTime;
 }

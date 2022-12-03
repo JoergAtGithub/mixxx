@@ -9,6 +9,41 @@
 #include "util/performancetimer.h"
 #include "waveform/guitick.h"
 
+#include <chrono>
+#include <cstdint>
+#pragma optimize("", off)
+struct Clock {
+    using Ticks = std::int64_t;
+    using Micros = std::chrono::microseconds;
+
+    Clock() {
+        LARGE_INTEGER frequency;
+        QueryPerformanceFrequency(&frequency);
+        mTicksToMicros = 1.0e6 / static_cast<double>(frequency.QuadPart);
+    }
+
+    Micros ticksToMicros(const Ticks ticks) const {
+        return Micros{llround(mTicksToMicros * static_cast<double>(ticks))};
+    }
+
+    Ticks microsToTicks(const Micros micros) const {
+        return static_cast<Ticks>(static_cast<double>(micros.count()) / mTicksToMicros);
+    }
+
+    Ticks ticks() const {
+        LARGE_INTEGER count;
+        QueryPerformanceCounter(&count);
+        return count.QuadPart;
+    }
+
+    std::chrono::microseconds micros() const {
+        return ticksToMicros(ticks());
+    }
+
+    double mTicksToMicros;
+};
+
+
 VSyncThread::VSyncThread(QObject* pParent)
         : QThread(pParent),
           m_bDoRendering(true),
@@ -117,8 +152,8 @@ int VSyncThread::toNextSyncMicros() {
     return rest;
 }
 
-int VSyncThread::fromTimerToNextSyncMicros(const PerformanceTimer& timer) {
-    int difference = static_cast<int>(m_timer.difference(timer).toIntegerMicros());
+int VSyncThread::fromTimerToNextSyncMicros(const std::chrono::microseconds filteredOutputBufferDacTime) {
+    int difference = (filteredOutputBufferDacTime - Clock().micros()).count();
     // int math is fine here, because we do not expect times > 4.2 s
     return difference + m_waitToSwapMicros;
 }

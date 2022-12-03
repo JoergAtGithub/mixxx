@@ -91,7 +91,8 @@ SoundDevicePortAudio::SoundDevicePortAudio(UserSettingsPointer config,
           m_framesSinceAudioLatencyUsageUpdate(0),
           m_syncBuffers(2),
           m_invalidTimeInfoCount(0),
-          m_lastCallbackEntrytoDacSecs(0) {
+          m_lastCallbackEntrytoDacSecs(0)
+   {
     // Setting parent class members:
     m_hostAPI = Pa_GetHostApiInfo(deviceInfo->hostApi)->name;
     m_dSampleRate = deviceInfo->defaultSampleRate;
@@ -987,7 +988,7 @@ int SoundDevicePortAudio::callbackProcessClkRef(
 void SoundDevicePortAudio::updateCallbackEntryToDacTime(
         const PaStreamCallbackTimeInfo* timeInfo) {
     double timeSinceLastCbSecs = m_clkRefTimer.restart().toDoubleSeconds();
-
+    
     // Plausibility check:
     // We have the DAC timing as reference with almost no jitter
     // (else the sound would be distorted)
@@ -1015,7 +1016,6 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
     PaTime callbackEntrytoDacSecs = timeInfo->outputBufferDacTime
             - timeInfo->currentTime;
     double bufferSizeSec = m_framesPerBuffer / m_dSampleRate;
-
 
     double diff = (timeSinceLastCbSecs + callbackEntrytoDacSecs) -
             (m_lastCallbackEntrytoDacSecs + bufferSizeSec);
@@ -1049,7 +1049,18 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
         callbackEntrytoDacSecs = math_clamp(callbackEntrytoDacSecs, 0.0, bufferSizeSec * 2);
     }
 
-    VisualPlayPosition::setCallbackEntryToDacSecs(callbackEntrytoDacSecs, m_clkRefTimer);
+
+    /// Absolute time at callback start
+    m_timeAtAudioCallbackStart = ableton::link::platform::Clock().micros();
+
+    m_accumulatedSampleDuration +=
+            std::chrono::microseconds((m_framesPerBuffer * 1000000) / static_cast<int>(m_dSampleRate));
+
+    m_filteredOutputBufferDacTime = m_hostTimeFilter.sampleTimeToHostTime(
+            static_cast<double>(m_accumulatedSampleDuration.count()) + callbackEntrytoDacSecs * 1000000);
+
+
+    VisualPlayPosition::setCallbackEntryToDacSecs(m_filteredOutputBufferDacTime);
     m_lastCallbackEntrytoDacSecs = callbackEntrytoDacSecs;
 
     //qDebug() << callbackEntrytoDacSecs << timeSinceLastCbSecs;
