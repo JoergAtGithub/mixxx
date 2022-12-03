@@ -1232,7 +1232,8 @@ if(MSVC)
     target_compile_options(mixxx-lib PUBLIC /W4)
   else()
     target_compile_options(mixxx-lib PUBLIC /W3)
-    target_compile_definitions(mixxx-lib PUBLIC _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING _CRT_SECURE_NO_WARNINGS)
+    # _HAS_DEPRECATED_RESULT_OF is needed to compile AbletonLink with MSVC in C++20 mode (upstream fix is expected in AbletonLink 3.0.6: https://github.com/Ableton/link/issues/119)
+    target_compile_definitions(mixxx-lib PUBLIC _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING _HAS_DEPRECATED_RESULT_OF _CRT_SECURE_NO_WARNINGS)
   endif()
 else()
   # TODO: Add -Wtrampolines, not yet supported by clazy
@@ -1943,6 +1944,24 @@ if(WIN32)
   )
   target_include_directories(mixxx PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
+
+# ASIO (included in Ableton Link) requires atomic on clang to link `std::__atomic_base<unsigned int>::is_lock_free() const'
+include(CheckAtomic)
+if(HAVE_CXX_ATOMICS_WITH_LIB OR HAVE_CXX_ATOMICS64_WITH_LIB)
+  message(STATUS "Linking libatomic is needed for atomic support on this platform")
+  target_link_libraries(mixxx-lib PUBLIC atomic)
+endif()
+
+# Ableton Link
+find_package(AbletonLink NAMES AbletonLink ableton ableton-link ableton-link-dev)
+
+if (AbletonLink_FOUND)
+  message(STATUS "Found Ableton Link")
+  target_link_libraries(mixxx-lib PRIVATE Ableton::Link)
+else()
+  message(FATAL_ERROR "Ableton Link not found!")
+endif()
+
 
 # Chromaprint
 find_package(Chromaprint REQUIRED)

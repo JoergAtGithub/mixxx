@@ -63,7 +63,7 @@ class VisualPlayPosition : public QObject {
     static QSharedPointer<VisualPlayPosition> getVisualPlayPosition(const QString& group);
 
     // This is called by SoundDevicePortAudio just after the callback starts.
-    static void setCallbackEntryToDacSecs(std::chrono::microseconds filteredOutputBufferDacTime);
+    static void setCallbackEntryTimeAtDac(std::chrono::microseconds filteredOutputBufferDacTime);
 
     void setInvalid() { m_valid = false; };
     bool isValid() const {

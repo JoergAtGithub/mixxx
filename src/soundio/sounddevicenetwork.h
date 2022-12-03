@@ -1,5 +1,8 @@
 #pragma once
 
+#include <ableton/Link.hpp>
+#include <ableton/link/HostTimeFilter.hpp>
+
 #include <QString>
 #include <QSharedPointer>
 #include <QThread>
@@ -68,6 +71,8 @@ class SoundDeviceNetwork : public SoundDevice {
     bool m_denormals;
     qint64 m_targetTime;
     PerformanceTimer m_clkRefTimer;
+    
+    ableton::link::HostTimeFilter<ableton::link::platform::Clock> m_hostTimeFilter;
 };
 
 class SoundDeviceNetworkThread : public QThread {

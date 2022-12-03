@@ -4,6 +4,8 @@
 #include <QTime>
 #include <QtDebug>
 
+
+#include <ableton/Link.hpp>
 #include "moc_vsyncthread.cpp"
 #include "util/math.h"
 #include "util/performancetimer.h"

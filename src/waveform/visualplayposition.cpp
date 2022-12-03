@@ -133,6 +133,6 @@ QSharedPointer<VisualPlayPosition> VisualPlayPosition::getVisualPlayPosition(con
 }
 
 //static
-void VisualPlayPosition::setCallbackEntryToDacSecs(std::chrono::microseconds filteredOutputBufferDacTime) {
+void VisualPlayPosition::setCallbackEntryTimeAtDac(std::chrono::microseconds filteredOutputBufferDacTime) {
     m_filteredOutputBufferDacTime = filteredOutputBufferDacTime;
 }

@@ -493,7 +493,7 @@ void SoundDeviceNetwork::updateCallbackEntryToDacTime() {
             static_cast<double>(m_accumulatedSampleDuration.count()) + callbackEntrytoDacSecs * 1000000);
 
 
-    VisualPlayPosition::setCallbackEntryToDacSecs(m_filteredOutputBufferDacTime);
+    VisualPlayPosition::setCallbackEntryTimeAtDac(m_filteredOutputBufferDacTime);
     //qDebug() << callbackEntrytoDacSecs << timeSinceLastCbSecs;
 }
 
