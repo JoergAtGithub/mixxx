@@ -465,7 +465,7 @@ void SoundDeviceNetwork::callbackProcessClkRef() {
     {
         ScopedTimer t("SoundDevicePortAudio::callbackProcess prepare %1",
                 m_deviceId.name);
-        m_pSoundManager->onDeviceOutputCallback(m_framesPerBuffer);
+        m_pSoundManager->onDeviceOutputCallback(m_framesPerBuffer, m_filteredOutputBufferDacTime);
     }
 
     m_pSoundManager->writeProcess();

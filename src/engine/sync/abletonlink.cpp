@@ -137,7 +137,7 @@ std::chrono::microseconds AbletonLink::getHostTime() const {
 // Approximate the system time when the first sample in the current audio buffer will hit the speakers
 std::chrono::microseconds AbletonLink::getHostTimeAtSpeaker(
         const std::chrono::microseconds hostTime) const {
-    return hostTime - m_currentLatency;
+    return hostTime - m_currentLatency + std::chrono::microseconds(11700);
 }
 
 void AbletonLink::updateLeaderBeatDistance(double beatDistance) {
@@ -180,15 +180,19 @@ void AbletonLink::reinitLeaderParams(double beatDistance, mixxx::Bpm baseBpm, mi
 void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
 }
 
-void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
+void AbletonLink::onCallbackStart(int sampleRate,
+        int bufferSize,
+        std::chrono::microseconds filteredOutputBufferDacTime) {
     /// Uses Ableton's HostTimeFilter class to create a smooth linear regression between absolute sample time and system time
-    m_sampleTimeAtStartCallback +=
-            std::chrono::microseconds((bufferSize * 1000000) / sampleRate);
-    m_hostTimeAtStartCallback = m_hostTimeFilter.sampleTimeToHostTime(
-            static_cast<double>(m_sampleTimeAtStartCallback.count()));
+    /* m_sampleTimeAtStartCallback +=
+            std::chrono::microseconds((bufferSize * 1000000) / sampleRate);*/
+    m_hostTimeAtStartCallback =
+            filteredOutputBufferDacTime; /* m_hostTimeFilter.sampleTimeToHostTime(
+static_cast<double>(m_sampleTimeAtStartCallback.count()));*/
 
     m_timeAtStartCallback = m_pLink->clock().micros();
     readAudioBufferMicros();
+    // m_currentLatency += std::chrono::microseconds(11700);
 
     if (m_pLink->isEnabled()) {
         ableton::Link::SessionState sessionState = m_pLink->captureAudioSessionState();

@@ -83,7 +83,7 @@ TEST_F(EngineMasterTest, SingleChannelOutputWorks) {
             .Times(1)
             .WillOnce(Return());
 
-    m_pEngineMaster->process(MAX_BUFFER_LEN);
+    m_pEngineMaster->process(MAX_BUFFER_LEN, std::chrono::microseconds(0));
 
     // Check that the master output contains the channel data.
     assertMasterBufferMatchesGolden(testName);
@@ -123,7 +123,7 @@ TEST_F(EngineMasterTest, SingleChannelPFLOutputWorks) {
             .Times(1)
             .WillOnce(Return());
 
-    m_pEngineMaster->process(MAX_BUFFER_LEN);
+    m_pEngineMaster->process(MAX_BUFFER_LEN, std::chrono::microseconds(0));
 
     // Check that the master output is empty.
     assertMasterBufferMatchesGolden(testName);
@@ -186,7 +186,7 @@ TEST_F(EngineMasterTest, TwoChannelOutputWorks) {
             .Times(1)
             .WillOnce(Return());
 
-    m_pEngineMaster->process(MAX_BUFFER_LEN);
+    m_pEngineMaster->process(MAX_BUFFER_LEN, std::chrono::microseconds(0));
 
     // Check that the master output contains the sum of the channel data.
     assertMasterBufferMatchesGolden(testName);
@@ -249,7 +249,7 @@ TEST_F(EngineMasterTest, TwoChannelPFLOutputWorks) {
             .Times(1)
             .WillOnce(Return());
 
-    m_pEngineMaster->process(MAX_BUFFER_LEN);
+    m_pEngineMaster->process(MAX_BUFFER_LEN, std::chrono::microseconds(0));
 
     // Check that the master output contains the sum of the channel data.
     assertMasterBufferMatchesGolden(testName);
@@ -334,7 +334,7 @@ TEST_F(EngineMasterTest, ThreeChannelOutputWorks) {
             .Times(1)
             .WillOnce(Return());
 
-    m_pEngineMaster->process(MAX_BUFFER_LEN);
+    m_pEngineMaster->process(MAX_BUFFER_LEN, std::chrono::microseconds(0));
 
     // Check that the master output contains the sum of the channel data.
     assertMasterBufferMatchesGolden(testName);
@@ -419,7 +419,7 @@ TEST_F(EngineMasterTest, ThreeChannelPFLOutputWorks) {
             .Times(1)
             .WillOnce(Return());
 
-    m_pEngineMaster->process(MAX_BUFFER_LEN);
+    m_pEngineMaster->process(MAX_BUFFER_LEN, std::chrono::microseconds(0));
 
     // Check that the master output contains the sum of the channel data.
     assertMasterBufferMatchesGolden(testName);

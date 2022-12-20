@@ -960,7 +960,7 @@ int SoundDevicePortAudio::callbackProcessClkRef(
     {
         ScopedTimer t("SoundDevicePortAudio::callbackProcess prepare %1",
                 m_deviceId.debugName());
-        m_pSoundManager->onDeviceOutputCallback(framesPerBuffer);
+        m_pSoundManager->onDeviceOutputCallback(framesPerBuffer, m_filteredOutputBufferDacTime);
     }
 
     if (out) {
@@ -1015,6 +1015,18 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
 
     PaTime callbackEntrytoDacSecs = timeInfo->outputBufferDacTime
             - timeInfo->currentTime;
+
+    /// Absolute time at callback start
+    m_timeAtAudioCallbackStart = ableton::link::platform::Clock().micros();
+
+    m_accumulatedSampleDuration += std::chrono::microseconds(
+            (m_framesPerBuffer * 1000000) / static_cast<int>(m_dSampleRate));
+
+    /* m_filteredOutputBufferDacTime = m_hostTimeFilter.sampleTimeToHostTime(
+            static_cast<double>(m_accumulatedSampleDuration.count()) +
+       callbackEntrytoDacSecs * 1000000);*/
+    m_filteredOutputBufferDacTime = m_hostTimeFilter.sampleTimeToHostTime(timeInfo->currentTime);
+
     double bufferSizeSec = m_framesPerBuffer / m_dSampleRate;
 
     double diff = (timeSinceLastCbSecs + callbackEntrytoDacSecs) -
@@ -1048,16 +1060,6 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
         // clamp values to avoid a big offset due to clock drift.
         callbackEntrytoDacSecs = math_clamp(callbackEntrytoDacSecs, 0.0, bufferSizeSec * 2);
     }
-
-
-    /// Absolute time at callback start
-    m_timeAtAudioCallbackStart = ableton::link::platform::Clock().micros();
-
-    m_accumulatedSampleDuration +=
-            std::chrono::microseconds((m_framesPerBuffer * 1000000) / static_cast<int>(m_dSampleRate));
-
-    m_filteredOutputBufferDacTime = m_hostTimeFilter.sampleTimeToHostTime(
-            static_cast<double>(m_accumulatedSampleDuration.count()) + callbackEntrytoDacSecs * 1000000);
 
 
     VisualPlayPosition::setCallbackEntryToDacSecs(callbackEntrytoDacSecs, m_clkRefTimer);

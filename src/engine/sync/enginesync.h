@@ -60,7 +60,9 @@ class EngineSync : public SyncableListener {
 
     void addSyncableDeck(Syncable* pSyncable);
     EngineChannel* getLeaderChannel() const;
-    void onCallbackStart(mixxx::audio::SampleRate sampleRate, int bufferSize);
+    void onCallbackStart(mixxx::audio::SampleRate sampleRate,
+            int bufferSize,
+            std::chrono::microseconds filteredOutputBufferDacTime);
     void onCallbackEnd(mixxx::audio::SampleRate sampleRate, int bufferSize);
 
   private:

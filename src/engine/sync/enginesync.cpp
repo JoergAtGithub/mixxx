@@ -601,9 +601,11 @@ void EngineSync::addSyncableDeck(Syncable* pSyncable) {
     m_syncables.append(pSyncable);
 }
 
-void EngineSync::onCallbackStart(mixxx::audio::SampleRate sampleRate, int bufferSize) {
+void EngineSync::onCallbackStart(mixxx::audio::SampleRate sampleRate,
+        int bufferSize,
+        std::chrono::microseconds filteredOutputBufferDacTime) {
     m_pInternalClock->onCallbackStart(sampleRate, bufferSize);
-    m_pAbletonLink->onCallbackStart(sampleRate, bufferSize);
+    m_pAbletonLink->onCallbackStart(sampleRate, bufferSize, filteredOutputBufferDacTime);
 }
 
 void EngineSync::onCallbackEnd(mixxx::audio::SampleRate sampleRate, int bufferSize) {

@@ -126,7 +126,7 @@ TEST_F(PlayerManagerTest, UnEjectTest) {
     deck1->slotLoadTrack(pTrack1, false);
     ASSERT_NE(nullptr, deck1->getLoadedTrack());
 
-    m_pEngine->process(1024);
+    m_pEngine->process(1024, std::chrono::microseconds(0));
     while (!deck1->getEngineDeck()->getEngineBuffer()->isTrackLoaded()) {
         QTest::qSleep(100); // millis
     }
@@ -157,7 +157,7 @@ TEST_F(PlayerManagerTest, UnEjectReplaceTrackTest) {
     deck1->slotLoadTrack(pTrack1, false);
     ASSERT_NE(nullptr, deck1->getLoadedTrack());
 
-    m_pEngine->process(1024);
+    m_pEngine->process(1024, std::chrono::microseconds(0));
     while (!deck1->getEngineDeck()->getEngineBuffer()->isTrackLoaded()) {
         QTest::qSleep(100); // millis
     }
@@ -166,7 +166,7 @@ TEST_F(PlayerManagerTest, UnEjectReplaceTrackTest) {
     TrackPointer pTrack2 = getOrAddTrackByLocation(getTestDir().filePath(kTrackLocationTest2));
     ASSERT_NE(nullptr, pTrack2);
     deck1->slotLoadTrack(pTrack2, false);
-    m_pEngine->process(1024);
+    m_pEngine->process(1024, std::chrono::microseconds(0));
     while (!deck1->getEngineDeck()->getEngineBuffer()->isTrackLoaded()) {
         QTest::qSleep(100); // millis
     }
