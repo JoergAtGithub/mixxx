@@ -2,6 +2,7 @@
 
 #include <QList>
 #include <QString>
+#include <chrono>
 
 #include "preferences/usersettings.h"
 #include "soundio/sounddevicestatus.h"
@@ -56,6 +57,8 @@ class SoundDevice {
     bool operator==(const SoundDevice &other) const;
     bool operator==(const QString &other) const;
 
+    std::chrono::microseconds m_absTimeWhenPrevOutputBufferReachsDac;
+
   protected:
     void composeOutputBuffer(CSAMPLE* outputBuffer,
                              const SINT iFramesPerBuffer,
@@ -82,6 +85,8 @@ class SoundDevice {
     int m_iNumInputChannels;
     // The current samplerate for the sound device.
     double m_dSampleRate;
+    // The output latency reported by portaudio streaminfo
+    double m_outputLatencyMillis;
     // The name of the audio API used by this device.
     QString m_hostAPI;
     SINT m_framesPerBuffer;

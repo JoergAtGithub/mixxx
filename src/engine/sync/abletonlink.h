@@ -9,14 +9,17 @@
 #include "engine/sync/synccontrol.h"
 
 /// This class manages a link session.
-/// Read & update (get & set) this session for Mixxx to be a synced Link participant (bpm & phase)
+/// Read & update (get & set) this session for Mixxx to be a synced Link
+/// participant (bpm & phase)
 ///
 /// Ableton Link Readme (lib/ableton-link/README.md)
 /// Documentation in the header (lib/ableton-link/include/ableton/Link.hpp)
-/// Ableton provides a command line tool (LinkHut) for debugging Link programs (instructions in the Readme)
+/// Ableton provides a command line tool (LinkHut) for debugging Link programs
+/// (instructions in the Readme)
 ///
-/// Ableton recommends getting/setting the link session from the audio thread for maximum timing accuracy.
-/// Call the appropriate, realtime-safe functions from the audio callback to do this.
+/// Ableton recommends getting/setting the link session from the audio thread
+/// for maximum timing accuracy. Call the appropriate, realtime-safe functions
+/// from the audio callback to do this.
 
 class AbletonLink : public QObject, public Syncable {
     Q_OBJECT
@@ -85,7 +88,9 @@ class AbletonLink : public QObject, public Syncable {
     /// occur.
     void updateInstantaneousBpm(mixxx::Bpm bpm) override;
 
-    void onCallbackStart(int sampleRate, int bufferSize);
+    void onCallbackStart(int sampleRate,
+            int bufferSize,
+            std::chrono::microseconds absTimeWhenPrevOutputBufferReachsDac);
     void onCallbackEnd(int sampleRate, int bufferSize);
 
   private slots:
@@ -117,7 +122,8 @@ class AbletonLink : public QObject, public Syncable {
     std::chrono::microseconds getHostTimeAtSpeaker(std::chrono::microseconds hostTime) const;
 
     double getQuantum() const {
-        // Mixxx doesn't know about bars/time-signatures yet - phase syncronisation can't be implemented therefore yet
+        // Mixxx doesn't know about bars/time-signatures yet - phase
+        // syncronisation can't be implemented therefore yet
         return 1.0;
     }
 

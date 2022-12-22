@@ -101,6 +101,8 @@ SoundDeviceStatus SoundDeviceNetwork::open(bool isClkRefDevice, int syncBuffers)
         m_pThread->start(QThread::TimeCriticalPriority);
     }
 
+    m_hostTimeFilter.reset();
+
     return SoundDeviceStatus::Ok;
 }
 
@@ -465,7 +467,8 @@ void SoundDeviceNetwork::callbackProcessClkRef() {
     {
         ScopedTimer t("SoundDevicePortAudio::callbackProcess prepare %1",
                 m_deviceId.name);
-        m_pSoundManager->onDeviceOutputCallback(m_framesPerBuffer);
+        m_pSoundManager->onDeviceOutputCallback(
+                m_framesPerBuffer, m_absTimeWhenPrevOutputBufferReachsDac);
     }
 
     m_pSoundManager->writeProcess();
@@ -481,6 +484,13 @@ void SoundDeviceNetwork::updateCallbackEntryToDacTime() {
     m_targetTime += m_audioBufferTime.toIntegerMicros();
     double callbackEntrytoDacSecs = (m_targetTime - currentTime) / 1000000.0;
     callbackEntrytoDacSecs = math_max(callbackEntrytoDacSecs, 0.0001);
+
+    // Use Ableton's HostTimeFilter class to create a smooth linear regression
+    // between absolute network time and absolute host time
+    m_absTimeWhenPrevOutputBufferReachsDac = m_hostTimeFilter.sampleTimeToHostTime(
+                                                     static_cast<double>(currentTime)) +
+            std::chrono::microseconds(static_cast<long long>(callbackEntrytoDacSecs * 1000000));
+
     VisualPlayPosition::setCallbackEntryToDacSecs(callbackEntrytoDacSecs, m_clkRefTimer);
     //qDebug() << callbackEntrytoDacSecs << timeSinceLastCbSecs;
 }

@@ -119,13 +119,14 @@ mixxx::Bpm AbletonLink::getBaseBpm() const {
 }
 
 std::chrono::microseconds AbletonLink::getHostTime() const {
-    return m_hostTimeAtStartCallback + m_pLink->clock().micros() - m_timeAtStartCallback;
+    return m_hostTimeAtStartCallback;
 }
 
-// Approximate the system time when the first sample in the current audio buffer will hit the speakers
+// Approximate the system time when the first sample in the current audio buffer
+// will hit the speakers
 std::chrono::microseconds AbletonLink::getHostTimeAtSpeaker(
         const std::chrono::microseconds hostTime) const {
-    return hostTime - m_audioBufferTimeMicros;
+    return hostTime + m_audioBufferTimeMicros;
 }
 
 void AbletonLink::updateLeaderBeatDistance(double beatDistance) {
@@ -156,7 +157,7 @@ void AbletonLink::updateLeaderBpm(mixxx::Bpm bpm) {
 }
 
 void AbletonLink::notifyLeaderParamSource() {
-    //TODO: Not implemented yet
+    // TODO: Not implemented yet
 }
 
 void AbletonLink::reinitLeaderParams(double beatDistance, mixxx::Bpm baseBpm, mixxx::Bpm bpm) {
@@ -168,14 +169,20 @@ void AbletonLink::reinitLeaderParams(double beatDistance, mixxx::Bpm baseBpm, mi
 void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
 }
 
-void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
-    /// Uses Ableton's HostTimeFilter class to create a smooth linear regression between absolute sample time and system time
-    m_sampleTimeAtStartCallback +=
-            std::chrono::microseconds((bufferSize * 1000000) / sampleRate);
-    m_hostTimeAtStartCallback = m_hostTimeFilter.sampleTimeToHostTime(
-            static_cast<double>(m_sampleTimeAtStartCallback.count()));
-
+void AbletonLink::onCallbackStart(int sampleRate,
+        int bufferSize,
+        std::chrono::microseconds absTimeWhenPrevOutputBufferReachsDac) {
     m_timeAtStartCallback = m_pLink->clock().micros();
+
+    auto latency = absTimeWhenPrevOutputBufferReachsDac - m_timeAtStartCallback;
+    qDebug() << "#####################:" << absTimeWhenPrevOutputBufferReachsDac.count()
+             << " ##################AbletonLatency " << latency.count()
+             << " Delta : "
+             << m_hostTimeAtStartCallback.count() -
+                    absTimeWhenPrevOutputBufferReachsDac.count();
+
+    m_hostTimeAtStartCallback =
+            absTimeWhenPrevOutputBufferReachsDac;
     m_audioBufferTimeMicros = std::chrono::microseconds((bufferSize / 2 * 1000000) / sampleRate);
 
     if (m_pLink->isEnabled()) {
@@ -187,7 +194,7 @@ void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
         }
 
         auto beats = sessionState.beatAtTime(
-                getHostTimeAtSpeaker(m_hostTimeAtStartCallback), getQuantum());
+                getHostTimeAtSpeaker(absTimeWhenPrevOutputBufferReachsDac), getQuantum());
         auto beatDistance = std::fmod(beats, 1.);
         m_pEngineSync->notifyBeatDistanceChanged(this, beatDistance);
     }
@@ -214,7 +221,8 @@ void AbletonLink::audioThreadDebugOutput() {
     qDebug() << "sessionState.isPlaying()" << sessionState.isPlaying();
     qDebug() << "sessionState.timeForIsPlaying()" << sessionState.timeForIsPlaying().count();
 
-    // Est. Delay (micro-seconds) between onCallbackStart() and buffer's first audio sample reaching speakers
+    // Est. Delay (micro-seconds) between onCallbackStart() and buffer's first
+    // audio sample reaching speakers
     qDebug() << "Est. Delay (us)"
              << (getHostTimeAtSpeaker(getHostTime()) -
                         m_pLink->clock().micros())

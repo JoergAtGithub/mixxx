@@ -242,7 +242,7 @@ class BaseSignalPathTest : public MixxxTest, SoundSourceProviderRegistration {
 
     void ProcessBuffer() {
         qDebug() << "------- Process Buffer -------";
-        m_pEngineMaster->process(kProcessBufferSize);
+        m_pEngineMaster->process(kProcessBufferSize, std::chrono::microseconds(0));
     }
 
     ChannelHandleFactoryPointer m_pChannelHandleFactory;

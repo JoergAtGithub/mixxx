@@ -3,6 +3,8 @@
 #include <portaudio.h>
 
 #include <QString>
+#include <ableton/Link.hpp>
+#include <ableton/link/HostTimeFilter.hpp>
 
 #include "control/pollingcontrolproxy.h"
 #include "soundio/sounddevice.h"
@@ -80,4 +82,6 @@ class SoundDevicePortAudio : public SoundDevice {
     int m_invalidTimeInfoCount;
     PerformanceTimer m_clkRefTimer;
     PaTime m_lastCallbackEntrytoDacSecs;
+
+    ableton::link::HostTimeFilter<ableton::link::platform::Clock> m_hostTimeFilter;
 };
