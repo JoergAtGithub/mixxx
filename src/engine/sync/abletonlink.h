@@ -113,7 +113,7 @@ class AbletonLink : public QObject, public Syncable {
     std::chrono::microseconds m_sampleTimeAtStartCallback;
     std::chrono::microseconds m_timeAtStartCallback;
 
-    ControlPushButton* m_pLinkButton;
+    std::unique_ptr<ControlPushButton> m_pLinkButton;
     std::unique_ptr<ControlObject> m_pNumLinkPeers;
 
     void slotControlSyncEnabled(double value);

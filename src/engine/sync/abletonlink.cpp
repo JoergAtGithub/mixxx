@@ -25,11 +25,11 @@ AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
     m_pLink = std::make_unique<ableton::Link>(120.);
     m_timeAtStartCallback = m_pLink->clock().micros();
 
-    m_pLinkButton = new ControlPushButton(ConfigKey(group, "sync_enabled"));
+    m_pLinkButton = std::make_unique<ControlPushButton>(ConfigKey(group, "sync_enabled"));
     m_pLinkButton->setButtonMode(ControlPushButton::TOGGLE);
     m_pLinkButton->setStates(2);
 
-    connect(m_pLinkButton,
+    connect(m_pLinkButton.get(),
             &ControlObject::valueChanged,
             this,
             &AbletonLink::slotControlSyncEnabled,
@@ -56,7 +56,6 @@ AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
 
 AbletonLink::~AbletonLink() {
     m_pLink.reset();
-    delete m_pLinkButton;
 }
 
 void AbletonLink::slotControlSyncEnabled(double value) {
