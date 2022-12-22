@@ -210,10 +210,7 @@ void AbletonLink::onCallbackEnd(int sampleRate, int bufferSize) {
     Q_UNUSED(bufferSize)
 }
 
-// ***************************
-// Debug output functions only
-// ***************************
-
+// Debug output function, to be called in audio thread
 void AbletonLink::audioSafePrint() {
     qDebug() << "isEnabled()" << m_pLink->isEnabled();
     qDebug() << "numPeers()" << m_pLink->numPeers();
@@ -236,6 +233,7 @@ void AbletonLink::audioSafePrint() {
                         .count();
 }
 
+// Debug output function, which must not be called in audio thread
 void AbletonLink::nonAudioPrint() {
     qDebug() << "isStartStopSyncEnabled()" << m_pLink->isStartStopSyncEnabled();
 }

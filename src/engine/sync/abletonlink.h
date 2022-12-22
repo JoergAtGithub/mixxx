@@ -122,12 +122,12 @@ class AbletonLink : public QObject, public Syncable {
         return 1.0;
     }
 
-    // -----------     Test/DEBUG stuff below     ----------------
+    // Test/Debug code
 
     QTimer* m_pTestTimer;
     const double beat = 0.0;
 
-    // Link getters to call from audio thread.
+    /// Link getters to call from audio thread.
     void audioSafePrint();
 
     /// Link getters to call from non-audio thread.
