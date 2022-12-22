@@ -103,7 +103,7 @@ class AbletonLink : public QObject, public Syncable {
 
     mixxx::Bpm m_oldTempo;
 
-    std::chrono::microseconds m_currentLatency;
+    std::chrono::microseconds m_audioBufferTimeMicros;
     std::chrono::microseconds m_hostTimeAtStartCallback;
     std::chrono::microseconds m_sampleTimeAtStartCallback;
     std::chrono::microseconds m_timeAtStartCallback;
@@ -113,7 +113,6 @@ class AbletonLink : public QObject, public Syncable {
 
     void slotControlSyncEnabled(double value);
 
-    void readAudioBufferMicros();
     std::chrono::microseconds getHostTime() const;
     std::chrono::microseconds getHostTimeAtSpeaker(std::chrono::microseconds hostTime) const;
 

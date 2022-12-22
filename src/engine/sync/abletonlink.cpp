@@ -19,7 +19,7 @@ AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
           m_pEngineSync(pEngineSync),
           m_mode(SyncMode::None),
           m_oldTempo(kDefaultBpm),
-          m_currentLatency(0),
+          m_audioBufferTimeMicros(0),
           m_hostTimeAtStartCallback(0),
           m_sampleTimeAtStartCallback(0) {
     m_pLink = std::make_unique<ableton::Link>(120.);
@@ -118,18 +118,6 @@ mixxx::Bpm AbletonLink::getBaseBpm() const {
     return tempo;
 }
 
-void AbletonLink::readAudioBufferMicros() {
-    if ((m_pEngineSync != nullptr) &&
-            (m_pEngineSync->getLeaderChannel() != nullptr) &&
-            (m_pEngineSync->getLeaderChannel()->getEngineBuffer() != nullptr)) {
-        // Only set a new buffer size if we can determine it, otherwise we assume that it's not changed
-        m_currentLatency =
-                std::chrono::microseconds(m_pEngineSync->getLeaderChannel()
-                                                  ->getEngineBuffer()
-                                                  ->getAudioBufferMicros());
-    };
-}
-
 std::chrono::microseconds AbletonLink::getHostTime() const {
     return m_hostTimeAtStartCallback + m_pLink->clock().micros() - m_timeAtStartCallback;
 }
@@ -137,7 +125,7 @@ std::chrono::microseconds AbletonLink::getHostTime() const {
 // Approximate the system time when the first sample in the current audio buffer will hit the speakers
 std::chrono::microseconds AbletonLink::getHostTimeAtSpeaker(
         const std::chrono::microseconds hostTime) const {
-    return hostTime - m_currentLatency;
+    return hostTime - m_audioBufferTimeMicros;
 }
 
 void AbletonLink::updateLeaderBeatDistance(double beatDistance) {
@@ -188,7 +176,7 @@ void AbletonLink::onCallbackStart(int sampleRate, int bufferSize) {
             static_cast<double>(m_sampleTimeAtStartCallback.count()));
 
     m_timeAtStartCallback = m_pLink->clock().micros();
-    readAudioBufferMicros();
+    m_audioBufferTimeMicros = std::chrono::microseconds((bufferSize / 2 * 1000000) / sampleRate);
 
     if (m_pLink->isEnabled()) {
         ableton::Link::SessionState sessionState = m_pLink->captureAudioSessionState();
