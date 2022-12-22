@@ -131,13 +131,17 @@ void AbletonLink::readAudioBufferMicros() {
 }
 
 std::chrono::microseconds AbletonLink::getHostTime() const {
-    return m_hostTimeAtStartCallback + m_pLink->clock().micros() - m_timeAtStartCallback;
+    return m_hostTimeAtStartCallback; // + m_pLink->clock().micros() - m_timeAtStartCallback;
 }
 
 // Approximate the system time when the first sample in the current audio buffer will hit the speakers
 std::chrono::microseconds AbletonLink::getHostTimeAtSpeaker(
         const std::chrono::microseconds hostTime) const {
-    return hostTime - m_currentLatency + std::chrono::microseconds(11700);
+    // return hostTime - m_currentLatency + std::chrono::microseconds(11700);
+
+    return hostTime +
+            m_currentLatency; //    - std::chrono::microseconds(20000) -
+                              //    std::chrono::microseconds(11700);
 }
 
 void AbletonLink::updateLeaderBeatDistance(double beatDistance) {
@@ -186,11 +190,20 @@ void AbletonLink::onCallbackStart(int sampleRate,
     /// Uses Ableton's HostTimeFilter class to create a smooth linear regression between absolute sample time and system time
     /* m_sampleTimeAtStartCallback +=
             std::chrono::microseconds((bufferSize * 1000000) / sampleRate);*/
-    m_hostTimeAtStartCallback =
-            filteredOutputBufferDacTime; /* m_hostTimeFilter.sampleTimeToHostTime(
-static_cast<double>(m_sampleTimeAtStartCallback.count()));*/
+
+    /* m_hostTimeFilter.sampleTimeToHostTime(static_cast<double>(m_sampleTimeAtStartCallback.count()));*/
 
     m_timeAtStartCallback = m_pLink->clock().micros();
+
+    auto latency = filteredOutputBufferDacTime - m_timeAtStartCallback;
+    qDebug() << "#####################:" << filteredOutputBufferDacTime.count()
+             << " ##################AbletonLatency " << latency.count()
+             << " Delta : "
+             << m_hostTimeAtStartCallback.count() -
+                    filteredOutputBufferDacTime.count();
+
+    m_hostTimeAtStartCallback =
+            filteredOutputBufferDacTime;
     readAudioBufferMicros();
     // m_currentLatency += std::chrono::microseconds(11700);
 

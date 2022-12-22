@@ -19,6 +19,7 @@
 #include "util/trace.h"
 #include "vinylcontrol/defs_vinylcontrol.h"
 #include "waveform/visualplayposition.h"
+#pragma optimize("", off)
 
 #ifdef PA_USE_ALSA
 // for PaAlsa_EnableRealtimeScheduling
@@ -356,20 +357,23 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
     // Get the actual details of the stream & update Mixxx's data
     const PaStreamInfo* streamDetails = Pa_GetStreamInfo(pStream);
     m_dSampleRate = streamDetails->sampleRate;
-    double currentLatencyMSec = streamDetails->outputLatency * 1000;
+    m_outputLatencyMillis = streamDetails->outputLatency * 1000;
     qDebug() << "   Actual sample rate: " << m_dSampleRate << "Hz, latency:"
-             << currentLatencyMSec << "ms";
+             << m_outputLatencyMillis << "ms";
 
     if (isClkRefDevice) {
         // Update the samplerate and latency ControlObjects, which allow the
         // waveform view to properly correct for the latency.
-        ControlObject::set(ConfigKey("[Master]", "latency"), currentLatencyMSec);
+        ControlObject::set(ConfigKey("[Master]", "latency"), m_outputLatencyMillis);
         ControlObject::set(ConfigKey("[Master]", "samplerate"), m_dSampleRate);
         ControlObject::set(ConfigKey("[Master]", "audio_buffer_size"), bufferMSec);
         m_invalidTimeInfoCount = 0;
         m_clkRefTimer.start();
+
+        m_hostTimeFilter.reset();
     }
     m_pStream = pStream;
+
     return SoundDeviceStatus::Ok;
 }
 
@@ -960,7 +964,8 @@ int SoundDevicePortAudio::callbackProcessClkRef(
     {
         ScopedTimer t("SoundDevicePortAudio::callbackProcess prepare %1",
                 m_deviceId.debugName());
-        m_pSoundManager->onDeviceOutputCallback(framesPerBuffer, m_filteredOutputBufferDacTime);
+        m_pSoundManager->onDeviceOutputCallback(
+                framesPerBuffer, m_absTimeWhenPrevOutputBufferReachsDac);
     }
 
     if (out) {
@@ -1016,18 +1021,22 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
     PaTime callbackEntrytoDacSecs = timeInfo->outputBufferDacTime
             - timeInfo->currentTime;
 
-    /// Absolute time at callback start
-    m_timeAtAudioCallbackStart = ableton::link::platform::Clock().micros();
-
-    m_accumulatedSampleDuration += std::chrono::microseconds(
-            (m_framesPerBuffer * 1000000) / static_cast<int>(m_dSampleRate));
-
-    /* m_filteredOutputBufferDacTime = m_hostTimeFilter.sampleTimeToHostTime(
-            static_cast<double>(m_accumulatedSampleDuration.count()) +
-       callbackEntrytoDacSecs * 1000000);*/
-    m_filteredOutputBufferDacTime = m_hostTimeFilter.sampleTimeToHostTime(timeInfo->currentTime);
-
     double bufferSizeSec = m_framesPerBuffer / m_dSampleRate;
+
+    // Absolute time reference for Ableton Link
+    PaTime soundCardTimeNow = Pa_GetStreamTime(m_pStream);
+    m_absTimeWhenPrevOutputBufferReachsDac =
+            m_hostTimeFilter.sampleTimeToHostTime(soundCardTimeNow);
+
+    if (callbackEntrytoDacSecs > 0.001 && callbackEntrytoDacSecs < bufferSizeSec * 2) {
+        m_absTimeWhenPrevOutputBufferReachsDac +=
+                std::chrono::microseconds(static_cast<long long>(
+                        (timeInfo->outputBufferDacTime - soundCardTimeNow) *
+                        1000000));
+    } else {
+        m_absTimeWhenPrevOutputBufferReachsDac += std::chrono::microseconds(
+                static_cast<long long>(m_outputLatencyMillis * 1000));
+    }
 
     double diff = (timeSinceLastCbSecs + callbackEntrytoDacSecs) -
             (m_lastCallbackEntrytoDacSecs + bufferSizeSec);
@@ -1054,13 +1063,11 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
                            << "diff:" << diff;
             }
         }
-
         callbackEntrytoDacSecs = (m_lastCallbackEntrytoDacSecs + bufferSizeSec)
                 - timeSinceLastCbSecs;
         // clamp values to avoid a big offset due to clock drift.
         callbackEntrytoDacSecs = math_clamp(callbackEntrytoDacSecs, 0.0, bufferSizeSec * 2);
     }
-
 
     VisualPlayPosition::setCallbackEntryToDacSecs(callbackEntrytoDacSecs, m_clkRefTimer);
     m_lastCallbackEntrytoDacSecs = callbackEntrytoDacSecs;

@@ -16,7 +16,7 @@
 #include "util/timer.h"
 #include "util/trace.h"
 #include "waveform/visualplayposition.h"
-
+#pragma optimize("", off)
 namespace {
 constexpr int kNetworkLatencyFrames = 8192; // 185 ms @ 44100 Hz
 // Related chunk sizes:
@@ -100,6 +100,8 @@ SoundDeviceStatus SoundDeviceNetwork::open(bool isClkRefDevice, int syncBuffers)
         m_pThread = std::make_unique<SoundDeviceNetworkThread>(this);
         m_pThread->start(QThread::TimeCriticalPriority);
     }
+
+    m_hostTimeFilter.reset();
 
     return SoundDeviceStatus::Ok;
 }
@@ -465,7 +467,8 @@ void SoundDeviceNetwork::callbackProcessClkRef() {
     {
         ScopedTimer t("SoundDevicePortAudio::callbackProcess prepare %1",
                 m_deviceId.name);
-        m_pSoundManager->onDeviceOutputCallback(m_framesPerBuffer, m_filteredOutputBufferDacTime);
+        m_pSoundManager->onDeviceOutputCallback(
+                m_framesPerBuffer, m_absTimeWhenPrevOutputBufferReachsDac);
     }
 
     m_pSoundManager->writeProcess();
@@ -482,16 +485,9 @@ void SoundDeviceNetwork::updateCallbackEntryToDacTime() {
     double callbackEntrytoDacSecs = (m_targetTime - currentTime) / 1000000.0;
     callbackEntrytoDacSecs = math_max(callbackEntrytoDacSecs, 0.0001);
 
-
-      /// Absolute time at callback start
-    m_timeAtAudioCallbackStart = ableton::link::platform::Clock().micros();
-
-    m_accumulatedSampleDuration +=
-            std::chrono::microseconds((m_framesPerBuffer * 1000000) / static_cast<int>(m_dSampleRate));
-
-    m_filteredOutputBufferDacTime = m_hostTimeFilter.sampleTimeToHostTime(
-            static_cast<double>(m_accumulatedSampleDuration.count()) + callbackEntrytoDacSecs * 1000000);
-
+    m_absTimeWhenPrevOutputBufferReachsDac = m_hostTimeFilter.sampleTimeToHostTime(
+                                                     static_cast<double>(currentTime)) +
+            std::chrono::microseconds(static_cast<long long>(callbackEntrytoDacSecs * 1000000));
 
     VisualPlayPosition::setCallbackEntryToDacSecs(callbackEntrytoDacSecs, m_clkRefTimer);
     //qDebug() << callbackEntrytoDacSecs << timeSinceLastCbSecs;

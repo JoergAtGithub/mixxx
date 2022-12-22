@@ -83,6 +83,6 @@ class SoundDevicePortAudio : public SoundDevice {
     int m_invalidTimeInfoCount;
     PerformanceTimer m_clkRefTimer;
     PaTime m_lastCallbackEntrytoDacSecs;
-       
+
     ableton::link::HostTimeFilter<ableton::link::platform::Clock> m_hostTimeFilter;
 };

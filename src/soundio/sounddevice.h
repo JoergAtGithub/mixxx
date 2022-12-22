@@ -57,13 +57,10 @@ class SoundDevice {
     void clearInputs();
     bool operator==(const SoundDevice &other) const;
     bool operator==(const QString &other) const;
-    
-    std::chrono::microseconds m_timeAtAudioCallbackStart;
-    std::chrono::microseconds m_accumulatedSampleDuration;
-    std::chrono::microseconds m_filteredOutputBufferDacTime;
 
+    std::chrono::microseconds m_absTimeWhenPrevOutputBufferReachsDac;
 
-    protected:
+  protected:
     void composeOutputBuffer(CSAMPLE* outputBuffer,
                              const SINT iFramesPerBuffer,
                              const SINT readOffset,
@@ -89,6 +86,8 @@ class SoundDevice {
     int m_iNumInputChannels;
     // The current samplerate for the sound device.
     double m_dSampleRate;
+    // The output latency reported by portaudio
+    double m_outputLatencyMillis;
     // The name of the audio API used by this device.
     QString m_hostAPI;
     SINT m_framesPerBuffer;
