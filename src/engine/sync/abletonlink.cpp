@@ -48,8 +48,8 @@ AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
     m_pLink->enable(false);
     m_pLink->enableStartStopSync(false);
 
-    nonAudioPrint();
-    audioSafePrint();
+    nonAudioThreadDebugOutput();
+    audioThreadDebugOutput();
 
     initTestTimer(1000, true);
 }
@@ -211,7 +211,7 @@ void AbletonLink::onCallbackEnd(int sampleRate, int bufferSize) {
 }
 
 // Debug output function, to be called in audio thread
-void AbletonLink::audioSafePrint() {
+void AbletonLink::audioThreadDebugOutput() {
     qDebug() << "isEnabled()" << m_pLink->isEnabled();
     qDebug() << "numPeers()" << m_pLink->numPeers();
 
@@ -234,7 +234,7 @@ void AbletonLink::audioSafePrint() {
 }
 
 // Debug output function, which must not be called in audio thread
-void AbletonLink::nonAudioPrint() {
+void AbletonLink::nonAudioThreadDebugOutput() {
     qDebug() << "isStartStopSyncEnabled()" << m_pLink->isStartStopSyncEnabled();
 }
 

@@ -90,8 +90,8 @@ class AbletonLink : public QObject, public Syncable {
 
   private slots:
     void testPrint() {
-        nonAudioPrint();
-        audioSafePrint();
+        nonAudioThreadDebugOutput();
+        audioThreadDebugOutput();
     }
 
   private:
@@ -128,10 +128,10 @@ class AbletonLink : public QObject, public Syncable {
     const double beat = 0.0;
 
     /// Link getters to call from audio thread.
-    void audioSafePrint();
+    void audioThreadDebugOutput();
 
     /// Link getters to call from non-audio thread.
-    void nonAudioPrint();
+    void nonAudioThreadDebugOutput();
 
     void initTestTimer(int ms, bool isRepeating);
 };
