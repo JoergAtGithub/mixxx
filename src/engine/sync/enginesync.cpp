@@ -522,7 +522,8 @@ void EngineSync::notifyBeatDistanceChanged(Syncable* pSyncable, double beatDista
         kLogger.trace() << "EngineSync::notifyBeatDistanceChanged"
                         << pSyncable->getGroup() << beatDistance;
     }
-    if (pSyncable != m_pInternalClock) {
+
+    if (pSyncable != m_pInternalClock && pSyncable != m_pAbletonLink) {
         if (getUniquePlayingSyncedDeck() == pSyncable) {
             updateLeaderBeatDistance(pSyncable, beatDistance);
         }
