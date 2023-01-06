@@ -94,7 +94,9 @@ SoundDevicePortAudio::SoundDevicePortAudio(UserSettingsPointer config,
           m_framesSinceAudioLatencyUsageUpdate(0),
           m_syncBuffers(2),
           m_invalidTimeInfoCount(0),
-          m_lastCallbackEntrytoDacSecs(0) {
+          m_lastCallbackEntrytoDacSecs(0),
+          m_cummulatedBufferTime(0),
+          m_meanOutputLatency(MovingInterquartileMean(501)) {
     // Setting parent class members:
     m_hostAPI = Pa_GetHostApiInfo(deviceInfo->hostApi)->name;
     m_dSampleRate = deviceInfo->defaultSampleRate;
@@ -372,6 +374,7 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
         m_clkRefTimer.start();
 
         m_hostTimeFilter.reset();
+        m_meanOutputLatency.clear();
     }
     m_pStream = pStream;
     return SoundDeviceStatus::Ok;
@@ -1022,24 +1025,40 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
             - timeInfo->currentTime;
     double bufferSizeSec = m_framesPerBuffer / m_dSampleRate;
 
+    auto hostTimeNow = ableton::link::platform::Clock().micros();
     // Use Ableton's HostTimeFilter class to create a smooth linear regression
     // between absolute sound card time and absolute host time
     PaTime soundCardTimeNow = Pa_GetStreamTime(
             m_pStream); // There is a delay & jitter to timeInfo->currentTime
-    m_absTimeWhenPrevOutputBufferReachsDac =
-            m_hostTimeFilter.sampleTimeToHostTime(soundCardTimeNow);
+
+    m_cummulatedBufferTime += bufferSizeSec;
+    auto filteredHostTimeNow =
+            m_hostTimeFilter.sampleTimeToHostTime(m_cummulatedBufferTime);
+
+    qWarning() << "Pa_GetStreamTime: "
+               << static_cast<long long>(soundCardTimeNow * 1000000)
+               << "timeInfo->currentTime: "
+               << static_cast<long long>(timeInfo->currentTime * 1000000)
+               << "timeInfo->outputBufferDacTime: "
+               << static_cast<long long>(
+                          timeInfo->outputBufferDacTime * 1000000)
+               << "m_absTimeWhenPrevOutputBufferReachsDac: "
+               << m_absTimeWhenPrevOutputBufferReachsDac.count();
 
     // Only use latency from PortAudios timeInfo, if it's in reasonable range,
     // otherwise use latency value from PortAudios streamInfo
     if (callbackEntrytoDacSecs > kMinReasonableAudioLatencySecs &&
-            callbackEntrytoDacSecs < bufferSizeSec * 2) {
-        m_absTimeWhenPrevOutputBufferReachsDac +=
+            timeSinceLastCbSecs < bufferSizeSec * 2) {
+        m_meanOutputLatency.insert(timeInfo->outputBufferDacTime - soundCardTimeNow);
+
+        m_absTimeWhenPrevOutputBufferReachsDac = filteredHostTimeNow +
                 std::chrono::microseconds(static_cast<long long>(
-                        (timeInfo->outputBufferDacTime - soundCardTimeNow) *
-                        1000000));
+                        m_meanOutputLatency.mean() * 1000000));
+        auto hostTimeNow2 = ableton::link::platform::Clock().micros();
     } else {
-        m_absTimeWhenPrevOutputBufferReachsDac += std::chrono::microseconds(
-                static_cast<long long>(m_outputLatencyMillis * 1000));
+        m_absTimeWhenPrevOutputBufferReachsDac = filteredHostTimeNow +
+                std::chrono::microseconds(
+                        static_cast<long long>(m_outputLatencyMillis * 1000));
     }
 
     double diff = (timeSinceLastCbSecs + callbackEntrytoDacSecs) -

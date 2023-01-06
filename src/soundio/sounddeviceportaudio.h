@@ -9,6 +9,7 @@
 #include "control/pollingcontrolproxy.h"
 #include "soundio/sounddevice.h"
 #include "util/duration.h"
+#include "util/movinginterquartilemean.h"
 #include "util/performancetimer.h"
 
 class SoundManager;
@@ -84,4 +85,6 @@ class SoundDevicePortAudio : public SoundDevice {
     PaTime m_lastCallbackEntrytoDacSecs;
 
     ableton::link::HostTimeFilter<ableton::link::platform::Clock> m_hostTimeFilter;
+    double m_cummulatedBufferTime;
+    MovingInterquartileMean m_meanOutputLatency;
 };

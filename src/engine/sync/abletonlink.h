@@ -109,7 +109,8 @@ class AbletonLink : public QObject, public Syncable {
     mixxx::Bpm m_oldTempo;
 
     std::chrono::microseconds m_audioBufferTimeMicros;
-    std::chrono::microseconds m_hostTimeAtStartCallback;
+    std::chrono::microseconds m_absTimeWhenPrevOutputBufferReachsDac;
+    std::chrono::microseconds m_absTimeWhenNextOutputBufferReachsDac;
     std::chrono::microseconds m_sampleTimeAtStartCallback;
     std::chrono::microseconds m_timeAtStartCallback;
 
