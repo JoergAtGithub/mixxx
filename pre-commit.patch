@@ -1,0 +1,15 @@
+diff --git a/src/track/taglib/trackmetadata_file.cpp b/src/track/taglib/trackmetadata_file.cpp
+index ac3f6a4c16..2fc365ba97 100644
+--- a/src/track/taglib/trackmetadata_file.cpp
++++ b/src/track/taglib/trackmetadata_file.cpp
+@@ -115,7 +115,9 @@ bool readAudioPropertiesFromFile(
+         TrackMetadata* pTrackMetadata,
+         const TagLib::File& file) {
+     if (!file.isValid()) {
+-        kLogger.warning() << "Cannot read audio properties from inaccessible/unreadable/invalid file:" << file.name().wstr();
++        kLogger.warning() << "Cannot read audio properties from "
++                             "inaccessible/unreadable/invalid file:"
++                          << file.name().wstr();
+         return false;
+     }
+     if (!pTrackMetadata) {

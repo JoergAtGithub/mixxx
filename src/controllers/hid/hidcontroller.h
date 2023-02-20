@@ -70,33 +70,37 @@ class HidControllerJSProxy : public ControllerJSProxy {
     /// @brief Sends HID OutputReport to HID device
     /// @param dataList Data to send as list of bytes
     /// @param length Unused but mandatory argument
-    /// @param reportID 1...255 for HID devices that uses ReportIDs - or 0 for devices, which don't use ReportIDs
-    /// @param resendUnchangedReport If set, the report will also be send, if the data are unchanged since last sending
+    /// @param reportID 1...255 for HID devices that uses ReportIDs - or 0 for
+    /// devices, which don't use ReportIDs
+    /// @param useNonSkippingQueue If set, the report will also be send, if the
+    /// data are unchanged since last sending or if newer data are in the queue
     Q_INVOKABLE void send(const QList<int>& dataList,
             unsigned int length,
             quint8 reportID,
-            bool resendUnchangedReport = false) {
+            bool useNonSkippingQueue = false) {
         Q_UNUSED(length);
         QByteArray dataArray;
         dataArray.reserve(dataList.size());
         for (int datum : dataList) {
             dataArray.append(datum);
         }
-        sendOutputReport(reportID, dataArray, resendUnchangedReport);
+        sendOutputReport(reportID, dataArray, useNonSkippingQueue);
     }
 
     /// @brief Sends an OutputReport to HID device
-    /// @param reportID 1...255 for HID devices that uses ReportIDs - or 0 for devices, which don't use ReportIDs
+    /// @param reportID 1...255 for HID devices that uses ReportIDs - or 0 for
+    /// devices, which don't use ReportIDs
     /// @param dataArray Data to send as byte array (Javascript type Uint8Array)
-    /// @param resendUnchangedReport If set, the report will also be send, if the data are unchanged since last sending
+    /// @param useNonSkippingQueue If set, the report will also be send, if the
+    /// data are unchanged since last sending or if newer data are in the queue
     Q_INVOKABLE void sendOutputReport(quint8 reportID,
             const QByteArray& dataArray,
-            bool resendUnchangedReport = false) {
+            bool useNonSkippingQueue = false) {
         VERIFY_OR_DEBUG_ASSERT(m_pHidController->m_pHidIoThread) {
             return;
         }
         m_pHidController->m_pHidIoThread->updateCachedOutputReportData(
-                reportID, dataArray, resendUnchangedReport);
+                reportID, dataArray, useNonSkippingQueue);
     }
 
     /// @brief getInputReport receives an InputReport from the HID device on request.
