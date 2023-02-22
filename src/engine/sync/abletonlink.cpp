@@ -163,7 +163,7 @@ void AbletonLink::onCallbackStart(int sampleRate,
         std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac) {
     m_timeAtStartCallback = m_pLink->clock().micros();
 
-    auto latency = absTimeWhenPrevOutputBufferReachesDac - m_timeAtStartCallback;
+    // auto latency = absTimeWhenPrevOutputBufferReachesDac - m_timeAtStartCallback;
     /* qDebug() << "#####################:" << absTimeWhenPrevOutputBufferReachesDac.count()
              << " ##################AbletonLatency " << latency.count()
              << " Delta : "
