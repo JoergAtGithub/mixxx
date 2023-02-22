@@ -1035,7 +1035,6 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
             - timeInfo->currentTime;
     double bufferSizeSec = framesPerBuffer / m_dSampleRate;
 
-    auto hostTimeNow = ableton::link::platform::Clock().micros();
     // Use Ableton's HostTimeFilter class to create a smooth linear regression
     // between absolute sound card time and absolute host time
     PaTime soundCardTimeNow = Pa_GetStreamTime(
@@ -1064,7 +1063,6 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
         m_absTimeWhenPrevOutputBufferReachsDac = filteredHostTimeNow +
                 std::chrono::microseconds(static_cast<long long>(
                         m_meanOutputLatency.mean() * 1000000));
-        auto hostTimeNow2 = ableton::link::platform::Clock().micros();
     } else {
         m_absTimeWhenPrevOutputBufferReachsDac = filteredHostTimeNow +
                 std::chrono::microseconds(
