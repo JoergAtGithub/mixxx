@@ -5,6 +5,7 @@
 #include <QString>
 #include <ableton/Link.hpp>
 #include <ableton/link/HostTimeFilter.hpp>
+#include <memory>
 
 #include "control/pollingcontrolproxy.h"
 #include "soundio/sounddevice.h"
@@ -27,8 +28,8 @@ class SoundDevicePortAudio : public SoundDevice {
     SoundDeviceStatus open(bool isClkRefDevice, int syncBuffers) override;
     bool isOpen() const override;
     SoundDeviceStatus close() override;
-    void readProcess() override;
-    void writeProcess() override;
+    void readProcess(SINT framesPerBuffer) override;
+    void writeProcess(SINT framesPerBuffer) override;
     QString getError() const override;
 
     // This callback function gets called every time the sound device runs out of
@@ -54,7 +55,8 @@ class SoundDevicePortAudio : public SoundDevice {
     }
 
   private:
-    void updateCallbackEntryToDacTime(const PaStreamCallbackTimeInfo* timeInfo);
+    void updateCallbackEntryToDacTime(
+            SINT framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo);
     void updateAudioLatencyUsage(const SINT framesPerBuffer);
 
     // PortAudio stream for this device.
@@ -67,8 +69,8 @@ class SoundDevicePortAudio : public SoundDevice {
     PaStreamParameters m_outputParams;
     // Description of the input stream coming from the soundcard.
     PaStreamParameters m_inputParams;
-    FIFO<CSAMPLE>* m_outputFifo;
-    FIFO<CSAMPLE>* m_inputFifo;
+    std::unique_ptr<FIFO<CSAMPLE>> m_outputFifo;
+    std::unique_ptr<FIFO<CSAMPLE>> m_inputFifo;
     bool m_outputDrift;
     bool m_inputDrift;
 

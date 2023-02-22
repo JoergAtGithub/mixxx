@@ -87,9 +87,8 @@ class SoundManager : public QObject {
     void pushInputBuffers(const QList<AudioInputBuffer>& inputs,
                           const SINT iFramesPerBuffer);
 
-
-    void writeProcess() const;
-    void readProcess() const;
+    void writeProcess(SINT framesPerBuffer) const;
+    void readProcess(SINT framesPerBuffer) const;
 
     void registerOutput(const AudioOutput& output, AudioSource* src);
     void registerInput(const AudioInput& input, AudioDestination* dest);
@@ -109,7 +108,7 @@ class SoundManager : public QObject {
         }
     }
 
-    void processUnderflowHappened();
+    void processUnderflowHappened(SINT framesPerBuffer);
 
   signals:
     void devicesUpdated(); // emitted when pointers to SoundDevices go stale
@@ -128,6 +127,9 @@ class SoundManager : public QObject {
     void closeDevices(bool sleepAfterClosing);
 
     void setJACKName() const;
+    bool jackApiUsed() const {
+        return m_config.getAPI() == MIXXX_PORTAUDIO_JACK_STRING;
+    }
 
     EngineMaster *m_pMaster;
     UserSettingsPointer m_pConfig;
