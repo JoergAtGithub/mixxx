@@ -586,10 +586,10 @@ void SoundManager::checkConfig() {
 }
 
 void SoundManager::onDeviceOutputCallback(const SINT iFramesPerBuffer,
-        std::chrono::microseconds absTimeWhenPrevOutputBufferReachsDac) {
+        std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac) {
     // Produce a block of samples for output. EngineMaster expects stereo
     // samples so multiply iFramesPerBuffer by 2.
-    m_pMaster->process(iFramesPerBuffer * 2, absTimeWhenPrevOutputBufferReachsDac);
+    m_pMaster->process(iFramesPerBuffer * 2, absTimeWhenPrevOutputBufferReachesDac);
 }
 
 void SoundManager::pushInputBuffers(const QList<AudioInputBuffer>& inputs,

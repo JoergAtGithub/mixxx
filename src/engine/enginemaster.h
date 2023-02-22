@@ -68,7 +68,7 @@ class EngineMaster : public QObject, public AudioSource {
     void onInputDisconnected(const AudioInput& input);
 
     void process(const int iBufferSize,
-            std::chrono::microseconds absTimeWhenPrevOutputBufferReachsDac);
+            std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac);
 
     // Add an EngineChannel to the mixing engine. This is not thread safe --
     // only call it before the engine has started mixing.
@@ -262,7 +262,7 @@ class EngineMaster : public QObject, public AudioSource {
     // m_activeTalkoverChannels with each channel that is active for the
     // respective output.
     void processChannels(int iBufferSize,
-            std::chrono::microseconds absTimeWhenPrevOutputBufferReachsDac);
+            std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac);
 
     ChannelHandleFactoryPointer m_pChannelHandleFactory;
     void applyMasterEffects(int iBufferSize);

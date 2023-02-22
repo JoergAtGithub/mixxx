@@ -977,7 +977,7 @@ int SoundDevicePortAudio::callbackProcessClkRef(
         ScopedTimer t("SoundDevicePortAudio::callbackProcess prepare %1",
                 m_deviceId.debugName());
         m_pSoundManager->onDeviceOutputCallback(
-                framesPerBuffer, m_absTimeWhenPrevOutputBufferReachsDac);
+                framesPerBuffer, m_absTimeWhenPrevOutputBufferReachesDac);
     }
 
     if (out) {
@@ -1051,8 +1051,8 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
                << "timeInfo->outputBufferDacTime: "
                << static_cast<long long>(
                           timeInfo->outputBufferDacTime * 1000000)
-               << "m_absTimeWhenPrevOutputBufferReachsDac: "
-               << m_absTimeWhenPrevOutputBufferReachsDac.count();
+               << "m_absTimeWhenPrevOutputBufferReachesDac: "
+               << m_absTimeWhenPrevOutputBufferReachesDac.count();
 
     // Only use latency from PortAudios timeInfo, if it's in reasonable range,
     // otherwise use latency value from PortAudios streamInfo
@@ -1060,11 +1060,11 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
             timeSinceLastCbSecs < bufferSizeSec * 2) {
         m_meanOutputLatency.insert(timeInfo->outputBufferDacTime - soundCardTimeNow);
 
-        m_absTimeWhenPrevOutputBufferReachsDac = filteredHostTimeNow +
+        m_absTimeWhenPrevOutputBufferReachesDac = filteredHostTimeNow +
                 std::chrono::microseconds(static_cast<long long>(
                         m_meanOutputLatency.mean() * 1000000));
     } else {
-        m_absTimeWhenPrevOutputBufferReachsDac = filteredHostTimeNow +
+        m_absTimeWhenPrevOutputBufferReachesDac = filteredHostTimeNow +
                 std::chrono::microseconds(
                         static_cast<long long>(m_outputLatencyMillis * 1000));
     }
