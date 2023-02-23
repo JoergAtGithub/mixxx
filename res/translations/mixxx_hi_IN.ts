@@ -271,7 +271,7 @@
 <context>
     <name>BaseTrackPlayerImpl</name>
     <message>
-        <location filename="../../src/mixer/basetrackplayer.cpp" line="494"/>
+        <location filename="../../src/mixer/basetrackplayer.cpp" line="478"/>
         <source>Couldn&apos;t load track.</source>
         <translation>ट्रैक लोड नहीं हो सका</translation>
     </message>
@@ -427,7 +427,7 @@
     <message>
         <location filename="../../src/preferences/broadcastprofile.cpp" line="474"/>
         <source>Can&apos;t use secure password storage: keychain access failed.</source>
-        <translation>सुरक्षित पासवर्ड संग्रहण का उपयोग नहीं कर सकते: किचेन ऐक्सेस विफल।</translation>
+        <translation>सुरक्षित पासवर्ड संग्रहण का उपयोग नहीं कर सकते: कीचेन ऐक्सेस विफल।</translation>
     </message>
     <message>
         <location filename="../../src/preferences/broadcastprofile.cpp" line="504"/>
@@ -697,7 +697,7 @@
     <message>
         <location filename="../../src/util/cmdlineargs.cpp" line="109"/>
         <source>Mixxx is an open source DJ software. For more information, see: </source>
-        <translation>Mixxx एक सार्वजनिक स्रोत डिस्क जोकी (DJ) सॉफ्टवेयर है। अधिक जानकारी के लिए देखें :</translation>
+        <translation>Mixxx एक सार्वजनिक स्रोत डिस्क जॉकी सॉफ्टवेयर है। अधिक जानकारी के लिए देखें :</translation>
     </message>
     <message>
         <location filename="../../src/util/cmdlineargs.cpp" line="117"/>
@@ -14931,37 +14931,32 @@ This can not be undone!</source>
 <context>
     <name>WTrackTableView</name>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="876"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="864"/>
         <source>Confirm track hide</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="877"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="865"/>
         <source>Are you sure you want to hide the selected tracks?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="883"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="875"/>
         <source>Are you sure you want to remove the selected tracks from AutoDJ queue?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="887"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="877"/>
         <source>Are you sure you want to remove the selected tracks from this crate?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="891"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="879"/>
         <source>Are you sure you want to remove the selected tracks from this playlist?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="900"/>
-        <source>Don&apos;t ask again during this session</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="879"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="885"/>
         <source>Confirm track removal</source>
         <translation type="unfinished"/>
     </message>

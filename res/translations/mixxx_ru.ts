@@ -78,7 +78,7 @@
     <message>
         <location filename="../../src/library/baseexternallibraryfeature.cpp" line="31"/>
         <source>Add to Auto DJ Queue (top)</source>
-        <translation>Добавить в очередь Авто DJ (начало)</translation>
+        <translation>Добавить в очередь АвтоDJ (наверх)</translation>
     </message>
     <message>
         <location filename="../../src/library/baseexternallibraryfeature.cpp" line="37"/>
@@ -122,7 +122,7 @@
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="96"/>
         <source>Add to Auto DJ Queue (top)</source>
-        <translation>Добавить в очередь АвтоDJ (начало)</translation>
+        <translation>Добавить в очередь АвтоDJ (наверх)</translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="75"/>
@@ -272,7 +272,7 @@
 <context>
     <name>BaseTrackPlayerImpl</name>
     <message>
-        <location filename="../../src/mixer/basetrackplayer.cpp" line="494"/>
+        <location filename="../../src/mixer/basetrackplayer.cpp" line="478"/>
         <source>Couldn&apos;t load track.</source>
         <translation>Не удалось загрузить трек.</translation>
     </message>
@@ -614,7 +614,7 @@
     <message>
         <location filename="../../src/library/browse/browsetablemodel.cpp" line="70"/>
         <source>Key</source>
-        <translation>Тональность</translation>
+        <translation>Ключ</translation>
     </message>
     <message>
         <location filename="../../src/library/browse/browsetablemodel.cpp" line="71"/>
@@ -1693,7 +1693,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="393"/>
         <source>Cue</source>
-        <translation>Кий</translation>
+        <translation>Cue</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="394"/>
@@ -1703,7 +1703,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="395"/>
         <source>Go-To Cue</source>
-        <translation>Go-To Cue</translation>
+        <translation>Перейти Cue</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="397"/>
@@ -1723,7 +1723,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="405"/>
         <source>Cue (CDJ Mode)</source>
-        <translation>Кью (CDJ режим)</translation>
+        <translation>Cue (CDJ режим)</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="406"/>
@@ -1950,7 +1950,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="980"/>
         <source>Clear</source>
-        <translation>Ясно</translation>
+        <translation>Очистить</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="981"/>
@@ -2007,12 +2007,12 @@ trace    - Above + Profiling messages</source>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="1111"/>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="1112"/>
         <source>Microphone Ducking Strength</source>
-        <translation>Микрофон ныряя прочность</translation>
+        <translation>Сила приглушения микрофона</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="1117"/>
         <source>Microphone Ducking Mode</source>
-        <translation>Ныряя режим микрофона</translation>
+        <translation>Режим приглушения микрофона</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="1128"/>
@@ -2122,7 +2122,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="237"/>
         <source>Tap to sync tempo (and phase with quantize enabled), hold to enable permanent sync</source>
-        <translation>Нажмите для синхронизации (и фазировки с квантизацией), удерживайте для постоянной синхронизации</translation>
+        <translation>Нажмите для синхронизации (и фазировки с квантованием), удерживайте для постоянной синхронизации</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="242"/>
@@ -4455,7 +4455,7 @@ Two source connections to the same server that have the same mountpoint can not 
     <message>
         <location filename="../../src/preferences/dialog/dlgprefbroadcastdlg.ui" line="20"/>
         <source>Live Broadcasting source connections</source>
-        <translation>Подключение источника живой трансляции</translation>
+        <translation>Подключение источника прямой трансляции</translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgprefbroadcastdlg.ui" line="65"/>
@@ -4760,7 +4760,7 @@ Apply settings and continue?</source>
     <message>
         <location filename="../../src/controllers/dlgprefcontroller.cpp" line="276"/>
         <source>None</source>
-        <translation>Нет</translation>
+        <translation>Отсутствует</translation>
     </message>
     <message>
         <location filename="../../src/controllers/dlgprefcontroller.cpp" line="281"/>
@@ -6930,7 +6930,7 @@ The loudness target is approximate and assumes track pregain and main output lev
     <message>
         <location filename="../../src/preferences/dialog/dlgprefsounddlg.ui" line="48"/>
         <source>Audio Buffer</source>
-        <translation>Аудио буфера</translation>
+        <translation>Аудио буфер</translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgprefsounddlg.ui" line="71"/>
@@ -6979,7 +6979,7 @@ The loudness target is approximate and assumes track pregain and main output lev
     <message>
         <location filename="../../src/preferences/dialog/dlgprefsounddlg.ui" line="389"/>
         <source>Buffer Underflow Count</source>
-        <translation>Количество незаполнению буфера</translation>
+        <translation>Количество опустошений буфера</translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgprefsounddlg.ui" line="399"/>
@@ -6989,7 +6989,7 @@ The loudness target is approximate and assumes track pregain and main output lev
     <message>
         <location filename="../../src/preferences/dialog/dlgprefsounddlg.ui" line="85"/>
         <source>Keylock/Pitch-Bending Engine</source>
-        <translation>Блокировка клавиатуры/Pitch изгиб двигатель</translation>
+        <translation>Движок блокировки/изменения тональности</translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgprefsounddlg.ui" line="61"/>
@@ -7014,7 +7014,7 @@ The loudness target is approximate and assumes track pregain and main output lev
     <message>
         <location filename="../../src/preferences/dialog/dlgprefsounddlg.ui" line="325"/>
         <source>Enlarge your audio buffer if the underflow counter is increasing or you hear pops during playback.</source>
-        <translation>Увеличьте ваш аудио буфера, если underflow счетчик увеличивается или вы слышите СОЗ во время воспроизведения.</translation>
+        <translation>Увеличьте ваш аудио буфер, если счетчик опустошений буфера увеличивается или воспроизведение прерывается.</translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgprefsounddlg.ui" line="151"/>
@@ -7039,12 +7039,12 @@ The loudness target is approximate and assumes track pregain and main output lev
     <message>
         <location filename="../../src/preferences/dialog/dlgprefsounddlg.ui" line="335"/>
         <source>Downsize your audio buffer to improve Mixxx&apos;s responsiveness.</source>
-        <translation>Сокращать ваши аудио буфера для улучшения Mixxx в реакции.</translation>
+        <translation>Уменьшите ваши аудио буфер для улучшения отклика Mixxx.</translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgprefsounddlg.ui" line="238"/>
         <source>Query Devices</source>
-        <translation>Запрос устройства</translation>
+        <translation>Опрос устройств</translation>
     </message>
 </context>
 <context>
@@ -7096,7 +7096,7 @@ The loudness target is approximate and assumes track pregain and main output lev
     <message>
         <location filename="../../src/preferences/dialog/dlgprefvinyldlg.ui" line="28"/>
         <source>Turntable Input Signal Boost</source>
-        <translation>Поворотный стол входной сигнал Boost</translation>
+        <translation>Усиление сигнала проигрывателя</translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgprefvinyldlg.ui" line="58"/>
@@ -7248,7 +7248,7 @@ The loudness target is approximate and assumes track pregain and main output lev
     <message>
         <location filename="../../src/preferences/dialog/dlgprefwaveformdlg.ui" line="339"/>
         <source>End of track warning</source>
-        <translation>Конец пути предупреждения</translation>
+        <translation>Предупреждение о конце трека</translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgprefwaveformdlg.ui" line="139"/>
@@ -8773,7 +8773,7 @@ Do you really want to overwrite it?</source>
     <message>
         <location filename="../../src/mixxxmainwindow.cpp" line="487"/>
         <source>Sound Device Busy</source>
-        <translation>Звуковое устройство занят</translation>
+        <translation>Звуковое устройство занято</translation>
     </message>
     <message>
         <location filename="../../src/mixxxmainwindow.cpp" line="496"/>
@@ -9191,22 +9191,22 @@ Do you want to scan your library for cover files now?</source>
     <message>
         <location filename="../../src/soundio/soundmanagerutil.cpp" line="150"/>
         <source>Left Bus</source>
-        <translation>Левый автобус</translation>
+        <translation>Левая шина</translation>
     </message>
     <message>
         <location filename="../../src/soundio/soundmanagerutil.cpp" line="152"/>
         <source>Center Bus</source>
-        <translation>Центр автобус</translation>
+        <translation>Центральная шина</translation>
     </message>
     <message>
         <location filename="../../src/soundio/soundmanagerutil.cpp" line="154"/>
         <source>Right Bus</source>
-        <translation>Правый автобус</translation>
+        <translation>Правая шина</translation>
     </message>
     <message>
         <location filename="../../src/soundio/soundmanagerutil.cpp" line="156"/>
         <source>Invalid Bus</source>
-        <translation>Недопустимый автобус</translation>
+        <translation>Недопустимая шина</translation>
     </message>
     <message>
         <location filename="../../src/soundio/soundmanagerutil.cpp" line="159"/>
@@ -9347,7 +9347,7 @@ If you do not want to grant Mixxx access, click Cancel on the file picker. Mixxx
     <message>
         <location filename="../../src/effects/backends/builtin/echoeffect.cpp" line="80"/>
         <source>How much of the signal to send into the delay buffer</source>
-        <translation>Сколько из сигнала для отправки в буфер задержки</translation>
+        <translation>Какую часть сигнала отправить в буфер задержки</translation>
     </message>
     <message>
         <location filename="../../src/effects/backends/builtin/echoeffect.cpp" line="57"/>
@@ -11444,7 +11444,7 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="307"/>
         <source>Microphone Talk-Over</source>
-        <translation>Микрофон говорить над</translation>
+        <translation>Наложение микрофона</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="308"/>
@@ -11469,7 +11469,7 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="321"/>
         <source>Behavior depends on Microphone Talkover Mode:</source>
-        <translation>Поведение зависит от режима наложения микрофона</translation>
+        <translation>Поведение зависит от режима наложения микрофона:</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="322"/>
@@ -11943,7 +11943,7 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="314"/>
         <source>Auto: Automatically reduce music volume when microphone volume rises above threshold.</source>
-        <translation>Авто: Автоматически снижает громкость музыки, когда сигнал микрофона превышает определенный порог.</translation>
+        <translation>Авто: Автоматически снижает громкость музыки, когда сигнал микрофона превышает порог.</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="316"/>
@@ -12835,12 +12835,12 @@ Use this to change only the effected (wet) signal with EQ and filter effects.</s
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="138"/>
         <source>Microphone Peak Indicator</source>
-        <translation>Индикатор пиковых микрофон</translation>
+        <translation>Пиковый индикатор микрофона</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="139"/>
         <source>Indicates when the signal on the microphone is clipping,</source>
-        <translation>Указывает, когда сигнал на микрофон отсечения,</translation>
+        <translation>Указывает, когда сигнал на микрофона искажается,</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="152"/>
@@ -13003,17 +13003,17 @@ Use this to change only the effected (wet) signal with EQ and filter effects.</s
         <location filename="../../src/skin/legacy/tooltips.cpp" line="595"/>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="601"/>
         <source>Changes the track pitch independent of the tempo.</source>
-        <translation>Изменяет высоту тона трек независимо от темпа.</translation>
+        <translation>Изменяет тональность трека независимо от темпа.</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="597"/>
         <source>Increases the pitch by 10 cents.</source>
-        <translation>Увеличивает поле на 10 центов.</translation>
+        <translation>Повышает высоту тона на 10 центов.</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="603"/>
         <source>Decreases the pitch by 10 cents.</source>
-        <translation>Уменьшает поле на 10 центов.</translation>
+        <translation>Понижает высоту тона на 10 центов.</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="606"/>
@@ -13985,7 +13985,7 @@ This can not be undone!</source>
     <message>
         <location filename="../../src/widget/wmainmenubar.cpp" line="333"/>
         <source>Use timecoded vinyls on external turntables to control Mixxx</source>
-        <translation>Использование покадровой винилы на внешние вертушки для управления Mixxx</translation>
+        <translation>Использование палстинок с таймкодом на внешнем проигрывателе для управления Mixxx</translation>
     </message>
     <message>
         <location filename="../../src/widget/wmainmenubar.cpp" line="337"/>
@@ -14945,37 +14945,32 @@ This can not be undone!</source>
 <context>
     <name>WTrackTableView</name>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="876"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="864"/>
         <source>Confirm track hide</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="877"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="865"/>
         <source>Are you sure you want to hide the selected tracks?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="883"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="875"/>
         <source>Are you sure you want to remove the selected tracks from AutoDJ queue?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="887"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="877"/>
         <source>Are you sure you want to remove the selected tracks from this crate?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="891"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="879"/>
         <source>Are you sure you want to remove the selected tracks from this playlist?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="900"/>
-        <source>Don&apos;t ask again during this session</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="879"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="885"/>
         <source>Confirm track removal</source>
         <translation type="unfinished"/>
     </message>

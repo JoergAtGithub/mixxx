@@ -272,7 +272,7 @@
 <context>
     <name>BaseTrackPlayerImpl</name>
     <message>
-        <location filename="../../src/mixer/basetrackplayer.cpp" line="494"/>
+        <location filename="../../src/mixer/basetrackplayer.cpp" line="478"/>
         <source>Couldn&apos;t load track.</source>
         <translation>Nem lehet a számot betölteni.</translation>
     </message>
@@ -362,7 +362,7 @@
     <message>
         <location filename="../../src/library/basetracktablemodel.cpp" line="195"/>
         <source>Key</source>
-        <translation>Billentyű</translation>
+        <translation>Hangnem</translation>
     </message>
     <message>
         <location filename="../../src/library/basetracktablemodel.cpp" line="199"/>
@@ -387,7 +387,7 @@
     <message>
         <location filename="../../src/library/basetracktablemodel.cpp" line="215"/>
         <source>Samplerate</source>
-        <translation>Mintavételezési sebesség</translation>
+        <translation>Mintavételezési frekvencia</translation>
     </message>
     <message>
         <location filename="../../src/library/basetracktablemodel.cpp" line="219"/>
@@ -428,7 +428,7 @@
     <message>
         <location filename="../../src/preferences/broadcastprofile.cpp" line="474"/>
         <source>Can&apos;t use secure password storage: keychain access failed.</source>
-        <translation>Nem használhatsz jelszóval védett tárolót: Kulcshozzáférés nem sikerült</translation>
+        <translation>Nem használható a biztonságos jelszótároló: Kulcstartó megnyitása sikertelen.</translation>
     </message>
     <message>
         <location filename="../../src/preferences/broadcastprofile.cpp" line="504"/>
@@ -494,12 +494,12 @@
     <message>
         <location filename="../../src/library/browse/browsefeature.cpp" line="47"/>
         <source>Add to Quick Links</source>
-        <translation>Hozzáadás gyorshivatkozáshoz</translation>
+        <translation>Hozzáadás gyorshivatkozásokhoz</translation>
     </message>
     <message>
         <location filename="../../src/library/browse/browsefeature.cpp" line="53"/>
         <source>Remove from Quick Links</source>
-        <translation>Eltávolítás a gyorshivatkozásból</translation>
+        <translation>Eltávolítás a gyorshivatkozások közül</translation>
     </message>
     <message>
         <location filename="../../src/library/browse/browsefeature.cpp" line="59"/>
@@ -614,7 +614,7 @@
     <message>
         <location filename="../../src/library/browse/browsetablemodel.cpp" line="70"/>
         <source>Key</source>
-        <translation>Billentyű</translation>
+        <translation>Hangnem</translation>
     </message>
     <message>
         <location filename="../../src/library/browse/browsetablemodel.cpp" line="71"/>
@@ -924,7 +924,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="101"/>
         <source>Headphone mix (pre/main)</source>
-        <translation>Fejhallgató keverő</translation>
+        <translation>Fejhallgató keverés (elő/fő)</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="107"/>
@@ -939,7 +939,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="181"/>
         <source>Transport</source>
-        <translation>Forgalom</translation>
+        <translation>Lejátszásvezérlés</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="187"/>
@@ -949,7 +949,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="182"/>
         <source>Play button</source>
-        <translation>Lejátszás</translation>
+        <translation>Lejátszás gomb</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="160"/>
@@ -961,7 +961,7 @@ trace    - Above + Profiling messages</source>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="164"/>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="1149"/>
         <source>Set to zero volume</source>
-        <translation>Alapértelmezett hangerő</translation>
+        <translation>Nulla hangerő</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="199"/>
@@ -1031,7 +1031,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="208"/>
         <source>Toggle slip mode</source>
-        <translation>Csúsztatási mód ki/be</translation>
+        <translation>Csúsztató mód ki/be</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="212"/>
@@ -1066,7 +1066,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="232"/>
         <source>Toggle quantize mode</source>
-        <translation>Kvantálási mód megváltoztatása</translation>
+        <translation>Kvantálási mód kapcsolása</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="246"/>
@@ -1176,12 +1176,12 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="424"/>
         <source>Jump to hotcue %1</source>
-        <translation>Ugrás a(z) %1 hotcue-hoz</translation>
+        <translation>Ugrás a(z) % 1 hotcue-hoz</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="425"/>
         <source>Jump to hotcue %1 and stop</source>
-        <translation>Ugrás a(z) %1 hotcue-hoz és stop</translation>
+        <translation>Ugrás a(z)  hotcue-hoz és stop</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="426"/>
@@ -1367,12 +1367,12 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="199"/>
         <source>Stop</source>
-        <translation>Stop</translation>
+        <translation>Megállítás</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="201"/>
         <source>Stop And Jump To Start</source>
-        <translation>Stop és ugrás a kezdőponthoz</translation>
+        <translation>Megállítás és ugrás a kezdőponthoz</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="202"/>
@@ -1502,7 +1502,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="219"/>
         <source>Adjust Beatgrid Faster +.01</source>
-        <translation>Beatgrid felgyorsítása +.01</translation>
+        <translation>Ütemrács felgyorsítása +.01</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="219"/>
@@ -1748,7 +1748,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="417"/>
         <source>Jump To Hotcue %1</source>
-        <translation>Ugrás a(z) %1 Hotcue</translation>
+        <translation>Ugrás a %1 Hotcue</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="418"/>
@@ -2182,7 +2182,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="318"/>
         <source>Temporarily Increase Speed</source>
-        <translation>Sebesség csökkentése (finom)</translation>
+        <translation>Sebesség növelése átmenetileg</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="319"/>
@@ -2746,7 +2746,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="689"/>
         <source>Scroll vertically in either direction using a knob, as if pressing PGUP/PGDOWN keys</source>
-        <translation>Tekerj függőlegesen mindkét irányba enkóder használatával, mintha a PGUP/PGDOWN gombokat nyomkodnád</translation>
+        <translation>Tekerj függőlegesen mindkét irányba enkóder használatával, mintha a PGUP/PGDOWN billentyűket nyomkodnád</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="693"/>
@@ -2776,7 +2776,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="702"/>
         <source>Move horizontally in either direction using a knob, as if pressing LEFT/RIGHT keys</source>
-        <translation>Mozogj vízszintesen mindkét irányba enkóder használatával, mintha a BAL/JOBB gombokat nyomkodnád</translation>
+        <translation>Mozogj vízszintesen mindkét irányba enkóder használatával, mintha a BAL/JOBB billentyűket nyomkodnád</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="707"/>
@@ -2916,7 +2916,7 @@ trace    - Above + Profiling messages</source>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="856"/>
         <source>Next chain preset</source>
-        <translation>Következő lánv beállítás</translation>
+        <translation>Következő lánc beállítás</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="862"/>
@@ -14948,37 +14948,32 @@ This can not be undone!</source>
 <context>
     <name>WTrackTableView</name>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="876"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="864"/>
         <source>Confirm track hide</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="877"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="865"/>
         <source>Are you sure you want to hide the selected tracks?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="883"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="875"/>
         <source>Are you sure you want to remove the selected tracks from AutoDJ queue?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="887"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="877"/>
         <source>Are you sure you want to remove the selected tracks from this crate?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="891"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="879"/>
         <source>Are you sure you want to remove the selected tracks from this playlist?</source>
         <translation>Biztosan el akarod távolítani a kijelölt számokat ebből a lejátszólistából?</translation>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="900"/>
-        <source>Don&apos;t ask again during this session</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="879"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="885"/>
         <source>Confirm track removal</source>
         <translation type="unfinished"/>
     </message>

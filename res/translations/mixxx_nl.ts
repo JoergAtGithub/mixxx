@@ -13,7 +13,7 @@
     <message>
         <location filename="../../src/library/analysisfeature.cpp" line="55"/>
         <source>Analyze</source>
-        <translation>Analyseren</translation>
+        <translation>Analyseer</translation>
     </message>
 </context>
 <context>
@@ -127,17 +127,17 @@
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="75"/>
         <source>Remove</source>
-        <translation>Verwijderen</translation>
+        <translation>Verwijder</translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="64"/>
         <source>Rename</source>
-        <translation>Hernoemen</translation>
+        <translation>Hernoem</translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="85"/>
         <source>Lock</source>
-        <translation>Vergrendelen</translation>
+        <translation>Zet vast</translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="70"/>
@@ -196,7 +196,7 @@
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="270"/>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="274"/>
         <source>Renaming Playlist Failed</source>
-        <translation>Afspeellijst hernoemen mislukt</translation>
+        <translation>Hernoemen Afspeellijst Mislukt</translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="271"/>
@@ -272,7 +272,7 @@
 <context>
     <name>BaseTrackPlayerImpl</name>
     <message>
-        <location filename="../../src/mixer/basetrackplayer.cpp" line="494"/>
+        <location filename="../../src/mixer/basetrackplayer.cpp" line="478"/>
         <source>Couldn&apos;t load track.</source>
         <translation>Kan het nummer niet laden.</translation>
     </message>
@@ -494,7 +494,7 @@
     <message>
         <location filename="../../src/library/browse/browsefeature.cpp" line="47"/>
         <source>Add to Quick Links</source>
-        <translation>Toevoegen aan Quick Links</translation>
+        <translation>Voeg toe aan Snelkoppelingen</translation>
     </message>
     <message>
         <location filename="../../src/library/browse/browsefeature.cpp" line="53"/>
@@ -624,7 +624,7 @@
     <message>
         <location filename="../../src/library/browse/browsetablemodel.cpp" line="72"/>
         <source>Bitrate</source>
-        <translation>Bitrate</translation>
+        <translation>Bit snelheid</translation>
     </message>
     <message>
         <location filename="../../src/library/browse/browsetablemodel.cpp" line="78"/>
@@ -1007,7 +1007,7 @@ traceren - Boven + Profileringsberichten</translation>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="206"/>
         <source>Eject track</source>
-        <translation>Track uitwerpen</translation>
+        <translation>Werp track uit</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="56"/>
@@ -1352,7 +1352,7 @@ traceren - Boven + Profileringsberichten</translation>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="191"/>
         <source>Reverse Roll (Censor)</source>
-        <translation>Reverse Roll (Censor)</translation>
+        <translation>Omgekeerde Roll (Censor)</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="194"/>
@@ -1627,12 +1627,12 @@ traceren - Boven + Profileringsberichten</translation>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="128"/>
         <source>High EQ</source>
-        <translation>Hoge EQ</translation>
+        <translation>Hoge tonen</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="127"/>
         <source>Mid EQ</source>
-        <translation>Mid EQ</translation>
+        <translation>Middentonen</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="16"/>
@@ -2177,12 +2177,12 @@ traceren - Boven + Profileringsberichten</translation>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="310"/>
         <source>Adjust speed slower (coarse)</source>
-        <translation>Snelheid lager bijstellen (grof)</translation>
+        <translation>Aanpassen vertragen (grof)</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="314"/>
         <source>Adjust speed slower (fine)</source>
-        <translation>Snelheid lager bijstellen (fijn)</translation>
+        <translation>Aanpassen vertragen (fijn)</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="318"/>
@@ -2192,7 +2192,7 @@ traceren - Boven + Profileringsberichten</translation>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="319"/>
         <source>Temporarily increase speed (coarse)</source>
-        <translation>Snelheid tijdelijk verhogen (grof)</translation>
+        <translation>Tijdelijk Versnellen (grof)</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="322"/>
@@ -2202,7 +2202,7 @@ traceren - Boven + Profileringsberichten</translation>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="323"/>
         <source>Temporarily increase speed (fine)</source>
-        <translation>Snelheid tijdelijk verhogen (fijn)</translation>
+        <translation>Tijdelijk versnellen (fijn)</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="326"/>
@@ -3373,13 +3373,13 @@ traceren - Boven + Profileringsberichten</translation>
     <message>
         <location filename="../../src/library/trackset/crate/cratefeature.cpp" line="73"/>
         <source>Rename</source>
-        <translation>Hernoemen</translation>
+        <translation>Hernoem</translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/crate/cratefeature.cpp" line="94"/>
         <location filename="../../src/library/trackset/crate/cratefeature.cpp" line="376"/>
         <source>Lock</source>
-        <translation>Vergrendelen</translation>
+        <translation>Zet vast</translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/crate/cratefeature.cpp" line="123"/>
@@ -3653,7 +3653,7 @@ traceren - Boven + Profileringsberichten</translation>
         <location filename="../../src/library/dlganalysis.ui" line="98"/>
         <location filename="../../src/library/dlganalysis.cpp" line="189"/>
         <source>Analyze</source>
-        <translation>Analyseren</translation>
+        <translation>Analyseer</translation>
     </message>
     <message>
         <location filename="../../src/library/dlganalysis.ui" line="56"/>
@@ -4011,7 +4011,7 @@ Dit resulteert vaak in beat-rasters van hogere kwaliteit, maar zal het niet goed
     <message>
         <location filename="../../src/controllers/dlgcontrollerlearning.ui" line="80"/>
         <source>Close</source>
-        <translation>Sluiten</translation>
+        <translation>Sluit</translation>
     </message>
     <message>
         <location filename="../../src/controllers/dlgcontrollerlearning.ui" line="121"/>
@@ -4964,7 +4964,7 @@ Instellingen toepassen en doorgaan?</translation>
         <location filename="../../src/controllers/dlgprefcontrollerdlg.ui" line="487"/>
         <location filename="../../src/controllers/dlgprefcontrollerdlg.ui" line="571"/>
         <source>Remove</source>
-        <translation>Verwijderen</translation>
+        <translation>Verwijder</translation>
     </message>
     <message>
         <location filename="../../src/controllers/dlgprefcontrollerdlg.ui" line="88"/>
@@ -6191,7 +6191,7 @@ en stelt u in staat om de toonhoogte aan te passen voor harmonische mixen.</tran
     <message>
         <location filename="../../src/preferences/dialog/dlgpreflibrarydlg.ui" line="76"/>
         <source>Remove</source>
-        <translation>Verwijderen</translation>
+        <translation>Verwijder</translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgpreflibrarydlg.ui" line="48"/>
@@ -9032,7 +9032,7 @@ Wilt u een invoerapparaat selecteren?</translation>
     <message>
         <location filename="../../src/library/trackset/playlistfeature.cpp" line="76"/>
         <source>Lock</source>
-        <translation>Vergrendelen</translation>
+        <translation>Zet vast</translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/playlistfeature.cpp" line="54"/>
@@ -10881,7 +10881,7 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/library/trackset/setlogfeature.cpp" line="145"/>
         <source>Lock</source>
-        <translation>Vergrendelen</translation>
+        <translation>Zet vast</translation>
     </message>
 </context>
 <context>
@@ -15047,37 +15047,32 @@ This can not be undone!</source>
 <context>
     <name>WTrackTableView</name>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="876"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="864"/>
         <source>Confirm track hide</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="877"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="865"/>
         <source>Are you sure you want to hide the selected tracks?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="883"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="875"/>
         <source>Are you sure you want to remove the selected tracks from AutoDJ queue?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="887"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="877"/>
         <source>Are you sure you want to remove the selected tracks from this crate?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="891"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="879"/>
         <source>Are you sure you want to remove the selected tracks from this playlist?</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="900"/>
-        <source>Don&apos;t ask again during this session</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="879"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="885"/>
         <source>Confirm track removal</source>
         <translation type="unfinished"/>
     </message>

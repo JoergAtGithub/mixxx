@@ -74,12 +74,12 @@
     <message>
         <location filename="../../src/library/baseexternallibraryfeature.cpp" line="25"/>
         <source>Add to Auto DJ Queue (bottom)</source>
-        <translation>Ajouter à la file Auto DJ (fin)</translation>
+        <translation>Ajouter à file Auto DJ (par dessous)</translation>
     </message>
     <message>
         <location filename="../../src/library/baseexternallibraryfeature.cpp" line="31"/>
         <source>Add to Auto DJ Queue (top)</source>
-        <translation>Ajouter à la file Auto DJ (début)</translation>
+        <translation>Ajouter à file Auto DJ (par dessus)</translation>
     </message>
     <message>
         <location filename="../../src/library/baseexternallibraryfeature.cpp" line="37"/>
@@ -99,7 +99,7 @@
     <message>
         <location filename="../../src/library/baseexternallibraryfeature.cpp" line="123"/>
         <source>An unknown error occurred while creating playlist: </source>
-        <translation>Une erreur inconnue s&apos;est produite à la création de la liste de lecture : </translation>
+        <translation>Une erreur inconnue est survenue lors de la création de la liste de lecture : </translation>
     </message>
 </context>
 <context>
@@ -112,7 +112,7 @@
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="91"/>
         <source>Add to Auto DJ Queue (bottom)</source>
-        <translation>Ajouter à la file Auto DJ (fin)</translation>
+        <translation>Ajouter à file Auto DJ (par dessous)</translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="58"/>
@@ -123,7 +123,7 @@
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="96"/>
         <source>Add to Auto DJ Queue (top)</source>
-        <translation>Ajouter à la file Auto DJ (début)</translation>
+        <translation>Ajouter à file Auto DJ (par dessus)</translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="75"/>
@@ -234,7 +234,7 @@
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="383"/>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="530"/>
         <source>An unknown error occurred while creating playlist: </source>
-        <translation>Une erreur inconnue s&apos;est produite à la création de la liste de lecture : </translation>
+        <translation>Une erreur inconnue est survenue lors de la création de la liste de lecture : </translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/baseplaylistfeature.cpp" line="437"/>
@@ -273,7 +273,7 @@
 <context>
     <name>BaseTrackPlayerImpl</name>
     <message>
-        <location filename="../../src/mixer/basetrackplayer.cpp" line="494"/>
+        <location filename="../../src/mixer/basetrackplayer.cpp" line="478"/>
         <source>Couldn&apos;t load track.</source>
         <translation>Impossible de charger la piste.</translation>
     </message>
@@ -547,7 +547,7 @@
     <message>
         <location filename="../../src/library/browse/browsefeature.cpp" line="441"/>
         <source>&quot;Computer&quot; lets you navigate, view, and load tracks from folders on your hard disk and external devices.</source>
-        <translation>&quot;Ordinateur&quot; vous permet de naviguer, voir et charger les pistes dans les répertoires de votre disque dur et périphériques externes.</translation>
+        <translation>&quot;Ordinateur&quot; vous permet de naviguer, voir et charger les pistes dans les dossiers de votre disque dur et périphériques externes.</translation>
     </message>
 </context>
 <context>
@@ -2525,7 +2525,7 @@ Ajouter la piste à la file Auto DJ (fin)</translation>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="520"/>
         <source>Jump to or set the %1</source>
         <comment>[intro/outro marker</comment>
-        <translation>Aller au ou régler le %1</translation>
+        <translation>Sauter au ou définir le %1</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="524"/>
@@ -3127,12 +3127,12 @@ Ajouter la piste à la file Auto DJ (fin)</translation>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="1272"/>
         <source>Cover Art Show/Hide (Decks)</source>
-        <translation>Montrer/Cacher Jaquette (Decks)</translation>
+        <translation>Montrer/Cacher la pochette (Decks)</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="1273"/>
         <source>Show/hide cover art in the main decks</source>
-        <translation>Montre/Cache la pochette d&apos;album sur les decks principaux</translation>
+        <translation>Affiche/Cache la pochette d&apos;album sur les platines principales</translation>
     </message>
     <message>
         <location filename="../../src/controllers/controlpickermenu.cpp" line="1281"/>
@@ -3434,7 +3434,7 @@ Ajouter la piste à la file Auto DJ (fin)</translation>
     <message>
         <location filename="../../src/library/trackset/crate/cratefeature.cpp" line="376"/>
         <source>Unlock</source>
-        <translation>Déverrouiller</translation>
+        <translation>Unlock</translation>
     </message>
     <message>
         <location filename="../../src/library/trackset/crate/cratefeature.cpp" line="695"/>
@@ -3631,7 +3631,7 @@ Ajouter la piste à la file Auto DJ (fin)</translation>
     <message>
         <location filename="../../src/dialog/dlgaboutdlg.ui" line="107"/>
         <source>Git Version:</source>
-        <translation>Git Version:</translation>
+        <translation>Git Version :</translation>
     </message>
     <message>
         <location filename="../../src/dialog/dlgaboutdlg.ui" line="114"/>
@@ -4434,7 +4434,7 @@ Résulte souvent en de meilleures grilles rythmiques, mais ne marchera pas bien 
         <source>'%1' has the same Icecast mountpoint as '%2'.
 Two source connections to the same server that have the same mountpoint can not be enabled simultaneously.</source>
         <translation>&apos;%1&apos; a le même point de montage Icecast que &apos;%2&apos;.
-Deux de source de connexions vers le même serveur, ayant le même point de montage, ne peuvent pas être activé simultanément.</translation>
+Deux de source de connexions vers le même serveur, ayant le même point de montage, ne peuvent pas être activées simultanément.</translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgprefbroadcast.cpp" line="581"/>
@@ -5032,7 +5032,7 @@ Appliquer les paramètres et continuer ?</translation>
     <message>
         <location filename="../../src/controllers/dlgprefcontrollers.cpp" line="39"/>
         <source>Mixxx uses &quot;mappings&quot; to connect messages from your controller to controls in Mixxx. If you do not see a mapping for your controller in the &quot;Load Mapping&quot; menu when you click on your controller on the left sidebar, you may be able to download one online from the %1. Place the XML (.xml) and Javascript (.js) file(s) in the &quot;User Mapping Folder&quot; then restart Mixxx. If you download a mapping in a ZIP file, extract the XML and Javascript file(s) from the ZIP file to your &quot;User Mapping Folder&quot; then restart Mixxx.</source>
-        <translation>Mixxx utilise des «mappages» pour connecter les messages de votre contrôleur aux commandes de Mixxx. Si vous ne voyez pas de mappage pour votre contrôleur dans le menu &quot;Load Mapping&quot; lorsque vous cliquez sur votre contrôleur dans la barre latérale gauche, vous pourrez peut-être en télécharger un en ligne à partir de %1. Placer le(s) fichier(s) XML (.xml) et Javascript (.js) dans &quot;User Mapping Folder&quot; puis redémarrer Mixxx. Si vous téléchargez un mappage dans un fichier ZIP, extrayez le(s) fichier(s) XML et Javascript du fichier ZIP vers  &quot;User Mapping Folder&quot; puis redémarrer Mixxx. </translation>
+        <translation>Mixxx utilise des «mappages» pour connecter les messages de votre contrôleur aux commandes de Mixxx. Si vous ne voyez pas de mappage pour votre contrôleur dans le menu &quot;Load Mapping&quot; lorsque vous cliquez sur votre contrôleur dans la barre latérale gauche, vous pourrez peut-être en télécharger un en ligne à partir de %1. Placer le(s) fichier(s) XML (.xml) et Javascript (.js) dans &quot;User Mapping Folder&quot; puis redémarrer Mixxx. Si vous téléchargez un mappage dans un fichier ZIP, extraire le(s) fichier(s) XML et Javascript du fichier ZIP vers  &quot;User Mapping Folder&quot; puis redémarrer Mixxx. </translation>
     </message>
     <message>
         <location filename="../../src/controllers/dlgprefcontrollers.cpp" line="55"/>
@@ -5075,7 +5075,7 @@ Appliquer les paramètres et continuer ?</translation>
     <message>
         <location filename="../../src/controllers/dlgprefcontrollersdlg.ui" line="107"/>
         <source>Open User Mapping Folder</source>
-        <translation>Ouvrir le répertoire des mappages utilisateur</translation>
+        <translation>Ouvrir le dossier des mappages utilisateur</translation>
     </message>
     <message>
         <location filename="../../src/controllers/dlgprefcontrollersdlg.ui" line="133"/>
@@ -5928,7 +5928,7 @@ Vous pouvez toujours glisser-déposer des pistes sur l&apos;écran pour cloner u
         <location filename="../../src/preferences/dialog/dlgprefkeydlg.ui" line="21"/>
         <source>When key detection is enabled, Mixxx detects the musical key of your tracks
 and allows you to pitch adjust them for harmonic mixing.</source>
-        <translation>Lorsque la détection de tonalité est activée, Mixxx détecte le tonalité de vos pistes.
+        <translation>Lorsque la détection de tonalité est active, Mixxx détecte le tonalité de vos pistes.
 vous permettant ainsi d&apos;ajuster la tonalité afin de produire une mixage harmonique.</translation>
     </message>
     <message>
@@ -6205,7 +6205,7 @@ vous permettant ainsi d&apos;ajuster la tonalité afin de produire une mixage ha
     <message>
         <location filename="../../src/preferences/dialog/dlgpreflibrarydlg.ui" line="21"/>
         <source>Music Directories</source>
-        <translation>Répertoires de music</translation>
+        <translation>Répertoires de musique</translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgpreflibrarydlg.ui" line="51"/>
@@ -6311,7 +6311,7 @@ vous permettant ainsi d&apos;ajuster la tonalité afin de produire une mixage ha
     <message>
         <location filename="../../src/preferences/dialog/dlgpreflibrarydlg.ui" line="515"/>
         <source>Open Mixxx Settings Folder</source>
-        <translation>Ouvrir le répertoire de paramètres Mixxx </translation>
+        <translation>Ouvrir le dossier de paramètres Mixxx </translation>
     </message>
     <message>
         <location filename="../../src/preferences/dialog/dlgpreflibrarydlg.ui" line="297"/>
@@ -9311,7 +9311,7 @@ Désirez-vous rechercher maintenant les pochettes dans votre bibliothèque?</tra
     <message>
         <location filename="../../src/encoder/encoderopus.cpp" line="82"/>
         <source>Using Opus at samplerates other than 48 kHz is not supported by the Opus encoder. Please use 48000 Hz in &quot;Sound Hardware&quot; preferences or switch to a different encoding.</source>
-        <translation>L&apos;utilisation de Opus à des échantillonnages autres que 48 kHz n&apos;est pas prise en charge par le codeur Opus. Veuillez utiliser 48000 Hz dans les préférences &quot;Matériel sonore&quot; ou basculez vers un codage différent.</translation>
+        <translation>L&apos;utilisation de Opus à des échantillonnages autres que 48 kHz n&apos;est pas prise en charge par l&apos;encodeur Opus. Veuillez utiliser 48000 Hz dans les préférences &quot;Matériel sonore&quot; ou basculez vers un codage différent.</translation>
     </message>
     <message>
         <location filename="../../src/encoder/encoderopus.cpp" line="150"/>
@@ -9363,7 +9363,7 @@ Si vous ne souhaitez pas accorder l&apos;accès à Mixxx, cliquez sur Annuler da
         <location filename="../../src/effects/backends/builtin/bitcrushereffect.cpp" line="24"/>
         <location filename="../../src/effects/backends/builtin/bitcrushereffect.cpp" line="25"/>
         <source>Bit Depth</source>
-        <translation>Résolution</translation>
+        <translation>Bit Depth</translation>
     </message>
     <message>
         <location filename="../../src/effects/backends/builtin/bitcrushereffect.cpp" line="14"/>
@@ -10451,7 +10451,7 @@ Complètement à droite: fin de la période d&apos;effet</translation>
     <message>
         <location filename="../../src/encoder/encoderfdkaac.cpp" line="258"/>
         <source>&lt;html&gt;Mixxx cannot record or stream in AAC or HE-AAC without the FDK-AAC encoder. In order to record or stream in AAC or AAC+, you need to download &lt;b&gt;libfdk-aac&lt;/b&gt; and install it on your system.</source>
-        <translation>&lt;html&gt;Mixxx ne peut pas enregistrer ou publier en streaming en AAC ou HE-AAC sans l&apos;encodeur FDK-AAC. Pour enregistrer ou publier en streaming en AAC ou AAC +, vous devez télécharger &lt;b&gt;libfdk-aac&lt;/b&gt; et l&apos;installer sur votre système.</translation>
+        <translation>&lt;html&gt;Mixxx ne peut pas enregistrer ou publier en streaming en AAC ou HE-AAC sans l&apos;encodeur FDK-AAC. Pour enregistrer ou publier en streaming en AAC ou AAC+, vous devez télécharger &lt;b&gt;libfdk-aac&lt;/b&gt; et l&apos;installer sur votre système.</translation>
     </message>
     <message>
         <location filename="../../src/encoder/encoderfdkaac.cpp" line="271"/>
@@ -10472,7 +10472,7 @@ Complètement à droite: fin de la période d&apos;effet</translation>
         <location filename="../../src/engine/sidechain/enginerecord.cpp" line="63"/>
         <location filename="../../src/engine/sidechain/shoutconnection.cpp" line="478"/>
         <source> encoder failure</source>
-        <translation>défaillance de l&apos;encodeur </translation>
+        <translation>échec de l&apos;encodeur </translation>
     </message>
     <message>
         <location filename="../../src/engine/sidechain/enginerecord.cpp" line="65"/>
@@ -10705,7 +10705,7 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/recording/recordingmanager.cpp" line="286"/>
         <source>Ensure there is enough free disk space and you have write permission for the Recordings folder.</source>
-        <translation>Assurez-vous d&apos;avoir suffisamment de place disponible et les permissions en écriture dans le répertoire des enregistrements.</translation>
+        <translation>Assurez-vous d&apos;avoir suffisamment de place disponible et les permissions en écriture dans le dossier des enregistrements.</translation>
     </message>
     <message>
         <location filename="../../src/recording/recordingmanager.cpp" line="287"/>
@@ -10739,7 +10739,7 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/library/rekordbox/rekordboxfeature.cpp" line="1476"/>
         <source>Folders</source>
-        <translation>Répertoires</translation>
+        <translation>Dossiers</translation>
     </message>
     <message>
         <location filename="../../src/library/rekordbox/rekordboxfeature.cpp" line="1460"/>
@@ -11934,7 +11934,7 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="83"/>
         <source>Show a big version of the Spinny or track cover art if enabled.</source>
-        <translation>Afficher une grande version de la couverture ou la pochette d&apos;album de la piste si elle est activée. </translation>
+        <translation>Afficher une grande version de la couverture ou la pochette d&apos;album de la piste si activé. </translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="107"/>
@@ -12031,7 +12031,7 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="281"/>
         <source>Hide all skin sections except the decks to have more screen space for the track library.</source>
-        <translation>Masque toutes les sections sauf les platines afin d&apos;offrir la plus grande place à la bibliothèque.</translation>
+        <translation>Masque toutes les sections du thème sauf les platines afin d&apos;offrir la plus grande place à la bibliothèque.</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="288"/>
@@ -12057,7 +12057,7 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="323"/>
         <source>Auto: Sets how much to reduce the music volume when the volume of active microphones rises above threshold.</source>
-        <translation>Auto : Règle le niveau de réduction du volume sonore de la musique lorsque le(s) micro(s) actif(s) dépasse le seuil.</translation>
+        <translation>Auto : Règle le niveau d&apos;atténuation  du volume sonore de la musique lorsque le(s) micro(s) actif(s) dépasse le seuil.</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="324"/>
@@ -12078,12 +12078,12 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="430"/>
         <source>Left click: shift 10 milliseconds earlier</source>
-        <translation>Clic gauche : décale 10 ms plus tôt</translation>
+        <translation>Clic-gauche : décale 10 ms plus tôt</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="431"/>
         <source>Right click: shift 1 millisecond earlier</source>
-        <translation>Clic-droit : décale 10 ms plus tard</translation>
+        <translation>Clic-droit : décale 1 ms plus tôt</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="434"/>
@@ -12093,7 +12093,7 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="436"/>
         <source>Left click: shift 10 milliseconds later</source>
-        <translation>Clic-gauche : décale 1O ms plus tard</translation>
+        <translation>Clic-gauche : décale 10 ms plus tard</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="437"/>
@@ -12223,12 +12223,12 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="746"/>
         <source>Jump forward by 1 beat.</source>
-        <translation>Saute vers l&apos;avant de 1 battements</translation>
+        <translation>Saute vers l&apos;avant de 1 battement</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="747"/>
         <source>Move the loop forward by 1 beat.</source>
-        <translation>Déplace la boucle vers l&apos;avant de 1 battements</translation>
+        <translation>Déplace la boucle vers l&apos;avant de 1 battement</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="750"/>
@@ -12248,12 +12248,12 @@ Hint: compensates &quot;chipmunk&quot; or &quot;growling&quot; voices</source>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="753"/>
         <source>Jump backward by 1 beat.</source>
-        <translation>Saute vers l&apos;arrière de 1 battements</translation>
+        <translation>Saute vers l&apos;arrière de 1 battement</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="754"/>
         <source>Move the loop backward by 1 beat.</source>
-        <translation>Déplace la boucle vers l&apos;arrière de 1 battements</translation>
+        <translation>Déplace la boucle vers l&apos;arrière de 1 battement</translation>
     </message>
     <message>
         <location filename="../../src/skin/legacy/tooltips.cpp" line="762"/>
@@ -13748,7 +13748,7 @@ Utiliser ceci pour modifier uniquement le signal affecté (traité) avec EQ et l
         <location filename="../../src/widget/wcoverartmenu.cpp" line="33"/>
         <source>Reload from file/folder</source>
         <comment>reload cover art from file metadata or folder</comment>
-        <translation>Recharger depuis le fichier/le répertoire</translation>
+        <translation>Recharger depuis le fichier/dossier</translation>
     </message>
     <message>
         <location filename="../../src/widget/wcoverartmenu.cpp" line="66"/>
@@ -13913,7 +13913,7 @@ This can not be undone!</source>
     <message>
         <location filename="../../src/widget/wmainmenubar.cpp" line="134"/>
         <source>Rescans library folders for changes to tracks.</source>
-        <translation>Balaye les répertoires de la bibliothèque à la recherche de modifications dans les pistes.</translation>
+        <translation>Balaye les dossiers de la bibliothèque à la recherche de modifications dans les pistes.</translation>
     </message>
     <message>
         <location filename="../../src/widget/wmainmenubar.cpp" line="138"/>
@@ -15050,37 +15050,32 @@ This can not be undone!</source>
 <context>
     <name>WTrackTableView</name>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="876"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="864"/>
         <source>Confirm track hide</source>
         <translation>Confirm track hide</translation>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="877"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="865"/>
         <source>Are you sure you want to hide the selected tracks?</source>
         <translation>Are you sure you want to hide the selected tracks?</translation>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="883"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="875"/>
         <source>Are you sure you want to remove the selected tracks from AutoDJ queue?</source>
         <translation>Are you sure you want to remove the selected tracks from AutoDJ queue?</translation>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="887"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="877"/>
         <source>Are you sure you want to remove the selected tracks from this crate?</source>
         <translation>Are you sure you want to remove the selected tracks from this crate?</translation>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="891"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="879"/>
         <source>Are you sure you want to remove the selected tracks from this playlist?</source>
         <translation>Are you sure you want to remove the selected tracks from this playlist?</translation>
     </message>
     <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="900"/>
-        <source>Don&apos;t ask again during this session</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location filename="../../src/widget/wtracktableview.cpp" line="879"/>
+        <location filename="../../src/widget/wtracktableview.cpp" line="885"/>
         <source>Confirm track removal</source>
         <translation>Confirm track removal</translation>
     </message>
