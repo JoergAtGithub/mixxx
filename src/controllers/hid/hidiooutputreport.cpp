@@ -18,7 +18,8 @@ HidIoOutputReport::HidIoOutputReport(
         const quint8& reportId, const unsigned int& reportDataSize)
         : m_reportId(reportId),
           m_possiblyUnsentDataCached(false),
-          m_lastCachedDataSize(0) {
+          m_lastCachedDataSize(0),
+          m_isNonSkippingMode(false) {
     // First byte must always contain the ReportID - also after swapping, therefore initialize both arrays
     m_cachedData.reserve(kReportIdSize + reportDataSize);
     m_cachedData.append(reportId);
@@ -82,7 +83,7 @@ bool HidIoOutputReport::sendCachedData(QMutex* pHidDeviceAndPollMutex,
         return false;
     }
 
-    if (!(m_useNonSkippingQueue || m_lastSentData.compare(m_cachedData))) {
+    if (!m_lastSentData.compare(m_cachedData)) {
         // An HID OutputReport can contain only HID OutputItems.
         // HID OutputItems are defined to represent the state of one or more similar controls or LEDs.
         // Only HID Feature items may be attributes of other items.
@@ -154,4 +155,8 @@ bool HidIoOutputReport::sendCachedData(QMutex* pHidDeviceAndPollMutex,
 
     // Return with true, to signal the caller, that the time consuming hid_write operation was executed
     return true;
+}
+
+void HidIoOutputReport::setNonSkippingMode(bool isNonSkippingMode) {
+    m_isNonSkippingMode = isNonSkippingMode;
 }

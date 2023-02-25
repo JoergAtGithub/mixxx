@@ -23,17 +23,25 @@ class HidIoOutputReport {
             const mixxx::hid::DeviceInfo& deviceInfo,
             const RuntimeLoggingCategory& logOutput);
 
+    bool isNonSkippingMode() {
+        return m_isNonSkippingMode;
+    }
+
   private:
     const quint8 m_reportId;
     QByteArray m_lastSentData;
 
     /// Mutex must be locked when reading/writing m_cachedData
-    /// or m_possiblyUnsentDataCached, m_useNonSkippingQueue
+    /// m_possiblyUnsentDataCached, m_useNonSkippingQueue or
+    /// calling setNonSkippingMode / isNonSkippingMode
     QMutex m_cachedDataMutex;
 
     QByteArray m_cachedData;
     bool m_possiblyUnsentDataCached;
     bool m_useNonSkippingQueue;
+
+    bool m_isNonSkippingMode;
+    void setNonSkippingMode(bool isNonSkippingMode);
 
     /// Due to swapping of the QbyteArrays, we need to store
     /// this information independent of the QBytearray size
