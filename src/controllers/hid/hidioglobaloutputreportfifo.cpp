@@ -69,11 +69,6 @@ void HidIoGlobalOutputReportFifo::addReportDatasetToFifo(const quint8 reportId,
     */
 }
 
-void HidIoGlobalOutputReportFifo::purgeDatasetsByReportID(const quint8 reportId,
-        const mixxx::hid::DeviceInfo& deviceInfo,
-        const RuntimeLoggingCategory& logOutput) {
-}
-
 bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPollMutex,
         hid_device* pHidDevice,
         const mixxx::hid::DeviceInfo& deviceInfo,

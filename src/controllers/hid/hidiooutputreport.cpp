@@ -34,24 +34,12 @@ void HidIoOutputReport::updateCachedData(const QByteArray& data,
         bool useNonSkippingQueue) {
     auto cacheLock = lockMutex(&m_cachedDataMutex);
 
-    // Comparisition must be protected by m_cachedDataMutex
-    if (useNonSkippingQueue) {
-        m_possiblyUnsentDataCached = false;
-        return;
-    }
-
-    if (m_useNonSkippingQueue != useNonSkippingQueue) {
-        pGlobalOutputReportFifo->purgeDatasetsByReportID(m_reportId, deviceInfo, logOutput);
-    }
-
-    m_useNonSkippingQueue = useNonSkippingQueue;
-
     if (!m_lastCachedDataSize) {
         // First call updateCachedData for this report
         m_lastCachedDataSize = data.size();
 
     } else {
-        if (m_possiblyUnsentDataCached) {
+        if (m_possiblyUnsentDataCached && !useNonSkippingQueue) {
             qCDebug(logOutput) << "t:" << mixxx::Time::elapsed().formatMillisWithUnit()
                                << "Skipped superseded OutputReport"
                                << deviceInfo.formatName() << "serial #"
@@ -70,6 +58,16 @@ void HidIoOutputReport::updateCachedData(const QByteArray& data,
                                  << "- This indicates a bug in the mapping code!";
             m_lastCachedDataSize = data.size();
         }
+    }
+
+    m_useNonSkippingQueue = useNonSkippingQueue;
+
+    // m_possiblyUnsentDataCached must be set while m_cachedDataMutex is locked
+    // This step covers the case that data for the report are cached in skipping mode,
+    // succeed by a non-skipping send of the same report
+    if (useNonSkippingQueue) {
+        m_possiblyUnsentDataCached = false;
+        return;
     }
 
     // Deep copy with reusing the already allocated heap memory
