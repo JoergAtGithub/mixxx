@@ -43,6 +43,7 @@ HidIoThread::HidIoThread(
           m_pHidDevice(pHidDevice),
           m_lastPollSize(0),
           m_pollingBufferIndex(0),
+          m_globalOutputReportFifo(),
           m_runLoopSemaphore(1) {
     // Initializing isn't strictly necessary but is good practice.
     for (int i = 0; i < kNumBuffers; i++) {
@@ -205,7 +206,11 @@ void HidIoThread::updateCachedOutputReportData(quint8 reportID,
     mapLock.unlock();
 
     actualOutputReportIterator->second->updateCachedData(
-            data, m_deviceInfo, m_logOutput, useNonSkippingQueue);
+            data, m_deviceInfo, m_logOutput, &m_globalOutputReportFifo, useNonSkippingQueue);
+
+    if (useNonSkippingQueue) {
+        m_globalOutputReportFifo.addReportDatasetToFifo(reportID, data, m_deviceInfo, m_logOutput);
+    }
 }
 
 bool HidIoThread::sendNextCachedOutputReport() {

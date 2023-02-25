@@ -13,15 +13,20 @@ class HidIoGlobalOutputReportFifo {
   public:
     HidIoGlobalOutputReportFifo();
 
-    /// Caches new report data, which will later send by the IO thread
-    void updateCachedData(const quint8 reportId,
+    /// Caches new report dataset, which will later send by the IO thread
+    void addReportDatasetToFifo(const quint8 reportId,
             const QByteArray& data,
+            const mixxx::hid::DeviceInfo& deviceInfo,
+            const RuntimeLoggingCategory& logOutput);
+
+    /// Purges all report datasets with the given ReportID from the FIFO
+    void purgeDatasetsByReportID(const quint8 reportId,
             const mixxx::hid::DeviceInfo& deviceInfo,
             const RuntimeLoggingCategory& logOutput);
 
     /// Sends the OutputReport to the HID device, when changed data are cached.
     /// Returns true if a time consuming hid_write operation was executed.
-    bool sendCachedData(QMutex* pHidDeviceAndPollMutex,
+    bool sendNextReportDataset(QMutex* pHidDeviceAndPollMutex,
             hid_device* pHidDevice,
             const mixxx::hid::DeviceInfo& deviceInfo,
             const RuntimeLoggingCategory& logOutput);

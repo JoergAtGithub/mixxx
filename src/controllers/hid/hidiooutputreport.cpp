@@ -30,8 +30,21 @@ HidIoOutputReport::HidIoOutputReport(
 void HidIoOutputReport::updateCachedData(const QByteArray& data,
         const mixxx::hid::DeviceInfo& deviceInfo,
         const RuntimeLoggingCategory& logOutput,
+        HidIoGlobalOutputReportFifo* pGlobalOutputReportFifo,
         bool useNonSkippingQueue) {
     auto cacheLock = lockMutex(&m_cachedDataMutex);
+
+    // Comparisition must be protected by m_cachedDataMutex
+    if (useNonSkippingQueue) {
+        m_possiblyUnsentDataCached = false;
+        return;
+    }
+
+    if (m_useNonSkippingQueue != useNonSkippingQueue) {
+        pGlobalOutputReportFifo->purgeDatasetsByReportID(m_reportId, deviceInfo, logOutput);
+    }
+
+    m_useNonSkippingQueue = useNonSkippingQueue;
 
     if (!m_lastCachedDataSize) {
         // First call updateCachedData for this report
@@ -67,7 +80,6 @@ void HidIoOutputReport::updateCachedData(const QByteArray& data,
             data.constData(),
             data.size());
     m_possiblyUnsentDataCached = true;
-    m_useNonSkippingQueue = useNonSkippingQueue;
 }
 
 bool HidIoOutputReport::sendCachedData(QMutex* pHidDeviceAndPollMutex,
@@ -155,8 +167,4 @@ bool HidIoOutputReport::sendCachedData(QMutex* pHidDeviceAndPollMutex,
 
     // Return with true, to signal the caller, that the time consuming hid_write operation was executed
     return true;
-}
-
-void HidIoOutputReport::setNonSkippingMode(bool isNonSkippingMode) {
-    m_isNonSkippingMode = isNonSkippingMode;
 }

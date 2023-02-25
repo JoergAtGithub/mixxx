@@ -25,14 +25,14 @@ HidIoGlobalOutputReportFifo::HidIoGlobalOutputReportFifo()
     m_lastSentData.append(reportId);*/
 }
 
-void HidIoGlobalOutputReportFifo::updateCachedData(const quint8 reportId,
+void HidIoGlobalOutputReportFifo::addReportDatasetToFifo(const quint8 reportId,
         const QByteArray& data,
         const mixxx::hid::DeviceInfo& deviceInfo,
         const RuntimeLoggingCategory& logOutput) {
     auto cacheLock = lockMutex(&m_cachedDataMutex);
     /*
     if (!m_lastCachedDataSize) {
-        // First call updateCachedData for this report
+        // First call addReportDatasetToFifo for this report
         m_lastCachedDataSize = data.size();
 
     } else {
@@ -69,7 +69,12 @@ void HidIoGlobalOutputReportFifo::updateCachedData(const quint8 reportId,
     */
 }
 
-bool HidIoGlobalOutputReportFifo::sendCachedData(QMutex* pHidDeviceAndPollMutex,
+void HidIoGlobalOutputReportFifo::purgeDatasetsByReportID(const quint8 reportId,
+        const mixxx::hid::DeviceInfo& deviceInfo,
+        const RuntimeLoggingCategory& logOutput) {
+}
+
+bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPollMutex,
         hid_device* pHidDevice,
         const mixxx::hid::DeviceInfo& deviceInfo,
         const RuntimeLoggingCategory& logOutput) {
