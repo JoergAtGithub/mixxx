@@ -73,64 +73,34 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
         const RuntimeLoggingCategory& logOutput) {
     auto startOfHidWrite = mixxx::Time::elapsed();
 
-    auto cacheLock = lockMutex(&m_fifoMutex);
+    auto fifoLock = lockMutex(&m_fifoMutex);
 
     if (m_indexOfNextReportToSend == m_indexOfLastCachedReport) {
         // No data in FIFO to be send
+        // Return with false, to signal the caller, that no time consuming IO
+        // operation was necessary
         return false;
-    }
-
-    /*
-    if (!m_possiblyUnsentDataCached) {
-        // Return with false, to signal the caller, that no time consuming IO
-    operation was necessary return false;
-    }
-
-    if (!(m_useNonSkippingQueue || m_lastSentData.compare(m_cachedData))) {
-        // An HID OutputReport can contain only HID OutputItems.
-        // HID OutputItems are defined to represent the state of one or more
-    similar controls or LEDs.
-        // Only HID Feature items may be attributes of other items.
-        // This means there is always a one to one relationship to the state of
-    control(s)/LED(s),
-        // and if the state is not changed, there's no need to execute the time
-    consuming hid_write again.
-
-        // Setting m_possiblyUnsentDataCached to false prevents,
-        // that the byte array compare operation is executed for the same data
-    again m_possiblyUnsentDataCached = false;
-
-        cacheLock.unlock();
-
-        qCDebug(logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit()
-                           << " Skipped identical Output Report for"
-                           << deviceInfo.formatName() << "serial #"
-                           << deviceInfo.serialNumber() << "(Report ID"
-                           << m_reportId << ")";
-
-        // Return with false, to signal the caller, that no time consuming IO
-    operation was necessary return false;
     }
 
     // Preemptively set m_lastSentData and m_possiblyUnsentDataCached,
     // to release the mutex during the time consuming hid_write operation.
-    // In the unlikely case that hid_write fails, they will be invalidated
-    afterwards
-    // This is safe, because these members are only reset in this scope of this
-    method,
-    // and concurrent execution of this method is prevented by locking
-    pHidDeviceMutex m_lastSentData.swap(m_cachedData);
-    m_possiblyUnsentDataCached = false;
+    // In the unlikely case that hid_write fails, they will be invalidated afterwards
+    // This is safe, because these members are only reset in this scope of this method,
+    // and concurrent execution of this method is prevented by locking pHidDeviceMutex
 
-    cacheLock.unlock();
+    QByteArray dataToSend;
+    dataToSend.reserve(kReportIdSize + m_maxCachedDataSize);
+    dataToSend.swap(m_outputReportFifo[m_indexOfNextReportToSend]);
+
+    fifoLock.unlock();
 
     auto hidDeviceLock = lockMutex(pHidDeviceAndPollMutex);
 
     // hid_write can take several milliseconds, because hidapi synchronizes
     // the asyncron HID communication from the OS
     int result = hid_write(pHidDevice,
-            reinterpret_cast<const unsigned char*>(m_lastSentData.constData()),
-            m_lastSentData.size());
+            reinterpret_cast<const unsigned char*>(dataToSend.constData()),
+            dataToSend.size());
     if (result == -1) {
         qCWarning(logOutput) << "Unable to send data to" <<
     deviceInfo.formatName() << ":"
@@ -141,32 +111,24 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
 
     hidDeviceLock.unlock();
 
-    if (result == -1) {
-        cacheLock.relock();
-        // Clear the m_lastSentData because the last send data are not reliable
-    known.
-        // These error should not occur in normal operation,
-        // therefore the performance impact of additional memory allocation
-        // at the next call of this method is negligible
-        m_lastSentData.clear();
-        m_lastSentData.append(m_reportId);
-        m_possiblyUnsentDataCached = true;
+    fifoLock.relock();
 
-        // Return with true, to signal the caller, that the time consuming
-    hid_write operation was executed
-        // (Note, that the return value isn't an error code)
-        return true;
+    if (m_indexOfNextReportToSend++ >= kSizeOfFifoInReports) {
+        m_indexOfNextReportToSend = 0;
     }
 
-    qCDebug(logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit() << " "
-                       << result << "bytes sent to" << deviceInfo.formatName()
-                       << "serial #" << deviceInfo.serialNumber()
-                       << "(including report ID of" << m_reportId << ") -
-    Needed: "
-                       << (mixxx::Time::elapsed() -
-    startOfHidWrite).formatMicrosWithUnit();
+    if (result == 0) {
+        qCDebug(logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit()
+                           << " " << result << "bytes sent to"
+                           << deviceInfo.formatName() << "serial #"
+                           << deviceInfo.serialNumber()
+                           << "(including report ID of"
+                           << dataToSend.constData()[0] << ") - Needed: "
+                           << (mixxx::Time::elapsed() - startOfHidWrite)
+                                      .formatMicrosWithUnit();
+    }
 
     // Return with true, to signal the caller, that the time consuming hid_write
-    operation was executed*/
+    // operation was executed
     return true;
 }

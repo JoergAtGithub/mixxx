@@ -67,6 +67,7 @@ void HidIoOutputReport::updateCachedData(const QByteArray& data,
     // succeed by a non-skipping send of the same report
     if (useNonSkippingQueue) {
         m_possiblyUnsentDataCached = false;
+        m_lastSentData.clear();
         return;
     }
 
