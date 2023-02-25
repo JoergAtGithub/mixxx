@@ -15,58 +15,56 @@ constexpr int kMaxHidErrorMessageSize = 512;
 } // namespace
 
 HidIoGlobalOutputReportFifo::HidIoGlobalOutputReportFifo()
-        : // m_possiblyUnsentDataCached(false),
-          m_lastCachedDataSize(0) {
-    // First byte must always contain the ReportID - also after swapping,
-    // therefore initialize both arrays
-    /* m_cachedData.reserve(kReportIdSize + reportDataSize);
-    m_cachedData.append(reportId);
-    m_lastSentData.reserve(kReportIdSize + reportDataSize);
-    m_lastSentData.append(reportId);*/
+        : m_indexOfNextReportToSend(0),
+          m_indexOfLastCachedReport(0),
+          m_maxCachedDataSize(0) {
 }
 
 void HidIoGlobalOutputReportFifo::addReportDatasetToFifo(const quint8 reportId,
         const QByteArray& data,
         const mixxx::hid::DeviceInfo& deviceInfo,
         const RuntimeLoggingCategory& logOutput) {
-    auto cacheLock = lockMutex(&m_cachedDataMutex);
-    /*
-    if (!m_lastCachedDataSize) {
-        // First call addReportDatasetToFifo for this report
-        m_lastCachedDataSize = data.size();
+    auto cacheLock = lockMutex(&m_fifoMutex);
 
-    } else {
-        if (m_possiblyUnsentDataCached) {
-            qCDebug(logOutput) << "t:" << mixxx::Time::elapsed().formatMillisWithUnit()
-                               << "Skipped superseded OutputReport"
-                               << deviceInfo.formatName() << "serial #"
-                               << deviceInfo.serialNumber() << "(Report ID"
-                               << m_reportId << ")";
-        }
-
-        // The size of an HID report is defined in a HID device and can't vary at runtime
-        if (m_lastCachedDataSize != data.size()) {
-            qCWarning(logOutput) << "Size of report (with Report ID"
-                                 << m_reportId << ") changed from"
-                                 << m_lastCachedDataSize
-                                 << "to" << data.size() << "for"
-                                 << deviceInfo.formatName() << "serial #"
-                                 << deviceInfo.serialNumber()
-                                 << "- This indicates a bug in the mapping code!";
-            m_lastCachedDataSize = data.size();
-        }
+    if (m_maxCachedDataSize < data.size()) {
+        // If we use the max size of all reports ever sent in non-skipping mode,
+        // we prevent unnecessary resize of the QByteArray m_outputReportFifo
+        m_maxCachedDataSize = data.size();
     }
 
+    unsigned int indexOfReportToCache;
+
+    if (m_indexOfLastCachedReport + 1 < kSizeOfFifoInReports) {
+        indexOfReportToCache = m_indexOfLastCachedReport + 1;
+    } else {
+        indexOfReportToCache = 0;
+    }
+
+    // If the FIFO is full we have no other chance than skipping the dataset
+    if (m_indexOfNextReportToSend == indexOfReportToCache) {
+        qCWarning(logOutput)
+                << "FIFO overflow: Unable to add OutputReport " << reportId
+                << " to the global cache for non-skipping sending of "
+                   "OututReports for "
+                << deviceInfo.formatName();
+        return;
+    }
+
+    // First byte must always contain the ReportID - also after swapping,
+    // therefore initialize both arrays
+    QByteArray cachedData;
+    cachedData.reserve(kReportIdSize + m_maxCachedDataSize);
+    cachedData.append(reportId);
+    cachedData.append(data);
+
     // Deep copy with reusing the already allocated heap memory
-    // The first byte with the ReportID is not overwritten
-    qByteArrayReplaceWithPositionAndSize(&m_cachedData,
-            kReportIdSize,
-            m_cachedData.size(),
-            data.constData(),
-            data.size());
-    m_possiblyUnsentDataCached = true;
-    m_useNonSkippingQueue = useNonSkippingQueue;
-    */
+    qByteArrayReplaceWithPositionAndSize(&m_outputReportFifo[indexOfReportToCache],
+            0,
+            m_outputReportFifo[indexOfReportToCache].size(),
+            cachedData.constData(),
+            cachedData.size());
+
+    m_indexOfLastCachedReport = indexOfReportToCache;
 }
 
 bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPollMutex,
@@ -75,7 +73,13 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
         const RuntimeLoggingCategory& logOutput) {
     auto startOfHidWrite = mixxx::Time::elapsed();
 
-    auto cacheLock = lockMutex(&m_cachedDataMutex);
+    auto cacheLock = lockMutex(&m_fifoMutex);
+
+    if (m_indexOfNextReportToSend == m_indexOfLastCachedReport) {
+        // No data in FIFO to be send
+        return false;
+    }
+
     /*
     if (!m_possiblyUnsentDataCached) {
         // Return with false, to signal the caller, that no time consuming IO

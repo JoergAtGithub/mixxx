@@ -28,12 +28,14 @@ class HidIoGlobalOutputReportFifo {
 
   private:
     QByteArray m_outputReportFifo[kSizeOfFifoInReports];
+    unsigned int m_indexOfNextReportToSend;
+    unsigned int m_indexOfLastCachedReport;
 
     /// Mutex must be locked when reading/writing
-    /// m_outputReportFifo and m_lastCachedDataSize
-    QMutex m_cachedDataMutex;
+    /// m_outputReportFifo and m_maxCachedDataSize
+    QMutex m_fifoMutex;
 
     /// Due to swapping of the QbyteArrays, we need to store
     /// this information independent of the QBytearray size
-    int m_lastCachedDataSize;
+    int m_maxCachedDataSize;
 };
