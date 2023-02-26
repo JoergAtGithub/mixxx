@@ -214,10 +214,21 @@ void HidIoThread::updateCachedOutputReportData(quint8 reportID,
 }
 
 bool HidIoThread::sendNextCachedOutputReport() {
-    // m_outputReports.size() doesn't need mutex protection, because the value of i is not used.
-    // i is just a counter to prevent infinite loop execution.
-    // If the map size increases, this loop will execute one iteration more,
-    // which only has the effect, that one additional lookup operation for unsent data will be executed.
+    // First send non-skipping reports from FIFO
+    if (m_globalOutputReportFifo.sendNextReportDataset(&m_hidDeviceAndPollMutex,
+                m_pHidDevice,
+                m_deviceInfo,
+                m_logOutput)) {
+        // Return after each time consuming sendCachedData
+        return true;
+    }
+
+    // If non non-skipping reports were in the FIFO, send the skipable reports
+    // from the m_outputReports cache m_outputReports.size() doesn't need mutex
+    // protection, because the value of i is not used. i is just a counter to
+    // prevent infinite loop execution. If the map size increases, this loop
+    // will execute one iteration more, which only has the effect, that one
+    // additional lookup operation for unsent data will be executed.
     for (std::size_t i = 0; i < m_outputReports.size(); i++) {
         auto mapLock = lockMutex(&m_outputReportMapMutex);
         if (m_outputReportIterator == m_outputReports.end()) {
