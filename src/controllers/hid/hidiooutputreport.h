@@ -36,6 +36,8 @@ class HidIoOutputReport {
     bool m_possiblyUnsentDataCached;
     bool m_useNonSkippingQueue;
 
+    bool m_isNonSkippingMode;
+
     /// Due to swapping of the QbyteArrays, we need to store
     /// this information independent of the QBytearray size
     int m_lastCachedDataSize;
