@@ -34,8 +34,4 @@ class HidIoGlobalOutputReportFifo {
     /// Mutex must be locked when reading/writing
     /// m_outputReportFifo and m_maxCachedDataSize
     QMutex m_fifoMutex;
-
-    /// Due to swapping of the QbyteArrays, we need to store
-    /// this information independent of the QBytearray size
-    int m_maxCachedDataSize;
 };

@@ -17,8 +17,7 @@ constexpr int kMaxHidErrorMessageSize = 512;
 
 HidIoGlobalOutputReportFifo::HidIoGlobalOutputReportFifo()
         : m_indexOfLastSentReport(0),
-          m_indexOfLastCachedReport(0),
-          m_maxCachedDataSize(0) {
+          m_indexOfLastCachedReport(0) {
 }
 
 void HidIoGlobalOutputReportFifo::addReportDatasetToFifo(const quint8 reportId,
@@ -27,12 +26,6 @@ void HidIoGlobalOutputReportFifo::addReportDatasetToFifo(const quint8 reportId,
         const RuntimeLoggingCategory& logOutput) {
     auto cacheLock = lockMutex(&m_fifoMutex);
 
-    if (m_maxCachedDataSize < data.size()) {
-        // If we use the max size of all reports ever sent in non-skipping mode,
-        // we prevent unnecessary resize of the QByteArray m_outputReportFifo
-        m_maxCachedDataSize = data.size();
-    }
-
     unsigned int indexOfReportToCache;
 
     if (m_indexOfLastCachedReport + 1 < kSizeOfFifoInReports) {
@@ -40,6 +33,11 @@ void HidIoGlobalOutputReportFifo::addReportDatasetToFifo(const quint8 reportId,
     } else {
         indexOfReportToCache = 0;
     }
+
+    // qCWarning(logOutput) << "FIFO used entries:" << (indexOfReportToCache >
+    // m_indexOfLastSentReport ? kSizeOfFifoInReports - (indexOfReportToCache -
+    // m_indexOfLastSentReport) : kSizeOfFifoInReports - (kSizeOfFifoInReports -
+    // m_indexOfLastSentReport + indexOfReportToCache));
 
     // If the FIFO is full we have no other chance than skipping the dataset
     if (m_indexOfLastSentReport == indexOfReportToCache) {
@@ -54,16 +52,12 @@ void HidIoGlobalOutputReportFifo::addReportDatasetToFifo(const quint8 reportId,
     // First byte must always contain the ReportID - also after swapping,
     // therefore initialize both arrays
     QByteArray cachedData;
-    cachedData.reserve(kReportIdSize + m_maxCachedDataSize);
+    cachedData.reserve(kReportIdSize + data.size());
     cachedData.append(reportId);
     cachedData.append(data);
 
     // Deep copy with reusing the already allocated heap memory
-    qByteArrayReplaceWithPositionAndSize(&m_outputReportFifo[indexOfReportToCache],
-            0,
-            m_outputReportFifo[indexOfReportToCache].size(),
-            cachedData.constData(),
-            cachedData.size());
+    cachedData.swap(m_outputReportFifo[indexOfReportToCache]);
 
     m_indexOfLastCachedReport = indexOfReportToCache;
 }
@@ -79,7 +73,7 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
     if (m_indexOfLastSentReport == m_indexOfLastCachedReport) {
         // No data in FIFO to be send
         // Return with false, to signal the caller, that no time consuming IO
-        // operation was necessary
+        // operation was ncessary
         return false;
     }
 
@@ -96,7 +90,6 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
     // and concurrent execution of this method is prevented by locking pHidDeviceMutex
 
     QByteArray dataToSend;
-    dataToSend.reserve(kReportIdSize + m_maxCachedDataSize);
     dataToSend.swap(m_outputReportFifo[m_indexOfLastSentReport]);
 
     fifoLock.unlock();
@@ -118,15 +111,13 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
 
     hidDeviceLock.unlock();
 
-    fifoLock.relock();
-
-    if (result == 0) {
+    if (result != -1) {
         qCDebug(logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit()
                            << " " << result << "bytes sent to"
                            << deviceInfo.formatName() << "serial #"
                            << deviceInfo.serialNumber()
                            << "(including report ID of"
-                           << dataToSend.constData()[0] << ") - Needed: "
+                           << static_cast<quint8>(dataToSend[0]) << ") - Needed: "
                            << (mixxx::Time::elapsed() - startOfHidWrite)
                                       .formatMicrosWithUnit();
     }
