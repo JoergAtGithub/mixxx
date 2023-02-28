@@ -15,7 +15,7 @@ class HidIoOutputReport {
             const mixxx::hid::DeviceInfo& deviceInfo,
             const RuntimeLoggingCategory& logOutput,
             HidIoGlobalOutputReportFifo* pGlobalOutputReportFifo,
-            bool useNonSkippingQueue);
+            bool useNonSkippingFIFO);
 
     /// Sends the OutputReport to the HID device, when changed data are cached.
     /// Returns true if a time consuming hid_write operation was executed.
@@ -29,12 +29,12 @@ class HidIoOutputReport {
     QByteArray m_lastSentData;
 
     /// Mutex must be locked when reading/writing m_cachedData
-    /// or m_possiblyUnsentDataCached, m_useNonSkippingQueue
+    /// or m_possiblyUnsentDataCached, m_useNonSkippingFIFO
     QMutex m_cachedDataMutex;
 
     QByteArray m_cachedData;
     bool m_possiblyUnsentDataCached;
-    bool m_useNonSkippingQueue;
+    bool m_useNonSkippingFIFO;
 
     bool m_isNonSkippingMode;
 

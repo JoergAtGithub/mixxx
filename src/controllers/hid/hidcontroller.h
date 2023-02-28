@@ -72,35 +72,61 @@ class HidControllerJSProxy : public ControllerJSProxy {
     /// @param length Unused but mandatory argument
     /// @param reportID 1...255 for HID devices that uses ReportIDs - or 0 for
     /// devices, which don't use ReportIDs
-    /// @param useNonSkippingQueue If set, the report will also be send, if the
-    /// data are unchanged since last sending or if newer data are in the queue
+    /// @param useNonSkippingFIFO
+    ///  - If False (default):
+    ///    - Reports with identical data will not be send twice
+    ///    - If reports were superseded by newer data, before they can send,
+    ///      the oudated data will be skipped
+    ///    - This mode works for all USB HID Class compliant reports,
+    ///      were the fields describe a state of a control (like an LED)
+    ///    - This mode is best in overload situations
+    ///  - If True:
+    ///    - The report will not be skipped (execept FIFO memory overflow)
+    ///    - All reports with useNonSkippingFIFO set True will be send before
+    ///      any cached report with useNonSkippingFIFO False
+    ///    - All reports with useNonSkippingFIFO set True will be send in
+    ///      strict First In First Out (FIFO) order
+    ///    - Use this mode only where really needed
     Q_INVOKABLE void send(const QList<int>& dataList,
             unsigned int length,
             quint8 reportID,
-            bool useNonSkippingQueue = false) {
+            bool useNonSkippingFIFO = false) {
         Q_UNUSED(length);
         QByteArray dataArray;
         dataArray.reserve(dataList.size());
         for (int datum : dataList) {
             dataArray.append(datum);
         }
-        sendOutputReport(reportID, dataArray, useNonSkippingQueue);
+        sendOutputReport(reportID, dataArray, useNonSkippingFIFO);
     }
 
     /// @brief Sends an OutputReport to HID device
     /// @param reportID 1...255 for HID devices that uses ReportIDs - or 0 for
     /// devices, which don't use ReportIDs
     /// @param dataArray Data to send as byte array (Javascript type Uint8Array)
-    /// @param useNonSkippingQueue If set, the report will also be send, if the
-    /// data are unchanged since last sending or if newer data are in the queue
+    /// @param useNonSkippingFIFO
+    ///  - If False (default):
+    ///    - Reports with identical data will not be send twice
+    ///    - If reports were superseded by newer data, before they can send,
+    ///      the oudated data will be skipped
+    ///    - This mode works for all USB HID Class compliant reports,
+    ///      were the fields describe a state of a control (like an LED)
+    ///    - This mode is best in overload situations
+    ///  - If True:
+    ///    - The report will not be skipped (execept FIFO memory overflow)
+    ///    - All reports with useNonSkippingFIFO set True will be send before
+    ///      any cached report with useNonSkippingFIFO False
+    ///    - All reports with useNonSkippingFIFO set True will be send in
+    ///      strict First In First Out (FIFO) order
+    ///    - Use this mode only where really needed
     Q_INVOKABLE void sendOutputReport(quint8 reportID,
             const QByteArray& dataArray,
-            bool useNonSkippingQueue = false) {
+            bool useNonSkippingFIFO = false) {
         VERIFY_OR_DEBUG_ASSERT(m_pHidController->m_pHidIoThread) {
             return;
         }
         m_pHidController->m_pHidIoThread->updateCachedOutputReportData(
-                reportID, dataArray, useNonSkippingQueue);
+                reportID, dataArray, useNonSkippingFIFO);
     }
 
     /// @brief getInputReport receives an InputReport from the HID device on request.

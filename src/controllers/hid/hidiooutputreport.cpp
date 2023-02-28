@@ -31,7 +31,7 @@ void HidIoOutputReport::updateCachedData(const QByteArray& data,
         const mixxx::hid::DeviceInfo& deviceInfo,
         const RuntimeLoggingCategory& logOutput,
         HidIoGlobalOutputReportFifo* pGlobalOutputReportFifo,
-        bool useNonSkippingQueue) {
+        bool useNonSkippingFIFO) {
     auto cacheLock = lockMutex(&m_cachedDataMutex);
 
     if (!m_lastCachedDataSize) {
@@ -39,7 +39,7 @@ void HidIoOutputReport::updateCachedData(const QByteArray& data,
         m_lastCachedDataSize = data.size();
 
     } else {
-        if (m_possiblyUnsentDataCached && !useNonSkippingQueue) {
+        if (m_possiblyUnsentDataCached && !useNonSkippingFIFO) {
             qCDebug(logOutput) << "t:" << mixxx::Time::elapsed().formatMillisWithUnit()
                                << "skipped superseded OutputReport data for ReportID"
                                << m_reportId;
@@ -56,12 +56,12 @@ void HidIoOutputReport::updateCachedData(const QByteArray& data,
         }
     }
 
-    m_useNonSkippingQueue = useNonSkippingQueue;
+    m_useNonSkippingFIFO = useNonSkippingFIFO;
 
     // m_possiblyUnsentDataCached must be set while m_cachedDataMutex is locked
     // This step covers the case that data for the report are cached in skipping mode,
     // succeed by a non-skipping send of the same report
-    if (useNonSkippingQueue) {
+    if (useNonSkippingFIFO) {
         m_possiblyUnsentDataCached = false;
         m_lastSentData.clear();
         return;
