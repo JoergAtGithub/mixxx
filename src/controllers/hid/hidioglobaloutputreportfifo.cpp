@@ -34,11 +34,6 @@ void HidIoGlobalOutputReportFifo::addReportDatasetToFifo(const quint8 reportId,
         indexOfReportToCache = 0;
     }
 
-    // qCWarning(logOutput) << "FIFO used entries:" << (indexOfReportToCache >
-    // m_indexOfLastSentReport ? kSizeOfFifoInReports - (indexOfReportToCache -
-    // m_indexOfLastSentReport) : kSizeOfFifoInReports - (kSizeOfFifoInReports -
-    // m_indexOfLastSentReport + indexOfReportToCache));
-
     // If the FIFO is full we have no other chance than skipping the dataset
     if (m_indexOfLastSentReport == indexOfReportToCache) {
         qCWarning(logOutput)
@@ -77,6 +72,10 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
         return false;
     }
 
+    // Store old values for use in controller debug output after fifoLock.unlock()
+    unsigned int indexOfLastCachedReport = m_indexOfLastCachedReport;
+    unsigned int indexOfLastSentReport = m_indexOfLastSentReport;
+
     if (m_indexOfLastSentReport + 1 < kSizeOfFifoInReports) {
         m_indexOfLastSentReport++;
     } else {
@@ -113,11 +112,16 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
 
     if (result != -1) {
         qCDebug(logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit()
-                           << " " << result << "bytes sent to"
-                           << deviceInfo.formatName() << "serial #"
-                           << deviceInfo.serialNumber()
-                           << "(including report ID of"
-                           << static_cast<quint8>(dataToSend[0]) << ") - Needed: "
+                           << " " << result << "bytes (including report ID of"
+                           << static_cast<quint8>(dataToSend[0])
+                           << ") sent from non-skipping FIFO ("
+                           << (indexOfLastCachedReport > indexOfLastSentReport
+                                              ? indexOfLastCachedReport -
+                                                      indexOfLastSentReport
+                                              : kSizeOfFifoInReports -
+                                                      indexOfLastSentReport +
+                                                      indexOfLastCachedReport)
+                           << "/" << kSizeOfFifoInReports << "used) - Needed: "
                            << (mixxx::Time::elapsed() - startOfHidWrite)
                                       .formatMicrosWithUnit();
     }
