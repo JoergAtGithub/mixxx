@@ -48,7 +48,7 @@ void HidIoOutputReport::updateCachedData(const QByteArray& data,
         // The size of an HID report is defined in a HID device and can't vary at runtime
         if (m_lastCachedDataSize != data.size()) {
             qCWarning(logOutput)
-                    << "Size of OutputReport ( with ReportID" m_reportId
+                    << "Size of OutputReport ( with ReportID" << m_reportId
                     << ") changed from" << m_lastCachedDataSize << "to"
                     << data.size()
                     << "- This indicates a bug in the mapping code!";
