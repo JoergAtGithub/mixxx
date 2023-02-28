@@ -112,7 +112,7 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
 
     if (result != -1) {
         qCDebug(logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit()
-                           << " " << result << "bytes (including report ID of"
+                           << " " << result << "bytes (including ReportID of"
                            << static_cast<quint8>(dataToSend[0])
                            << ") sent from non-skipping FIFO ("
                            << (indexOfLastCachedReport > indexOfLastSentReport
