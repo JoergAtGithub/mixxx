@@ -18,7 +18,7 @@ HidIoOutputReport::HidIoOutputReport(
         const quint8& reportId, const unsigned int& reportDataSize)
         : m_reportId(reportId),
           m_possiblyUnsentDataCached(false),
-          m_isNonSkippingMode(false),
+          m_useNonSkippingFIFO(false),
           m_lastCachedDataSize(0) {
     // First byte must always contain the ReportID - also after swapping, therefore initialize both arrays
     m_cachedData.reserve(kReportIdSize + reportDataSize);

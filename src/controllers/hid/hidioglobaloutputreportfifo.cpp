@@ -8,7 +8,6 @@
 #include "util/string.h"
 #include "util/time.h"
 #include "util/trace.h"
-#pragma optimize("", off)
 
 namespace {
 constexpr int kReportIdSize = 1;
