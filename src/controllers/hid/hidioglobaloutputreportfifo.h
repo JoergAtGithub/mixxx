@@ -14,7 +14,7 @@ class HidIoGlobalOutputReportFifo {
   public:
     HidIoGlobalOutputReportFifo();
 
-    /// Caches new report dataset, which will later send by the IO thread
+    /// Caches new OutputReport, which will later send by the IO thread
     void addReportDatasetToFifo(const quint8 reportId,
             const QByteArray& data,
             const mixxx::hid::DeviceInfo& deviceInfo,

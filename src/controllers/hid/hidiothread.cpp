@@ -205,6 +205,8 @@ void HidIoThread::updateCachedOutputReportData(quint8 reportID,
 
     mapLock.unlock();
 
+    // If useNonSkippingFIFO is false, the report data are cached here
+    // If useNonSkippingFIFO is true, this cache is cleared
     actualOutputReportIterator->second->updateCachedData(
             data, m_deviceInfo, m_logOutput, &m_globalOutputReportFifo, useNonSkippingFIFO);
 

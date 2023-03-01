@@ -78,14 +78,15 @@ class HidControllerJSProxy : public ControllerJSProxy {
     ///    - If reports were superseded by newer data, before they can send,
     ///      the oudated data will be skipped
     ///    - This mode works for all USB HID Class compliant reports,
-    ///      were the fields describe a state of a control (like an LED)
-    ///    - This mode is best in overload situations
+    ///      were each field represents the state of a control (e.g. an LED)
+    ///    - This mode is best in overload situations, where more reports are
+    ///      send, than can be processed
     ///  - If True:
     ///    - The report will not be skipped (execept FIFO memory overflow)
     ///    - All reports with useNonSkippingFIFO set True will be send before
-    ///      any cached report with useNonSkippingFIFO False
+    ///      any cached report with useNonSkippingFIFO set False
     ///    - All reports with useNonSkippingFIFO set True will be send in
-    ///      strict First In First Out (FIFO) order
+    ///      strict First In / First Out (FIFO) order
     ///    - Use this mode only where really needed
     Q_INVOKABLE void send(const QList<int>& dataList,
             unsigned int length,
@@ -110,14 +111,15 @@ class HidControllerJSProxy : public ControllerJSProxy {
     ///    - If reports were superseded by newer data, before they can send,
     ///      the oudated data will be skipped
     ///    - This mode works for all USB HID Class compliant reports,
-    ///      were the fields describe a state of a control (like an LED)
-    ///    - This mode is best in overload situations
+    ///      were each field represents the state of a control (e.g. an LED)
+    ///    - This mode is best in overload situations, where more reports are
+    ///      send, than can be processed
     ///  - If True:
     ///    - The report will not be skipped (execept FIFO memory overflow)
     ///    - All reports with useNonSkippingFIFO set True will be send before
-    ///      any cached report with useNonSkippingFIFO False
+    ///      any cached report with useNonSkippingFIFO set False
     ///    - All reports with useNonSkippingFIFO set True will be send in
-    ///      strict First In First Out (FIFO) order
+    ///      strict First In / First Out (FIFO) order
     ///    - Use this mode only where really needed
     Q_INVOKABLE void sendOutputReport(quint8 reportID,
             const QByteArray& dataArray,
