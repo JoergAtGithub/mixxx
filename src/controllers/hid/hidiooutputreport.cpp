@@ -18,7 +18,6 @@ HidIoOutputReport::HidIoOutputReport(
         const quint8& reportId, const unsigned int& reportDataSize)
         : m_reportId(reportId),
           m_possiblyUnsentDataCached(false),
-          m_useNonSkippingFIFO(false),
           m_lastCachedDataSize(0) {
     // First byte must always contain the ReportID - also after swapping, therefore initialize both arrays
     m_cachedData.reserve(kReportIdSize + reportDataSize);
@@ -55,8 +54,6 @@ void HidIoOutputReport::updateCachedData(const QByteArray& data,
             m_lastCachedDataSize = data.size();
         }
     }
-
-    m_useNonSkippingFIFO = useNonSkippingFIFO;
 
     // m_possiblyUnsentDataCached must be set while m_cachedDataMutex is locked
     // This step covers the case that data for the report are cached in skipping mode,
