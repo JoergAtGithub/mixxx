@@ -9,6 +9,7 @@ namespace {
 constexpr int kSizeOfFifoInReports = 32;
 }
 
+/// Stores and sends OutputReports (independent of the ReportID) in First In / First Out order
 class HidIoGlobalOutputReportFifo {
   public:
     HidIoGlobalOutputReportFifo();
@@ -19,7 +20,8 @@ class HidIoGlobalOutputReportFifo {
             const mixxx::hid::DeviceInfo& deviceInfo,
             const RuntimeLoggingCategory& logOutput);
 
-    /// Sends the OutputReport to the HID device, when changed data are cached.
+    /// Sends the next OutputReport from FIFO to the HID device,
+    /// when if any report is cached in FIFO.
     /// Returns true if a time consuming hid_write operation was executed.
     bool sendNextReportDataset(QMutex* pHidDeviceAndPollMutex,
             hid_device* pHidDevice,
@@ -32,6 +34,7 @@ class HidIoGlobalOutputReportFifo {
     unsigned int m_indexOfLastCachedReport;
 
     /// Mutex must be locked when reading/writing
-    /// m_outputReportFifo and m_maxCachedDataSize
+    /// m_outputReportFifo, m_indexOfLastSentReport
+    /// or m_indexOfLastCachedReport
     QMutex m_fifoMutex;
 };
