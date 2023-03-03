@@ -210,6 +210,7 @@ void HidIoThread::updateCachedOutputReportData(quint8 reportID,
     actualOutputReportIterator->second->updateCachedData(
             data, m_deviceInfo, m_logOutput, &m_globalOutputReportFifo, useNonSkippingFIFO);
 
+    // If useNonSkippingFIFO is true, put the new report dataset on the FIFO
     if (useNonSkippingFIFO) {
         m_globalOutputReportFifo.addReportDatasetToFifo(reportID, data, m_deviceInfo, m_logOutput);
     }

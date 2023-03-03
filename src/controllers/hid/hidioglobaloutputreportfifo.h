@@ -9,12 +9,13 @@ namespace {
 constexpr int kSizeOfFifoInReports = 32;
 }
 
-/// Stores and sends OutputReports (independent of the ReportID) in First In / First Out order
+/// Stores and sends OutputReports (independent of the ReportID) in First In /
+/// First Out (FIFO) order
 class HidIoGlobalOutputReportFifo {
   public:
     HidIoGlobalOutputReportFifo();
 
-    /// Caches new OutputReport, which will later send by the IO thread
+    /// Caches new OutputReport to the FIFO, which will later be send by the IO thread
     void addReportDatasetToFifo(const quint8 reportId,
             const QByteArray& data,
             const mixxx::hid::DeviceInfo& deviceInfo,

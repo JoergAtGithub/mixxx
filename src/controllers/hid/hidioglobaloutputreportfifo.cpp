@@ -33,24 +33,28 @@ void HidIoGlobalOutputReportFifo::addReportDatasetToFifo(const quint8 reportId,
         indexOfReportToCache = 0;
     }
 
-    // If the FIFO is full we have no other chance than skipping the dataset
+    // Handle the case, that the FIFO is full - which is an error case
     if (m_indexOfLastSentReport == indexOfReportToCache) {
+        // If the FIFO is full, we skip the report dataset even
+        // in non-skipping mode, to keep the controller mapping thread
+        // responsive for InputReports from the controller.
+        // Alternative would be to block processing of the controller
+        // mapping thread, until the FIFO has space again.
         qCWarning(logOutput)
                 << "FIFO overflow: Unable to add OutputReport " << reportId
-                << " to the global cache for non-skipping sending of "
-                   "OututReports for "
+                << "to the global cache for non-skipping sending of OututReports for"
                 << deviceInfo.formatName();
         return;
     }
 
-    // First byte must always contain the ReportID - also after swapping,
-    // therefore initialize both arrays
+    // First byte must always contain the correct ReportID-Byte,
+    // also after swapping
     QByteArray cachedData;
     cachedData.reserve(kReportIdSize + data.size());
     cachedData.append(reportId);
     cachedData.append(data);
 
-    // Deep copy with reusing the already allocated heap memory
+    // Swap report data to FIFO
     cachedData.swap(m_outputReportFifo[indexOfReportToCache]);
 
     m_indexOfLastCachedReport = indexOfReportToCache;
@@ -75,17 +79,14 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
     unsigned int indexOfLastCachedReport = m_indexOfLastCachedReport;
     unsigned int indexOfLastSentReport = m_indexOfLastSentReport;
 
+    // Preemptively set m_indexOfLastSentReport and swap
+    // m_outputReportFifo[m_indexOfLastSentReport], to release the fifoLock
+    // mutex before the time consuming hid_write operation.
     if (m_indexOfLastSentReport + 1 < kSizeOfFifoInReports) {
         m_indexOfLastSentReport++;
     } else {
         m_indexOfLastSentReport = 0;
     }
-
-    // Preemptively set m_lastSentData and m_possiblyUnsentDataCached,
-    // to release the mutex during the time consuming hid_write operation.
-    // In the unlikely case that hid_write fails, they will be invalidated afterwards
-    // This is safe, because these members are only reset in this scope of this method,
-    // and concurrent execution of this method is prevented by locking pHidDeviceMutex
 
     QByteArray dataToSend;
     dataToSend.swap(m_outputReportFifo[m_indexOfLastSentReport]);
