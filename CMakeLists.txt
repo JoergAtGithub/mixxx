@@ -539,6 +539,7 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/controllers/controlleroutputmappingtablemodel.cpp
   src/controllers/controlpickermenu.cpp
   src/controllers/legacycontrollermappingfilehandler.cpp
+  src/controllers/controllerruntimedata.cpp
   src/controllers/delegates/controldelegate.cpp
   src/controllers/delegates/midibytedelegate.cpp
   src/controllers/delegates/midichanneldelegate.cpp
@@ -555,6 +556,7 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/controllers/scripting/colormapper.cpp
   src/controllers/scripting/colormapperjsproxy.cpp
   src/controllers/scripting/legacy/controllerscriptenginelegacy.cpp
+  src/controllers/scripting/legacy/controllerscreenrendering.cpp
   src/controllers/scripting/legacy/controllerscriptinterfacelegacy.cpp
   src/controllers/scripting/legacy/scriptconnection.cpp
   src/controllers/scripting/legacy/scriptconnectionjsproxy.cpp
@@ -1091,8 +1093,11 @@ if(QT6)
     src/qml/qmllibrarytracklistmodel.cpp
     src/qml/qmlplayermanagerproxy.cpp
     src/qml/qmlplayerproxy.cpp
+    src/qml/qmlrendertest.cpp
     src/qml/qmlvisibleeffectsmodel.cpp
+    src/qml/qmlwaveformdisplay.cpp
     src/qml/qmlwaveformoverview.cpp
+    src/waveform/renderers/waveformdisplayrange.cpp
   )
 else()
   target_sources(mixxx-lib PRIVATE
@@ -2273,6 +2278,7 @@ if(QT6)
       res/qml/Mixxx/Controls/WaveformOverviewHotcueMarker.qml
       res/qml/Mixxx/Controls/WaveformOverviewMarker.qml
       res/qml/Mixxx/Controls/WaveformOverview.qml
+      res/qml/Mixxx/Controls/WaveformDisplay.qml
   )
   target_link_libraries(mixxx-lib PRIVATE mixxx-qml-mixxxcontrolsplugin)
 
@@ -2935,6 +2941,7 @@ if(HID)
   target_sources(mixxx-lib PRIVATE
     src/controllers/hid/hidcontroller.cpp
     src/controllers/hid/hidiothread.cpp
+    src/controllers/hid/hidioglobaloutputreportfifo.cpp
     src/controllers/hid/hidiooutputreport.cpp
     src/controllers/hid/hiddevice.cpp
     src/controllers/hid/hidenumerator.cpp

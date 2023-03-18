@@ -8,6 +8,8 @@
 #include "controllers/legacycontrollermapping.h"
 #include "controllers/scripting/controllerscriptenginebase.h"
 
+class ControllerScreenRendering;
+
 /// ControllerScriptEngineLegacy loads and executes controller scripts for the legacy
 /// JS/XML hybrid controller mapping system.
 class ControllerScriptEngineLegacy : public ControllerScriptEngineBase {
@@ -28,30 +30,36 @@ class ControllerScriptEngineLegacy : public ControllerScriptEngineBase {
 
   public slots:
     void setScriptFiles(const QList<LegacyControllerMapping::ScriptFileInfo>& scripts);
+    void setQMLFiles(const QList<LegacyControllerMapping::QMLFileInfo>& qmls);
 
   private:
     bool evaluateScriptFile(const QFileInfo& scriptFile);
     void shutdown() override;
 
     QJSValue wrapArrayBufferCallback(const QJSValue& callback);
+    QJSValue wrapRenderBufferCallback(const QJSValue& callback);
     bool callFunctionOnObjects(const QList<QString>& scriptFunctionPrefixes,
             const QString&,
             const QJSValueList& args = {},
             bool bFatalError = false);
 
     QJSValue m_makeArrayBufferWrapperFunction;
+    QJSValue m_makeRenderBufferWrapperFunction;
     QList<QString> m_scriptFunctionPrefixes;
     QList<QJSValue> m_incomingDataFunctions;
     QHash<QString, QJSValue> m_scriptWrappedFunctionCache;
     QList<LegacyControllerMapping::ScriptFileInfo> m_scriptFiles;
+    QList<LegacyControllerMapping::QMLFileInfo> m_qmlFiles;
+
+    QList<std::shared_ptr<ControllerScreenRendering>> m_pScreenRendering;
 
     QFileSystemWatcher m_fileWatcher;
 
     // There is lots of tight coupling between ControllerScriptEngineLegacy
     // and ControllerScriptInterface. This is probably not worth improving in legacy code.
     friend class ControllerScriptInterfaceLegacy;
-    std::shared_ptr<QJSEngine> jsEngine() const {
-        return m_pJSEngine;
+    QJSEngine* jsEngine() const override {
+        return m_pJSEngine.get();
     }
 
     friend class ControllerScriptEngineLegacyTest;

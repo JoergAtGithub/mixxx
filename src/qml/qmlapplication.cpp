@@ -7,6 +7,7 @@
 #include "moc_qmlapplication.cpp"
 #include "qml/asyncimageprovider.h"
 #include "qml/qmlconfigproxy.h"
+#include "qml/qmlcontrollerproxy.h"
 #include "qml/qmlcontrolproxy.h"
 #include "qml/qmldlgpreferencesproxy.h"
 #include "qml/qmleffectmanifestparametersmodel.h"
