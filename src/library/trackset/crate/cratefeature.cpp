@@ -209,7 +209,7 @@ QString CrateFeature::formatRootViewHtml() const {
     html.append(QStringLiteral("<p>%1</p>").arg(cratesSummary3));
     //Colorize links in lighter blue, instead of QT default dark blue.
     //Links are still different from regular text, but readable on dark/light backgrounds.
-    //https://bugs.launchpad.net/mixxx/+bug/1744816
+    //https://github.com/mixxxdj/mixxx/issues/9103
     html.append(
             QStringLiteral("<a style=\"color:#0496FF;\" href=\"create\">%1</a>")
                     .arg(createCrateLink));
@@ -528,13 +528,15 @@ void CrateFeature::slotAutoDjTrackSourceChanged() {
 QModelIndex CrateFeature::rebuildChildModel(CrateId selectedCrateId) {
     qDebug() << "CrateFeature::rebuildChildModel()" << selectedCrateId;
 
+    m_lastRightClickedIndex = QModelIndex();
+
     TreeItem* pRootItem = m_pSidebarModel->getRootItem();
     VERIFY_OR_DEBUG_ASSERT(pRootItem != nullptr) {
         return QModelIndex();
     }
     m_pSidebarModel->removeRows(0, pRootItem->childRows());
 
-    QList<TreeItem*> modelRows;
+    std::vector<std::unique_ptr<TreeItem>> modelRows;
     modelRows.reserve(m_pTrackCollection->crates().countCrates());
 
     int selectedRow = -1;
@@ -542,9 +544,7 @@ QModelIndex CrateFeature::rebuildChildModel(CrateId selectedCrateId) {
             m_pTrackCollection->crates().selectCrateSummaries());
     CrateSummary crateSummary;
     while (crateSummaries.populateNext(&crateSummary)) {
-        auto pTreeItem = newTreeItemForCrateSummary(crateSummary);
-        modelRows.append(pTreeItem.get());
-        pTreeItem.release();
+        modelRows.push_back(newTreeItemForCrateSummary(crateSummary));
         if (selectedCrateId == crateSummary.getId()) {
             // save index for selection
             selectedRow = modelRows.size() - 1;
@@ -552,7 +552,7 @@ QModelIndex CrateFeature::rebuildChildModel(CrateId selectedCrateId) {
     }
 
     // Append all the newly created TreeItems in a dynamic way to the childmodel
-    m_pSidebarModel->insertTreeItemRows(modelRows, 0);
+    m_pSidebarModel->insertTreeItemRows(std::move(modelRows), 0);
 
     // Update rendering of crates depending on the currently selected track
     slotTrackSelected(m_selectedTrackId);

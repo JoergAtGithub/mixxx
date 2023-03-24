@@ -5,14 +5,16 @@
 #include "controllers/hid/hidcontroller.h"
 #include "controllers/hid/hiddenylist.h"
 #include "controllers/hid/hiddevice.h"
+#include "util/cmdlineargs.h"
 
 namespace {
 
 bool recognizeDevice(const hid_device_info& device_info) {
     // Skip mice and keyboards. Users can accidentally disable their mouse
     // and/or keyboard by enabling them as HID controllers in Mixxx.
-    // https://bugs.launchpad.net/mixxx/+bug/1940599
-    if (device_info.usage_page == mixxx::hid::kGenericDesktopUsagePage &&
+    // https://github.com/mixxxdj/mixxx/issues/10498
+    if (!CmdlineArgs::Instance().getDeveloper() &&
+            device_info.usage_page == mixxx::hid::kGenericDesktopUsagePage &&
             (device_info.usage == mixxx::hid::kGenericDesktopMouseUsage ||
                     device_info.usage == mixxx::hid::kGenericDesktopKeyboardUsage)) {
         return false;
