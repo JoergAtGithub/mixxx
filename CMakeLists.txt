@@ -110,6 +110,11 @@ endif()
 
 option(QT6 "Build with Qt6" OFF)
 
+option(QOPENGL "Use QOpenGLWindow based widget instead of QGLWidget" ON)
+if(QOPENGL)
+  add_compile_definitions(MIXXX_USE_QOPENGL)
+endif()
+
 if(APPLE)
   if(QT6)
     # Minimum macOS version supported by Qt 6
@@ -118,13 +123,21 @@ if(APPLE)
       set(VCPKG_TARGET_TRIPLET "x64-osx-min10.15")
     endif()
   else()
-    # Minimum macOS version supported by Qt 5.12
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 10.12 CACHE STRING "Minimum macOS version the build will be able to run on")
-    if(NOT VCPKG_TARGET_TRIPLET)
-      set(VCPKG_TARGET_TRIPLET "x64-osx-min1012")
+    if(VCPKG_TARGET_TRIPLET STREQUAL "arm64-osx-min1100")
+      # Minimum macOS version for arm64 Support
+      set(CMAKE_OSX_DEPLOYMENT_TARGET 11.0 CACHE STRING "Minimum macOS version the build will be able to run on")
+      set(CMAKE_OSX_ARCHITECTURES arm64 CACHE STRING "The target achritecture")
+      set(CMAKE_SYSTEM_PROCESSOR arm64 CACHE STRING "The target system processor")
+      set(CMAKE_SYSTEM_NAME Darwin CACHE STRING "Setting this enables CMAKE_CROSSCOMPILE")
+    else()
+      # Minimum macOS version supported by Qt 5.12
+      set(CMAKE_OSX_DEPLOYMENT_TARGET 10.12 CACHE STRING "Minimum macOS version the build will be able to run on")
+      if(NOT VCPKG_TARGET_TRIPLET)
+        set(VCPKG_TARGET_TRIPLET "x64-osx-min1012")
+      endif()
+      # Needed for deployment target < 10.14
+      add_compile_options(-fno-aligned-allocation)
     endif()
-    # Needed for deployment target < 10.14
-    add_compile_options(-fno-aligned-allocation)
   endif()
 endif()
 
@@ -170,8 +183,13 @@ else()
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # using regular Clang or AppleClang
-  set(LLVM_CLANG true)
+  if (CMAKE_CXX_SIMULATE_ID MATCHES "MSVC")
+    set(LLVM_CLANG false)
+    set(MSVC true)
+  else()
+    # using regular Clang or AppleClang
+    set(LLVM_CLANG true)
+  endif()
 else()
   set(LLVM_CLANG false)
 endif()
@@ -186,6 +204,9 @@ set(CMAKE_CXX_STANDARD 20)
 if(MSVC)
   # Ensure MSVC populates __cplusplus correctly.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
+  # Remove unreferenced code and data
+  # Since c++11 they can safely be removed to speed up linking.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:inline")
 endif()
 
 # Speed up builds on HDDs and prevent wearing of SDDs
@@ -289,6 +310,11 @@ if(MSVC)
       string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG}")
       string(REPLACE "/RTC1" "" CMAKE_C_FLAGS_DEBUG  "${CMAKE_C_FLAGS_DEBUG}")
     elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+      # For some reasons cmake uses /Ob1 in RelWithDebInfo https://gitlab.kitware.com/cmake/cmake/-/issues/20812
+      # /O2 is applied by CMake and this implies /Od2
+      string(REPLACE "/Ob1" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+      string(REPLACE "/Ob1" "" CMAKE_C_FLAGS_RELWITHDEBINFO  "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+
       # Reduce the size of the binary in RelWithDebInfo builds
       # Do not use /OPT:ICF because it has no effect.
       # https://github.com/mixxxdj/mixxx/pull/3660#pullrequestreview-600137258
@@ -355,8 +381,9 @@ if(MSVC)
       #Remove optimize flags set by cmake defaults
       string(REPLACE "/O2" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
       string(REPLACE "/O2" "" CMAKE_C_FLAGS_RELWITHDEBINFO  "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
-      string(REPLACE "/Ob2" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
-      string(REPLACE "/Ob2" "" CMAKE_C_FLAGS_RELWITHDEBINFO  "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+      # For some reasons cmake uses /Ob1 in RelWithDebInfo https://gitlab.kitware.com/cmake/cmake/-/issues/20812
+      string(REPLACE "/Ob1" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+      string(REPLACE "/Ob1" "" CMAKE_C_FLAGS_RELWITHDEBINFO  "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
       add_compile_options(/Od) # this implies /Ob0
       add_compile_options(/RTC1)
     endif()
@@ -673,7 +700,6 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/engine/engineworker.cpp
   src/engine/engineworkerscheduler.cpp
   src/engine/enginexfader.cpp
-  src/engine/filters/enginefilter.cpp
   src/engine/filters/enginefilterbessel4.cpp
   src/engine/filters/enginefilterbessel8.cpp
   src/engine/filters/enginefilterbiquad1.cpp
@@ -750,7 +776,10 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/library/export/trackexportworker.cpp
   src/library/externaltrackcollection.cpp
   src/library/hiddentablemodel.cpp
+  src/library/itunes/itunesdao.cpp
   src/library/itunes/itunesfeature.cpp
+  src/library/itunes/itunesplaylistmodel.cpp
+  src/library/itunes/itunesxmlimporter.cpp
   src/library/library_prefs.cpp
   src/library/library.cpp
   src/library/librarycontrol.cpp
@@ -840,14 +869,12 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/preferences/dialog/dlgprefbeatsdlg.ui
   src/preferences/dialog/dlgprefcolors.cpp
   src/preferences/dialog/dlgprefcolorsdlg.ui
-  src/preferences/dialog/dlgprefcrossfader.cpp
-  src/preferences/dialog/dlgprefcrossfaderdlg.ui
+  src/preferences/dialog/dlgprefmixer.cpp
+  src/preferences/dialog/dlgprefmixerdlg.ui
   src/preferences/dialog/dlgprefdeck.cpp
   src/preferences/dialog/dlgprefdeckdlg.ui
   src/preferences/dialog/dlgprefeffects.cpp
   src/preferences/dialog/dlgprefeffectsdlg.ui
-  src/preferences/dialog/dlgprefeq.cpp
-  src/preferences/dialog/dlgprefeqdlg.ui
   src/preferences/dialog/dlgpreferencepage.cpp
   src/preferences/dialog/dlgpreferences.cpp
   src/preferences/dialog/dlgpreferencesdlg.ui
@@ -943,6 +970,7 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/util/battery/battery.cpp
   src/util/cache.cpp
   src/util/cmdlineargs.cpp
+  src/util/colorcomponents.cpp
   src/util/color/color.cpp
   src/util/color/colorpalette.cpp
   src/util/color/predefinedcolorpalettes.cpp
@@ -999,7 +1027,6 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/util/valuetransformer.cpp
   src/util/versionstore.cpp
   src/util/widgethelper.cpp
-  src/util/widgetrendertimer.cpp
   src/util/workerthread.cpp
   src/util/workerthreadscheduler.cpp
   src/util/xml.cpp
@@ -1073,7 +1100,6 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/widget/wtracktableviewheader.cpp
   src/widget/wtracktext.cpp
   src/widget/wtrackwidgetgroup.cpp
-  src/widget/wvumeter.cpp
   src/widget/wwidget.cpp
   src/widget/wwidgetgroup.cpp
   src/widget/wwidgetstack.cpp
@@ -1101,12 +1127,10 @@ else()
     src/waveform/guitick.cpp
     src/waveform/renderers/glslwaveformrenderersignal.cpp
     src/waveform/renderers/glvsynctestrenderer.cpp
+    src/waveform/renderers/glwaveformrenderbackground.cpp
     src/waveform/renderers/glwaveformrendererfilteredsignal.cpp
     src/waveform/renderers/glwaveformrendererrgb.cpp
     src/waveform/renderers/glwaveformrenderersimplesignal.cpp
-    src/waveform/renderers/qtvsynctestrenderer.cpp
-    src/waveform/renderers/qtwaveformrendererfilteredsignal.cpp
-    src/waveform/renderers/qtwaveformrenderersimplesignal.cpp
     src/waveform/renderers/waveformmark.cpp
     src/waveform/renderers/waveformmarkrange.cpp
     src/waveform/renderers/waveformmarkset.cpp
@@ -1134,12 +1158,8 @@ else()
     src/waveform/widgets/glslwaveformwidget.cpp
     src/waveform/widgets/glvsynctestwidget.cpp
     src/waveform/widgets/glwaveformwidget.cpp
+    src/waveform/widgets/glwaveformwidgetabstract.cpp
     src/waveform/widgets/hsvwaveformwidget.cpp
-    src/waveform/widgets/qthsvwaveformwidget.cpp
-    src/waveform/widgets/qtrgbwaveformwidget.cpp
-    src/waveform/widgets/qtsimplewaveformwidget.cpp
-    src/waveform/widgets/qtvsynctestwidget.cpp
-    src/waveform/widgets/qtwaveformwidget.cpp
     src/waveform/widgets/rgbwaveformwidget.cpp
     src/waveform/widgets/softwarewaveformwidget.cpp
     src/waveform/widgets/waveformwidgetabstract.cpp
@@ -1148,15 +1168,83 @@ else()
     src/widget/woverviewlmh.cpp
     src/widget/woverviewrgb.cpp
     src/widget/wspinny.cpp
-      src/widget/wvumetergl.cpp
+    src/widget/wspinnybase.cpp
+    src/widget/wvumeter.cpp
+    src/widget/wvumeterbase.cpp
+    src/widget/wvumeterlegacy.cpp
     src/widget/wwaveformviewer.cpp
   )
+  if(QOPENGL)
+    target_sources(mixxx-lib PRIVATE
+      src/shaders/endoftrackshader.cpp
+      src/shaders/rgbashader.cpp
+      src/shaders/rgbshader.cpp
+      src/shaders/shader.cpp
+      src/shaders/textureshader.cpp
+      src/shaders/unicolorshader.cpp
+      src/util/texture.cpp
+      src/waveform/renderers/allshader/matrixforwidgetgeometry.cpp
+      src/waveform/renderers/allshader/waveformrenderbackground.cpp
+      src/waveform/renderers/allshader/waveformrenderbeat.cpp
+      src/waveform/renderers/allshader/waveformrenderer.cpp
+      src/waveform/renderers/allshader/waveformrendererendoftrack.cpp
+      src/waveform/renderers/allshader/waveformrendererfiltered.cpp
+      src/waveform/renderers/allshader/waveformrendererlrrgb.cpp
+      src/waveform/renderers/allshader/waveformrendererpreroll.cpp
+      src/waveform/renderers/allshader/waveformrendererrgb.cpp
+      src/waveform/renderers/allshader/waveformrenderersignalbase.cpp
+      src/waveform/renderers/allshader/waveformrenderersimple.cpp
+      src/waveform/renderers/allshader/waveformrendermark.cpp
+      src/waveform/renderers/allshader/waveformrendermarkrange.cpp
+      src/waveform/widgets/allshader/filteredwaveformwidget.cpp
+      src/waveform/widgets/allshader/lrrgbwaveformwidget.cpp
+      src/waveform/widgets/allshader/rgbwaveformwidget.cpp
+      src/waveform/widgets/allshader/simplewaveformwidget.cpp
+      src/waveform/widgets/allshader/waveformwidget.cpp
+      src/widget/openglwindow.cpp
+      src/widget/tooltipqopengl.cpp
+      src/widget/wglwidgetqopengl.cpp
+      src/widget/winitialglwidget.cpp
+      src/widget/wspinnyglsl.cpp
+      src/widget/wvumeterglsl.cpp
+    )
+  else()
+    target_sources(mixxx-lib PRIVATE
+      src/waveform/renderers/qtvsynctestrenderer.cpp
+      src/waveform/renderers/qtwaveformrendererfilteredsignal.cpp
+      src/waveform/renderers/qtwaveformrenderersimplesignal.cpp
+      src/waveform/widgets/qthsvwaveformwidget.cpp
+      src/waveform/widgets/qtrgbwaveformwidget.cpp
+      src/waveform/widgets/qtsimplewaveformwidget.cpp
+      src/waveform/widgets/qtvsynctestwidget.cpp
+      src/waveform/widgets/qtwaveformwidget.cpp
+      src/widget/wglwidgetqglwidget.cpp
+    )
+  endif()
 endif()
+
 set_target_properties(mixxx-lib PROPERTIES AUTOMOC ON AUTOUIC ON CXX_CLANG_TIDY "${CLANG_TIDY}")
 target_include_directories(mixxx-lib PUBLIC src "${CMAKE_CURRENT_BINARY_DIR}/src")
 if(UNIX AND NOT APPLE)
   target_sources(mixxx-lib PRIVATE src/util/rlimit.cpp)
   set(MIXXX_SETTINGS_PATH ".mixxx/")
+endif()
+
+if(APPLE)
+  # Enable Automatic Reference Counting (ARC) when compiling Objective-C(++).
+  # This frees us from having to worry about memory management when interfacing
+  # with Apple frameworks (e.g. as in itunesmacosimporter.mm) since the compiler
+  # will automatically insert retain/release calls on Objective-C objects.
+  target_compile_options(mixxx-lib PUBLIC -fobjc-arc)
+
+  option(MACOS_ITUNES_LIBRARY "Native macOS iTunes/Music.app library integration" ON)
+  if(MACOS_ITUNES_LIBRARY)
+    target_sources(mixxx-lib PRIVATE
+      src/library/itunes/itunesmacosimporter.mm
+    )
+    target_link_libraries(mixxx-lib PRIVATE "-weak_framework iTunesLibrary")
+    target_compile_definitions(mixxx-lib PUBLIC __MACOS_ITUNES_LIBRARY__)
+  endif()
 endif()
 
 # QML Debugging
@@ -1252,10 +1340,6 @@ target_compile_definitions(mixxx-lib PUBLIC
   $<$<CONFIG:Debug>:MIXXX_BUILD_DEBUG>
   $<$<CONFIG:Debug>:MIXXX_DEBUG_ASSERTIONS_ENABLED>
   $<$<NOT:$<CONFIG:Debug>>:MIXXX_BUILD_RELEASE>
-  # Disable assert.h assertions in release mode. Some libraries use
-  # this as a signal for when to enable code that should be disabled
-  # in release mode.
-  $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
 )
 
 # Mac-specific options
@@ -1704,6 +1788,7 @@ add_executable(mixxx-test
   src/test/hotcuecontrol_test.cpp
   src/test/imageutils_test.cpp
   src/test/indexrange_test.cpp
+  src/test/itunesxmlimportertest.cpp
   src/test/keyutilstest.cpp
   src/test/lcstest.cpp
   src/test/learningutilstest.cpp
@@ -1966,10 +2051,11 @@ endif()
 # Denon Engine Prime library export support (using libdjinterop)
 option(ENGINEPRIME "Support for library export to Denon Engine Prime" ON)
 if(ENGINEPRIME)
-  set(LIBDJINTEROP_VERSION 0.16.0)
+  set(LIBDJINTEROP_VERSION 0.16.1)
   # Look for an existing installation of libdjinterop and use that if available.
   # Otherwise, download and build from GitHub.
-  find_package(DjInterop ${LIBDJINTEROP_VERSION})
+  # Note: Version 0.17.0 is not yet compatible
+  find_package(DjInterop ${LIBDJINTEROP_VERSION} EXACT)
   if(DjInterop_FOUND)
     # An existing installation of djinterop is available.
     message(STATUS "Using existing system installation of libdjinterop")
@@ -2000,7 +2086,7 @@ if(ENGINEPRIME)
     # the configuration.
     ExternalProject_Add(libdjinterop
       URL "https://github.com/xsco/libdjinterop/archive/refs/tags/${LIBDJINTEROP_VERSION}.tar.gz"
-      URL_HASH SHA256=c998831fe4d3cc80c5c031491204244c9ed0c61575dd529260304b95d79db588
+      URL_HASH SHA256=25461f5cc3ea80850d8400872f4fef08ad3730d9f2051719cccf2460f5ac15ad
       DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloads"
       DOWNLOAD_NAME "libdjinterop-${LIBDJINTEROP_VERSION}.tar.gz"
       INSTALL_DIR ${DJINTEROP_INSTALL_DIR}
@@ -2053,10 +2139,13 @@ add_library(fidlib STATIC EXCLUDE_FROM_ALL lib/fidlib/fidlib.c)
 if(MSVC)
   target_compile_definitions(fidlib PRIVATE T_MSVC)
   target_compile_definitions(fidlib PRIVATE _USE_MATH_DEFINES)
+  target_compile_options(fidlib PRIVATE /W3)
 elseif(MINGW)
   target_compile_definitions(fidlib PRIVATE T_MINGW)
+  target_compile_options(fidlib PRIVATE -fno-finite-math-only -Wall -Wextra -Wfloat-conversion -Werror=return-type)
 else()
   target_compile_definitions(fidlib PRIVATE T_LINUX)
+  target_compile_options(fidlib PRIVATE -fno-finite-math-only -Wall -Wextra -Wfloat-conversion -Werror=return-type)
 endif()
 target_include_directories(mixxx-lib SYSTEM PUBLIC lib/fidlib)
 target_link_libraries(mixxx-lib PRIVATE fidlib)
@@ -2131,7 +2220,10 @@ target_link_libraries(mixxx-lib PRIVATE FLAC::FLAC)
 # inlining It is compiled without optimization and allows to use these function
 # from -ffast-math optimized objects. The MSVC option /fp:fast does not suffer this issue
 add_library(FpClassify STATIC EXCLUDE_FROM_ALL src/util/fpclassify.cpp)
-if(GNU_GCC OR LLVM_CLANG)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_SIMULATE_ID MATCHES "MSVC")
+  target_compile_options(FpClassify PRIVATE /fp:precise)
+elseif(GNU_GCC OR LLVM_CLANG)
   # The option `-ffp-contract=on` must precede `-fno-fast-math`
   # to silence a warning on Clang 14
   target_compile_options(FpClassify PRIVATE -ffp-contract=on -fno-fast-math)
@@ -3078,7 +3170,7 @@ if (NOT CPACK_DEBIAN_PACKAGE_RELEASE)
    set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
 endif()
 
-set(CPACK_DEBIAN_DISTRIBUTION_RELEASES jammy kinetic)
+set(CPACK_DEBIAN_DISTRIBUTION_RELEASES jammy kinetic lunar)
 set(CPACK_DEBIAN_SOURCE_DIR ${CMAKE_SOURCE_DIR})
 set(CPACK_DEBIAN_UPLOAD_PPA_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/packaging/CPackDebUploadPPA.cmake")
 set(CPACK_DEBIAN_INSTALL_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/packaging/CPackDebInstall.cmake")

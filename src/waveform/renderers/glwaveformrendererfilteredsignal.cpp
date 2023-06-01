@@ -11,7 +11,7 @@
 
 GLWaveformRendererFilteredSignal::GLWaveformRendererFilteredSignal(
         WaveformWidgetRenderer* waveformWidgetRenderer)
-        : GLWaveformRenderer(waveformWidgetRenderer) {
+        : GLWaveformRendererSignal(waveformWidgetRenderer) {
 }
 
 GLWaveformRendererFilteredSignal::~GLWaveformRendererFilteredSignal() {
@@ -23,8 +23,6 @@ void GLWaveformRendererFilteredSignal::onSetup(const QDomNode& /*node*/) {
 }
 
 void GLWaveformRendererFilteredSignal::draw(QPainter* painter, QPaintEvent* /*event*/) {
-    maybeInitializeGL();
-
     ConstWaveformPointer pWaveform = m_waveformRenderer->getWaveform();
     if (pWaveform.isNull()) {
         return;
