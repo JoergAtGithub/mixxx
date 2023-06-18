@@ -3,7 +3,7 @@
 #include <QStyleOption>
 #include <QStylePainter>
 
-#include "moc_wvumeter.cpp"
+#include "moc_wvumeterlegacy.cpp"
 #include "util/math.h"
 #include "util/timer.h"
 #include "widget/wpixmapstore.h"
@@ -13,8 +13,8 @@
 #define DEFAULT_HOLDTIME 400
 #define DEFAULT_HOLDSIZE 5
 
-WVuMeterLegacy::WVuMeterLegacy(QWidget* parent)
-        : WWidget(parent),
+WVuMeterLegacy::WVuMeterLegacy(QWidget* pParent)
+        : WWidget(pParent),
           m_dParameter(0),
           m_dPeakParameter(0),
           m_dLastParameter(0),
