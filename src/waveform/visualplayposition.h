@@ -1,10 +1,11 @@
 #pragma once
 
-#include <QTime>
-#include <QMap>
-#include <QAtomicPointer>
+#include <QElapsedTimer.h>
 
-#include "util/performancetimer.h"
+#include <QAtomicPointer>
+#include <QMap>
+#include <QTime>
+
 #include "control/controlvalue.h"
 
 class ControlProxy;
@@ -30,7 +31,7 @@ class VSyncThread;
 
 class VisualPlayPositionData {
   public:
-    PerformanceTimer m_referenceTime;
+    QElapsedTimer m_referenceTime;
     int m_callbackEntrytoDac; // Time from Audio Callback Entry to first sample of Buffer is transferred to DAC
     double m_enginePlayPos; // Play position of fist Sample in Buffer
     double m_rate;
@@ -71,7 +72,7 @@ class VisualPlayPosition : public QObject {
     static QSharedPointer<VisualPlayPosition> getVisualPlayPosition(const QString& group);
 
     // This is called by SoundDevicePortAudio just after the callback starts.
-    static void setCallbackEntryToDacSecs(double secs, const PerformanceTimer& time);
+    static void setCallbackEntryToDacSecs(double secs, const QElapsedTimer& time);
 
     void setInvalid() { m_valid = false; };
     bool isValid() const {
@@ -88,5 +89,5 @@ class VisualPlayPosition : public QObject {
     // Time info from the Sound device, updated just after audio callback is called
     static double m_dCallbackEntryToDacSecs;
     // Time stamp for m_timeInfo in main CPU time
-    static PerformanceTimer m_timeInfoTime;
+    static QElapsedTimer m_timeInfoTime;
 };

@@ -533,7 +533,7 @@ void SoundDeviceNetwork::updateAudioLatencyUsage(SINT framesPerBuffer) {
     //qDebug() << "sleep" << sleepUs;
 
     // measure time in Audio callback at the very last
-    m_timeInAudioCallback += m_clkRefTimer.elapsed();
+    m_timeInAudioCallback += mixxx::Duration::fromNanos(m_clkRefTimer.nsecsElapsed());
 
     // now go to sleep until the next callback
     if (sleepUs > 0) {

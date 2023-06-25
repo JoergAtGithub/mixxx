@@ -1,11 +1,12 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QPair>
 #include <QSemaphore>
 #include <QThread>
 #include <QTime>
 
-#include "util/performancetimer.h"
+#include "util/duration.h"
 #include "widget/wglwidget.h"
 
 class VSyncThread : public QThread {
@@ -32,7 +33,7 @@ class VSyncThread : public QThread {
     void setVSyncType(int mode);
     int droppedFrames();
     void setSwapWait(int sw);
-    int fromTimerToNextSyncMicros(const PerformanceTimer& timer);
+    int fromTimerToNextSyncMicros(const QElapsedTimer& timer);
     void vsyncSlotFinished();
     void getAvailableVSyncTypes(QList<QPair<int, QString>>* list);
     void setupSync(WGLWidget* glw, int index);
@@ -54,7 +55,7 @@ class VSyncThread : public QThread {
     bool m_syncOk;
     int m_droppedFrames;
     int m_swapWait;
-    PerformanceTimer m_timer;
+    QElapsedTimer m_timer;
     QSemaphore m_semaVsyncSlot;
     double m_displayFrameRate;
     int m_vSyncPerRendering;

@@ -12,7 +12,7 @@
 
 //static
 QMap<QString, QWeakPointer<VisualPlayPosition>> VisualPlayPosition::m_listVisualPlayPosition;
-PerformanceTimer VisualPlayPosition::m_timeInfoTime;
+QElapsedTimer VisualPlayPosition::m_timeInfoTime;
 double VisualPlayPosition::m_dCallbackEntryToDacSecs = 0;
 
 VisualPlayPosition::VisualPlayPosition(const QString& key)
@@ -124,7 +124,7 @@ QSharedPointer<VisualPlayPosition> VisualPlayPosition::getVisualPlayPosition(con
 }
 
 //static
-void VisualPlayPosition::setCallbackEntryToDacSecs(double secs, const PerformanceTimer& time) {
+void VisualPlayPosition::setCallbackEntryToDacSecs(double secs, const QElapsedTimer& time) {
     // the time is valid only just NOW, so measure the time from NOW for
     // later correction
     m_timeInfoTime = time;

@@ -1,8 +1,10 @@
 #pragma once
 
-#include <QString>
+#include <QElapsedTimer>
 #include <QSharedPointer>
+#include <QString>
 #include <QThread>
+
 
 #ifdef __LINUX__
 #include <pthread.h>
@@ -11,8 +13,8 @@
 #include "control/pollingcontrolproxy.h"
 #include "engine/sidechain/networkoutputstreamworker.h"
 #include "soundio/sounddevice.h"
+#include "util/duration.h"
 #include "util/memory.h"
-#include "util/performancetimer.h"
 
 #define CPU_USAGE_UPDATE_RATE 30 // in 1/s, fits to display frame rate
 #define CPU_OVERLOAD_DURATION 500 // in ms
@@ -69,7 +71,7 @@ class SoundDeviceNetwork : public SoundDevice {
     bool m_denormals;
     /// The deadline for the next buffer, in microseconds since the Unix epoch.
     qint64 m_targetTime;
-    PerformanceTimer m_clkRefTimer;
+    QElapsedTimer m_clkRefTimer;
 };
 
 class SoundDeviceNetworkThread : public QThread {

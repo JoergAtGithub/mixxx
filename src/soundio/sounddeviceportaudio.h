@@ -5,10 +5,10 @@
 #include <QString>
 #include <memory>
 
+#include "QElapsedTimer"
 #include "control/pollingcontrolproxy.h"
 #include "soundio/sounddevice.h"
 #include "util/duration.h"
-#include "util/performancetimer.h"
 
 class SoundManager;
 class ControlProxy;
@@ -80,6 +80,6 @@ class SoundDevicePortAudio : public SoundDevice {
     int m_framesSinceAudioLatencyUsageUpdate;
     int m_syncBuffers;
     int m_invalidTimeInfoCount;
-    PerformanceTimer m_clkRefTimer;
+    QElapsedTimer m_clkRefTimer;
     PaTime m_lastCallbackEntrytoDacSecs;
 };

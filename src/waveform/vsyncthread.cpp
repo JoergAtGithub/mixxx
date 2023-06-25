@@ -1,5 +1,6 @@
 #include "vsyncthread.h"
 
+#include <QElapsedTimer>
 #include <QThread>
 #include <QTime>
 #include <QtDebug>
@@ -48,7 +49,9 @@ void VSyncThread::run() {
             emit vsyncSwap(); // swaps the new waveform to front
             m_semaVsyncSlot.acquire();
 
-            m_sinceLastSwap = m_timer.restart();
+            m_sinceLastSwap = mixxx::Duration::fromNanos(m_timer.nsecsElapsed());
+            m_timer.restart();
+
             m_waitToSwapMicros = 1000;
             usleep(1000);
         } else { // if (m_vSyncMode == ST_TIMER) {
@@ -59,8 +62,8 @@ void VSyncThread::run() {
             m_semaVsyncSlot.acquire();
 
             // qDebug() << "ST_TIMER                      " << lastMicros << restMicros;
-            int remainingForSwap = m_waitToSwapMicros - static_cast<int>(
-                m_timer.elapsed().toIntegerMicros());
+            int remainingForSwap = m_waitToSwapMicros -
+                    static_cast<int>(m_timer.nsecsElapsed() / 1000);
             // waiting for interval by sleep
             if (remainingForSwap > 100) {
                 usleep(remainingForSwap);
@@ -74,7 +77,9 @@ void VSyncThread::run() {
             m_semaVsyncSlot.acquire();
 
             // <- Assume we are VSynced here ->
-            m_sinceLastSwap = m_timer.restart();
+
+            m_sinceLastSwap = mixxx::Duration::fromNanos(m_timer.nsecsElapsed());
+            m_timer.restart();
             int lastSwapTime = static_cast<int>(m_sinceLastSwap.toIntegerMicros());
             if (remainingForSwap < 0) {
                 // Our swapping call was already delayed
@@ -89,7 +94,7 @@ void VSyncThread::run() {
 }
 
 int VSyncThread::elapsed() {
-    return static_cast<int>(m_timer.elapsed().toIntegerMicros());
+    return static_cast<int>(m_timer.nsecsElapsed() / 1000);
 }
 
 void VSyncThread::setSyncIntervalTimeMicros(int syncTime) {
@@ -108,7 +113,7 @@ void VSyncThread::setVSyncType(int type) {
 }
 
 int VSyncThread::toNextSyncMicros() {
-    int rest = m_waitToSwapMicros - static_cast<int>(m_timer.elapsed().toIntegerMicros());
+    int rest = m_waitToSwapMicros - static_cast<int>(m_timer.nsecsElapsed() / 1000);
     // int math is fine here, because we do not expect times > 4.2 s
     if (rest < 0) {
         rest %= m_syncIntervalTimeMicros;
@@ -117,8 +122,8 @@ int VSyncThread::toNextSyncMicros() {
     return rest;
 }
 
-int VSyncThread::fromTimerToNextSyncMicros(const PerformanceTimer& timer) {
-    int difference = static_cast<int>(m_timer.difference(timer).toIntegerMicros());
+int VSyncThread::fromTimerToNextSyncMicros(const QElapsedTimer& timer) {
+    int difference = static_cast<int>((m_timer.nsecsElapsed() - timer.nsecsElapsed()) / 1000);
     // int math is fine here, because we do not expect times > 4.2 s
     return difference + m_waitToSwapMicros;
 }

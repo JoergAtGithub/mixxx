@@ -1014,7 +1014,7 @@ int SoundDevicePortAudio::callbackProcessClkRef(
 void SoundDevicePortAudio::updateCallbackEntryToDacTime(
         SINT framesPerBuffer,
         const PaStreamCallbackTimeInfo* timeInfo) {
-    double timeSinceLastCbSecs = m_clkRefTimer.restart().toDoubleSeconds();
+    double timeSinceLastCbSecs = static_cast<double>(m_clkRefTimer.restart() / 1000);
 
     // Plausibility check:
     // We have the DAC timing as reference with almost no jitter
@@ -1095,5 +1095,5 @@ void SoundDevicePortAudio::updateAudioLatencyUsage(
         //         << m_pMasterAudioLatencyUsage->get();
     }
     // measure time in Audio callback at the very last
-    m_timeInAudioCallback += m_clkRefTimer.elapsed();
+    m_timeInAudioCallback += mixxx::Duration::fromNanos(m_clkRefTimer.nsecsElapsed());
 }
