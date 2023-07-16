@@ -135,6 +135,16 @@ if(QOPENGL)
 endif()
 
 if(APPLE)
+  # Check if xcode-select is installed
+  execute_process(COMMAND xcode-select -v
+    RESULT_VARIABLE XCODE_SELECT_RESULT
+    OUTPUT_QUIET
+  )
+  if(XCODE_SELECT_RESULT)
+    # xcode-select command failed, meaning it is not installed or not configured properly
+    message(FATAL_ERROR "'xcode-select -v' failed with '${XCODE_SELECT_RESULT}'. You may need to install Xcode and run 'sudo xcode-select --install'.")
+  endif()
+
   if(QT6)
     # Minimum macOS version supported by Qt 6
     set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15 CACHE STRING "Minimum macOS version the build will be able to run on")
@@ -818,8 +828,8 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/library/recording/dlgrecording.cpp
   src/library/recording/dlgrecording.ui
   src/library/recording/recordingfeature.cpp
-  src/library/rekordbox/rekordbox_anlz.cpp
-  src/library/rekordbox/rekordbox_pdb.cpp
+  src/library/rekordbox/kaitaistructs/rekordbox_anlz.cpp
+  src/library/rekordbox/kaitaistructs/rekordbox_pdb.cpp
   src/library/rekordbox/rekordboxfeature.cpp
   src/library/rhythmbox/rhythmboxfeature.cpp
   src/library/scanner/importfilestask.cpp
@@ -1203,6 +1213,7 @@ else()
       src/shaders/shader.cpp
       src/shaders/textureshader.cpp
       src/shaders/unicolorshader.cpp
+      src/shaders/vinylqualityshader.cpp
       src/util/texture.cpp
       src/waveform/renderers/allshader/matrixforwidgetgeometry.cpp
       src/waveform/renderers/allshader/waveformrenderbackground.cpp
@@ -1258,6 +1269,10 @@ if(APPLE)
   # will automatically insert retain/release calls on Objective-C objects.
   target_compile_options(mixxx-lib PUBLIC -fobjc-arc)
 
+  target_sources(mixxx-lib PRIVATE
+    src/util/darkappearance.mm
+  )
+
   option(MACOS_ITUNES_LIBRARY "Native macOS iTunes/Music.app library integration" ON)
   if(MACOS_ITUNES_LIBRARY)
     target_sources(mixxx-lib PRIVATE
@@ -1275,35 +1290,25 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 # Disable warnings in generated source files
-set_property(
-  SOURCE src/library/rekordbox/rekordbox_anlz.cpp
-  APPEND_STRING
-  PROPERTY CXX_CLANG_TIDY ""
-)
-set_property(
-  SOURCE src/library/rekordbox/rekordbox_pdb.cpp
-  APPEND_STRING
-  PROPERTY CXX_CLANG_TIDY ""
-)
 if(GNU_GCC OR LLVM_CLANG)
   set_property(
-    SOURCE src/library/rekordbox/rekordbox_anlz.cpp
+    SOURCE src/library/rekordbox/kaitaistructs/rekordbox_anlz.cpp
     APPEND_STRING
     PROPERTY COMPILE_OPTIONS -Wno-unused-parameter
   )
   set_property(
-    SOURCE src/library/rekordbox/rekordbox_pdb.cpp
+    SOURCE src/library/rekordbox/kaitaistructs/rekordbox_pdb.cpp
     APPEND_STRING
     PROPERTY COMPILE_OPTIONS -Wno-unused-parameter -Wno-switch
   )
 elseif(MSVC)
   set_property(
-    SOURCE src/library/rekordbox/rekordbox_anlz.cpp
+    SOURCE src/library/rekordbox/kaitaistructs/rekordbox_anlz.cpp
     APPEND_STRING
     PROPERTY COMPILE_OPTIONS /w
   )
   set_property(
-    SOURCE src/library/rekordbox/rekordbox_pdb.cpp
+    SOURCE src/library/rekordbox/kaitaistructs/rekordbox_pdb.cpp
     APPEND_STRING
     PROPERTY COMPILE_OPTIONS /w
   )
@@ -1810,7 +1815,8 @@ add_executable(mixxx-test
   src/test/hotcuecontrol_test.cpp
   src/test/imageutils_test.cpp
   src/test/indexrange_test.cpp
-  src/test/itunesxmlimportertest.cpp
+  # TODO: reanable this after https://github.com/mixxxdj/mixxx/pull/11666
+  # src/test/itunesxmlimportertest.cpp
   src/test/keyutilstest.cpp
   src/test/lcstest.cpp
   src/test/learningutilstest.cpp
@@ -2058,19 +2064,20 @@ endif()
 # Denon Engine Prime library export support (using libdjinterop)
 option(ENGINEPRIME "Support for library export to Denon Engine Prime" ON)
 if(ENGINEPRIME)
-  set(LIBDJINTEROP_VERSION 0.16.1)
-  # Look for an existing installation of libdjinterop and use that if available.
-  # Otherwise, download and build from GitHub.
-  # Note: Version 0.17.0 is not yet compatible
-  find_package(DjInterop ${LIBDJINTEROP_VERSION} EXACT)
+  # libdjinterop does not currently have a stable ABI, so we fetch sources for a specific tag, build here, and link
+  # statically.  This situation should be reviewed once libdjinterop hits version 1.x.
+  set(LIBDJINTEROP_VERSION 0.19.1)
+  # Look whether an existing installation of libdjinterop matches the required version.
+  find_package(DjInterop  ${LIBDJINTEROP_VERSION} EXACT CONFIG)
+  if(NOT DjInterop_FOUND)
+    find_package(DjInterop  ${LIBDJINTEROP_VERSION} EXACT MODULE)
+  endif()
+
   if(DjInterop_FOUND)
     # An existing installation of djinterop is available.
-    message(STATUS "Using existing system installation of libdjinterop")
-    target_include_directories(mixxx-lib PUBLIC ${DjInterop_INCLUDE_DIRS})
+    message(STATUS "STATIC link existing system installation of libdjinterop")
     target_link_libraries(mixxx-lib PRIVATE DjInterop::DjInterop)
   else()
-    # Fetch djinterop sources from GitHub and build them statically.
-
     # On MacOS, Mixxx does not use system SQLite, so we will use libdjinterop's
     # embedded SQLite in such a case.
     if (APPLE AND NOT SQLite3_IS_STATIC)
@@ -2092,8 +2099,10 @@ if(ENGINEPRIME)
     # copy it into DOWNLOAD_DIR under DOWNLOAD_NAME prior to starting
     # the configuration.
     ExternalProject_Add(libdjinterop
-      URL "https://github.com/xsco/libdjinterop/archive/refs/tags/${LIBDJINTEROP_VERSION}.tar.gz"
-      URL_HASH SHA256=25461f5cc3ea80850d8400872f4fef08ad3730d9f2051719cccf2460f5ac15ad
+      URL
+        "https://github.com/xsco/libdjinterop/archive/refs/tags/${LIBDJINTEROP_VERSION}.tar.gz"
+        "https://launchpad.net/~xsco/+archive/ubuntu/djinterop/+sourcefiles/libdjinterop/${LIBDJINTEROP_VERSION}-0ubuntu1/libdjinterop_${LIBDJINTEROP_VERSION}.orig.tar.gz"
+      URL_HASH SHA256=fd03a7ed54bf4e58da0075b517a6e7382546227a1ac165769987d57e1cf5e36e
       DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloads"
       DOWNLOAD_NAME "libdjinterop-${LIBDJINTEROP_VERSION}.tar.gz"
       INSTALL_DIR ${DJINTEROP_INSTALL_DIR}
@@ -2104,9 +2113,15 @@ if(ENGINEPRIME)
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
         -DCMAKE_PREFIX_PATH=${PIPE_DELIMITED_CMAKE_PREFIX_PATH}
+        -DCMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}
         -DCMAKE_INSTALL_LIBDIR:PATH=lib
         -DCMAKE_MODULE_PATH:PATH=${CMAKE_MODULE_PATH}
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT}
+        -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+        -DCMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}
+        -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
         -DSYSTEM_SQLITE=${DJINTEROP_SYSTEM_SQLITE}
+      BUILD_COMMAND ${CMAKE_COMMAND} --build . --target DjInterop
       BUILD_BYPRODUCTS <INSTALL_DIR>/${DJINTEROP_LIBRARY}
       EXCLUDE_FROM_ALL TRUE
     )
@@ -2157,11 +2172,17 @@ endif()
 target_include_directories(mixxx-lib SYSTEM PUBLIC lib/fidlib)
 target_link_libraries(mixxx-lib PRIVATE fidlib)
 
+# Create a list from CMAKE_PREFIX_PATH with an alternate separator
+# This is required to forward CMAKE_PREFIX_PATH in ExternalProject_Add()
+# using the LIST_SEPARATOR option
+string(REPLACE ";" "|" CMAKE_PREFIX_PATH_ALT_SEP "${CMAKE_PREFIX_PATH}")
+
 # KeyFinder
 option(KEYFINDER "KeyFinder support" ON)
 if(KEYFINDER)
-  set(LIBKEYFINDER_VERSION 2.2.6)
-  find_package(KeyFinder ${LIBKEYFINDER_VERSION})
+  set(MIN_LIBKEYFINDER_VERSION 2.2.4)
+  set(FETCH_LIBKEYFINDER_VERSION 2.2.6)
+  find_package(KeyFinder ${MIN_LIBKEYFINDER_VERSION})
   if (KeyFinder_FOUND)
     target_link_libraries(mixxx-lib PRIVATE KeyFinder::KeyFinder)
   else()
@@ -2178,10 +2199,10 @@ if(KEYFINDER)
     # copy it into DOWNLOAD_DIR under DOWNLOAD_NAME prior to starting
     # the configuration.
     ExternalProject_Add(libkeyfinder
-      URL "https://github.com/mixxxdj/libkeyfinder/archive/refs/tags/v${LIBKEYFINDER_VERSION}.zip"
+      URL "https://github.com/mixxxdj/libkeyfinder/archive/refs/tags/v${FETCH_LIBKEYFINDER_VERSION}.zip"
       URL_HASH SHA256=f15deb56c2dcaa6b10dc3717a7d2f42a8407c04ad550f694de42118be998d256
       DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloads"
-      DOWNLOAD_NAME "libkeyfinder-${LIBKEYFINDER_VERSION}.zip"
+      DOWNLOAD_NAME "libkeyfinder-${FETCH_LIBKEYFINDER_VERSION}.zip"
       INSTALL_DIR "${KeyFinder_INSTALL_DIR}"
       LIST_SEPARATOR "|"
       CMAKE_ARGS
@@ -2190,11 +2211,17 @@ if(KEYFINDER)
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
         -DCMAKE_PREFIX_PATH=${PIPE_DELIMITED_CMAKE_PREFIX_PATH}
+        -DCMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}
         -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT}
+        -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+        -DCMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}
+        -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
         -DBUILD_TESTING=OFF
       BUILD_COMMAND ${CMAKE_COMMAND} --build .
       BUILD_BYPRODUCTS <INSTALL_DIR>/${KeyFinder_LIBRARY}
       EXCLUDE_FROM_ALL TRUE
+      LIST_SEPARATOR |
     )
 
     # This is a bit of a hack to make sure that the include directory actually
@@ -3071,7 +3098,7 @@ if(HID)
 endif()
 
 # USB Bulk controller support
-default_option(BULK "USB Bulk controller support" "LibUSB_FOUND")
+default_option(BULK "USB Bulk controller support" "LibUSB_FOUND;NOT WIN32")
 if(BULK)
   if(NOT LibUSB_FOUND)
     message(FATAL_ERROR "USB Bulk controller support requires libusb 1.0 and its development headers.")
