@@ -33,7 +33,8 @@ constexpr int kMaxCueLabelLength = 23;
 } // namespace
 
 allshader::WaveformRenderMark::WaveformRenderMark(WaveformWidgetRenderer* waveformWidget)
-        : WaveformRenderer(waveformWidget) {
+        : WaveformRenderer(waveformWidget),
+          m_bCuesUpdates(false) {
 }
 
 allshader::WaveformRenderMark::~WaveformRenderMark() {
@@ -208,7 +209,7 @@ void allshader::WaveformRenderMark::paintGL() {
 
                 if (visible || currentMarkEndPoint > 0) {
                     QColor color = pMark->fillColor();
-                    color.setAlphaF(0.4);
+                    color.setAlphaF(0.4f);
 
                     drawMark(
                             QRectF(QPointF(currentMarkPoint, 0),
@@ -444,7 +445,11 @@ void allshader::WaveformRenderMark::generateMarkImage(WaveformMarkPointer pMark,
         // though as soon as other OS-based font and app scaling mechanics join the
         // party the resulting font size is hard to predict (affects all supported OS).
         font.setPixelSize(13);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         font.setWeight(75); // bold
+#else
+        font.setWeight(QFont::Bold); // bold
+#endif
         font.setItalic(false);
 
         QFontMetrics metrics(font);

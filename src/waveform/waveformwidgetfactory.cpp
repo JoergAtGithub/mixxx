@@ -10,6 +10,7 @@
 
 #include <QGuiApplication>
 #include <QOpenGLFunctions>
+#include <QRegularExpression>
 #include <QStringList>
 #include <QTime>
 #include <QWidget>
@@ -71,6 +72,8 @@ bool shouldRenderWaveform(WaveformWidgetAbstract* pWaveformWidget) {
 
     return glw->shouldRender();
 }
+
+const QRegularExpression openGLVersionRegex(QStringLiteral("^(\\d+)\\.(\\d+).*$"));
 }  // anonymous namespace
 
 ///////////////////////////////////////////
@@ -132,9 +135,9 @@ WaveformWidgetFactory::WaveformWidgetFactory()
     WGLWidget* widget = SharedGLContext::getWidget();
     if (widget) {
         widget->makeCurrentIfNeeded();
-        auto context = QOpenGLContext::currentContext();
-        if (context) {
-            auto glFunctions = context->functions();
+        auto* pContext = QOpenGLContext::currentContext();
+        if (pContext) {
+            auto* glFunctions = pContext->functions();
             glFunctions->initializeOpenGLFunctions();
             QString versionString(QLatin1String(
                     reinterpret_cast<const char*>(glFunctions->glGetString(GL_VERSION))));
@@ -142,22 +145,36 @@ WaveformWidgetFactory::WaveformWidgetFactory()
                     reinterpret_cast<const char*>(glFunctions->glGetString(GL_VENDOR))));
             QString rendererString = QString(QLatin1String(
                     reinterpret_cast<const char*>(glFunctions->glGetString(GL_RENDERER))));
-            qDebug() << versionString << vendorString << rendererString;
+            qDebug().noquote() << QStringLiteral(
+                    "OpenGL driver version string \"%1\", vendor \"%2\", "
+                    "renderer \"%3\"")
+                                          .arg(versionString, vendorString, rendererString);
 
-            // note: the requested version has been set in WGLWidget's OpenGLWindow constructor
-            const int majorVersion = context->surface()->format().majorVersion();
-            const int minorVersion = context->surface()->format().minorVersion();
+            GLint majorVersion, minorVersion = GL_INVALID_ENUM;
+            glFunctions->glGetIntegerv(GL_MAJOR_VERSION, &majorVersion);
+            glFunctions->glGetIntegerv(GL_MINOR_VERSION, &minorVersion);
+            if (majorVersion == GL_INVALID_ENUM || minorVersion == GL_INVALID_ENUM) {
+                // GL_MAJOR/MINOR_VERSION are not supported below OpenGL 3.0, so
+                // parse GL_VERSION string as a fallback.
+                // https://www.khronos.org/opengl/wiki/OpenGL_Context#OpenGL_version_number
+                auto match = openGLVersionRegex.match(versionString);
+                DEBUG_ASSERT(match.hasMatch());
+                majorVersion = match.captured(1).toInt();
+                minorVersion = match.captured(2).toInt();
+            }
 
-            qDebug() << "QOpenGLContext surface format version:" << majorVersion << minorVersion;
+            qDebug().noquote()
+                    << QStringLiteral("Supported OpenGL version: %1.%2")
+                               .arg(QString::number(majorVersion), QString::number(minorVersion));
 
-            m_openGLShaderAvailable = QOpenGLShaderProgram::hasOpenGLShaderPrograms(context);
+            m_openGLShaderAvailable = QOpenGLShaderProgram::hasOpenGLShaderPrograms(pContext);
 
-            m_openGLVersion = context->isOpenGLES() ? "ES " : "";
+            m_openGLVersion = pContext->isOpenGLES() ? "ES " : "";
             m_openGLVersion += majorVersion == 0 ? QString("None") : versionString;
 
             if (majorVersion * 100 + minorVersion >= 201) {
                 m_openGlAvailable = true;
-                if (context->isOpenGLES()) {
+                if (pContext->isOpenGLES()) {
                     m_openGlesAvailable = true;
                 } else {
                     m_openGlAvailable = true;

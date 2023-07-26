@@ -1,3 +1,5 @@
+#include "widget/wspinnybase.h"
+
 #include <QApplication>
 #include <QMimeData>
 #include <QStylePainter>
@@ -9,6 +11,7 @@
 #include "control/controlproxy.h"
 #include "library/coverartcache.h"
 #include "library/coverartutils.h"
+#include "moc_wspinnybase.cpp"
 #include "track/track.h"
 #include "util/dnd.h"
 #include "util/fpclassify.h"
@@ -16,18 +19,17 @@
 #include "vinylcontrol/vinylcontrolmanager.h"
 #include "waveform/visualplayposition.h"
 #include "waveform/vsyncthread.h"
-#include "widget/moc_wspinny.cpp"
 #include "widget/wspinny.h"
 #include "wimagestore.h"
 
 // The SampleBuffers format enables antialiasing.
 WSpinnyBase::WSpinnyBase(
-        QWidget* parent,
+        QWidget* pParent,
         const QString& group,
         UserSettingsPointer pConfig,
         VinylControlManager* pVCMan,
         BaseTrackPlayer* pPlayer)
-        : WGLWidget(parent),
+        : WGLWidget(pParent),
           WBaseWidget(this),
           m_group(group),
           m_pConfig(pConfig),
@@ -246,8 +248,8 @@ void WSpinnyBase::setLoadedCover(const QPixmap& pixmap) {
 }
 
 void WSpinnyBase::slotLoadTrack(TrackPointer pTrack) {
-    if (m_loadedTrack) {
-        disconnect(m_loadedTrack.get(),
+    if (m_pLoadedTrack) {
+        disconnect(m_pLoadedTrack.get(),
                 &Track::coverArtUpdated,
                 this,
                 &WSpinnyBase::slotTrackCoverArtUpdated);
@@ -256,9 +258,9 @@ void WSpinnyBase::slotLoadTrack(TrackPointer pTrack) {
 
     setLoadedCover(QPixmap());
 
-    m_loadedTrack = pTrack;
-    if (m_loadedTrack) {
-        connect(m_loadedTrack.get(),
+    m_pLoadedTrack = pTrack;
+    if (m_pLoadedTrack) {
+        connect(m_pLoadedTrack.get(),
                 &Track::coverArtUpdated,
                 this,
                 &WSpinnyBase::slotTrackCoverArtUpdated);
@@ -269,13 +271,13 @@ void WSpinnyBase::slotLoadTrack(TrackPointer pTrack) {
 
 void WSpinnyBase::slotLoadingTrack(TrackPointer pNewTrack, TrackPointer pOldTrack) {
     Q_UNUSED(pNewTrack);
-    if (m_loadedTrack && pOldTrack == m_loadedTrack) {
-        disconnect(m_loadedTrack.get(),
+    if (m_pLoadedTrack && pOldTrack == m_pLoadedTrack) {
+        disconnect(m_pLoadedTrack.get(),
                 &Track::coverArtUpdated,
                 this,
                 &WSpinnyBase::slotTrackCoverArtUpdated);
     }
-    m_loadedTrack.reset();
+    m_pLoadedTrack.reset();
     m_lastRequestedCover = CoverInfo();
 
     setLoadedCover(QPixmap());
@@ -283,8 +285,8 @@ void WSpinnyBase::slotLoadingTrack(TrackPointer pNewTrack, TrackPointer pOldTrac
 }
 
 void WSpinnyBase::slotTrackCoverArtUpdated() {
-    if (m_loadedTrack) {
-        CoverArtCache::requestTrackCover(this, m_loadedTrack);
+    if (m_pLoadedTrack) {
+        CoverArtCache::requestTrackCover(this, m_pLoadedTrack);
     }
 }
 
@@ -297,25 +299,25 @@ void WSpinnyBase::slotCoverFound(
     Q_UNUSED(requestedCacheKey);
     Q_UNUSED(coverInfoUpdated); // CoverArtCache has taken care, updating the Track.
     if (pRequestor == this &&
-            m_loadedTrack &&
-            m_loadedTrack->getLocation() == coverInfo.trackLocation) {
+            m_pLoadedTrack &&
+            m_pLoadedTrack->getLocation() == coverInfo.trackLocation) {
         setLoadedCover(pixmap);
         coverChanged();
     }
 }
 
 void WSpinnyBase::slotCoverInfoSelected(const CoverInfoRelative& coverInfo) {
-    if (m_loadedTrack != nullptr) {
+    if (m_pLoadedTrack != nullptr) {
         // Will trigger slotTrackCoverArtUpdated().
-        m_loadedTrack->setCoverInfo(coverInfo);
+        m_pLoadedTrack->setCoverInfo(coverInfo);
     }
 }
 
 void WSpinnyBase::slotReloadCoverArt() {
-    if (!m_loadedTrack) {
+    if (!m_pLoadedTrack) {
         return;
     }
-    const auto future = guessTrackCoverInfoConcurrently(m_loadedTrack);
+    const auto future = guessTrackCoverInfoConcurrently(m_pLoadedTrack);
     // Don't wait for the result and keep running in the background
     Q_UNUSED(future)
 }
@@ -513,8 +515,8 @@ void WSpinnyBase::updateSlipEnabled(double enabled) {
 
 void WSpinnyBase::mouseMoveEvent(QMouseEvent* e) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    int y = e->position().y();
-    int x = e->position().x();
+    int y = static_cast<int>(e->position().y());
+    int x = static_cast<int>(e->position().x());
 #else
     int y = e->y();
     int x = e->x();
@@ -562,7 +564,7 @@ void WSpinnyBase::mouseMoveEvent(QMouseEvent* e) {
 }
 
 void WSpinnyBase::mousePressEvent(QMouseEvent* e) {
-    if (m_loadedTrack == nullptr) {
+    if (m_pLoadedTrack == nullptr) {
         return;
     }
 
@@ -577,8 +579,13 @@ void WSpinnyBase::mousePressEvent(QMouseEvent* e) {
     }
 
     if (e->button() == Qt::LeftButton) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        int y = static_cast<int>(e->position().y());
+        int x = static_cast<int>(e->position().x());
+#else
         int y = e->y();
         int x = e->x();
+#endif
 
         m_iStartMouseX = x;
         m_iStartMouseY = y;
@@ -608,7 +615,7 @@ void WSpinnyBase::mousePressEvent(QMouseEvent* e) {
         }
     } else {
         if (!m_loadedCover.isNull()) {
-            m_pDlgCoverArt->init(m_loadedTrack);
+            m_pDlgCoverArt->init(m_pLoadedTrack);
         } else if (!m_pDlgCoverArt->isVisible() && m_bShowCover) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             m_pCoverMenu->popup(e->globalPosition().toPoint());

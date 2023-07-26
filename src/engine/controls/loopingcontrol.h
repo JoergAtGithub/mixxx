@@ -65,6 +65,8 @@ class LoopingControl : public EngineControl {
     void trackLoaded(TrackPointer pNewTrack) override;
     void trackBeatsUpdated(mixxx::BeatsPointer pBeats) override;
 
+    double getTrackSamples() const;
+
   signals:
     void loopReset();
     void loopEnabledChanged(bool enabled);
@@ -169,6 +171,7 @@ class LoopingControl : public EngineControl {
     ControlObject* m_pSlipEnabled;
     RateControl* m_pRateControl;
     ControlObject* m_pPlayButton;
+    ControlObject* m_pRepeatButton;
 
     bool m_bLoopingEnabled;
     bool m_bLoopRollActive;
@@ -182,10 +185,6 @@ class LoopingControl : public EngineControl {
     LoopInfo m_oldLoopInfo;
     ControlValueAtomic<mixxx::audio::FramePos> m_currentPosition;
     ControlObject* m_pQuantizeEnabled;
-    ControlObject* m_pNextBeat;
-    ControlObject* m_pPreviousBeat;
-    ControlObject* m_pClosestBeat;
-    ControlObject* m_pTrackSamples;
     QAtomicPointer<BeatLoopingControl> m_pActiveBeatLoop;
 
     // Base BeatLoop Control Object.

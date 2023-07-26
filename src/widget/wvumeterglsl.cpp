@@ -1,11 +1,12 @@
 #include "widget/wvumeterglsl.h"
 
+#include "moc_wvumeterglsl.cpp"
 #include "util/assert.h"
 #include "util/math.h"
 #include "util/texture.h"
 
-WVuMeterGLSL::WVuMeterGLSL(QWidget* parent)
-        : WVuMeterBase(parent) {
+WVuMeterGLSL::WVuMeterGLSL(QWidget* pParent)
+        : WVuMeterBase(pParent) {
 }
 
 WVuMeterGLSL::~WVuMeterGLSL() {
