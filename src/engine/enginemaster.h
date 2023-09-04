@@ -3,15 +3,16 @@
 #include <QObject>
 #include <QVarLengthArray>
 
-#include "preferences/usersettings.h"
+#include "audio/types.h"
 #include "control/controlobject.h"
 #include "control/controlpushbutton.h"
-#include "engine/engineobject.h"
-#include "engine/channels/enginechannel.h"
 #include "engine/channelhandle.h"
+#include "engine/channels/enginechannel.h"
+#include "engine/engineobject.h"
+#include "preferences/usersettings.h"
+#include "recording/recordingmanager.h"
 #include "soundio/soundmanager.h"
 #include "soundio/soundmanagerutil.h"
-#include "recording/recordingmanager.h"
 
 class EngineWorkerScheduler;
 class EngineBuffer;
@@ -32,7 +33,7 @@ class EngineDelay;
 
 // The number of channels to pre-allocate in various structures in the
 // engine. Prevents memory allocation in EngineMaster::addChannel.
-static const int kPreallocatedChannels = 64;
+static constexpr int kPreallocatedChannels = 64;
 
 class EngineMaster : public QObject, public AudioSource {
     Q_OBJECT
@@ -87,9 +88,9 @@ class EngineMaster : public QObject, public AudioSource {
         }
     }
 
-    // Provide access to the master sync so enginebuffers can know what their rate controller is.
+    // Provide access to the sync lock so enginebuffers can know what their rate controller is.
     EngineSync* getEngineSync() const{
-        return m_pMasterSync;
+        return m_pEngineSync;
     }
 
     // These are really only exposed for tests to use.
@@ -104,6 +105,8 @@ class EngineMaster : public QObject, public AudioSource {
     EngineSideChain* getSideChain() const {
         return m_pEngineSideChain;
     }
+
+    CSAMPLE_GAIN getMasterGain(int channelIndex) const;
 
     struct ChannelInfo {
         ChannelInfo(int index)
@@ -123,7 +126,7 @@ class EngineMaster : public QObject, public AudioSource {
     };
 
     struct GainCache {
-        CSAMPLE m_gain;
+        CSAMPLE_GAIN m_gain;
         bool m_fadeout;
     };
 
@@ -252,7 +255,7 @@ class EngineMaster : public QObject, public AudioSource {
     ControlObject* m_pBoothEnabled;
 
   private:
-    // Processes active channels. The master sync channel (if any) is processed
+    // Processes active channels. The sync lock channel (if any) is processed
     // first and all others are processed after. Populates m_activeChannels,
     // m_activeBusChannels, m_activeHeadphoneChannels, and
     // m_activeTalkoverChannels with each channel that is active for the
@@ -260,8 +263,10 @@ class EngineMaster : public QObject, public AudioSource {
     void processChannels(int iBufferSize);
 
     ChannelHandleFactoryPointer m_pChannelHandleFactory;
-    void applyMasterEffects();
-    void processHeadphones(const CSAMPLE_GAIN masterMixGainInHeadphones);
+    void applyMasterEffects(int iBufferSize);
+    void processHeadphones(
+            const CSAMPLE_GAIN masterMixGainInHeadphones,
+            int iBufferSize);
     bool sidechainMixRequired() const;
 
     EngineEffectsManager* m_pEngineEffectsManager;
@@ -281,8 +286,7 @@ class EngineMaster : public QObject, public AudioSource {
     QVarLengthArray<ChannelInfo*, kPreallocatedChannels> m_activeHeadphoneChannels;
     QVarLengthArray<ChannelInfo*, kPreallocatedChannels> m_activeTalkoverChannels;
 
-    unsigned int m_iSampleRate;
-    unsigned int m_iBufferSize;
+    mixxx::audio::SampleRate m_sampleRate;
 
     // Mixing buffers for each output.
     CSAMPLE* m_pOutputBusBuffers[3];
@@ -293,14 +297,13 @@ class EngineMaster : public QObject, public AudioSource {
     CSAMPLE* m_pSidechainMix;
 
     EngineWorkerScheduler* m_pWorkerScheduler;
-    EngineSync* m_pMasterSync;
+    EngineSync* m_pEngineSync;
 
     ControlObject* m_pMasterGain;
     ControlObject* m_pBoothGain;
     ControlObject* m_pHeadGain;
     ControlObject* m_pMasterSampleRate;
     ControlObject* m_pMasterLatency;
-    ControlObject* m_pMasterAudioBufferSize;
     ControlObject* m_pAudioLatencyOverloadCount;
     ControlObject* m_pNumMicsConfigured;
     ControlPotmeter* m_pAudioLatencyUsage;

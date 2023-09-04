@@ -1,7 +1,9 @@
+#include "engine/positionscratchcontroller.h"
+
 #include <QtDebug>
 
-#include "engine/positionscratchcontroller.h"
 #include "engine/bufferscalers/enginebufferscale.h" // for MIN_SEEK_SPEED
+#include "moc_positionscratchcontroller.cpp"
 #include "util/math.h"
 
 class VelocityController {
@@ -145,9 +147,9 @@ void PositionScratchController::process(double currentSample, double releaseRate
             }
 
             // Max velocity we would like to stop in a given time period.
-            const double kMaxVelocity = 100;
+            constexpr double kMaxVelocity = 100;
             // Seconds to stop a throw at the max velocity.
-            const double kTimeToStop = 1.0;
+            constexpr double kTimeToStop = 1.0;
 
             // We calculate the exponential decay constant based on the above
             // constants. Roughly we backsolve what the decay should be if we want to
@@ -239,7 +241,7 @@ void PositionScratchController::process(double currentSample, double releaseRate
 
             // The rate threshold above which disabling position scratching will enable
             // an 'inertia' mode.
-            const double kThrowThreshold = 2.5;
+            constexpr double kThrowThreshold = 2.5;
 
             if (fabs(m_dRate) > kThrowThreshold) {
                 m_bEnableInertia = true;
@@ -274,8 +276,9 @@ double PositionScratchController::getRate() {
     return m_dRate;
 }
 
-void PositionScratchController::notifySeek(double currentSample) {
+void PositionScratchController::notifySeek(mixxx::audio::FramePos position) {
+    DEBUG_ASSERT(position.isValid());
     // scratching continues after seek due to calculating the relative distance traveled
     // in m_dPositionDeltaSum
-    m_dLastPlaypos = currentSample;
+    m_dLastPlaypos = position.toEngineSamplePos();
 }

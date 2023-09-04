@@ -8,7 +8,6 @@
 
 #include "engine/sidechain/enginesidechain.h"
 
-#include <QMutexLocker>
 #include <QtDebug>
 
 #include "engine/engine.h"
@@ -35,7 +34,7 @@ EngineSideChain::EngineSideChain(
     // a suitable choice since we do semi-realtime tasks
     // in the sidechain thread. To get reliable timing, it's important
     // that this work be prioritized over the GUI and non-realtime tasks. See
-    // discussion on Bug #1270583 and Bug #1194543.
+    // discussion on issue #7272 and https://bugs.launchpad.net/mixxx/1.11/+bug/1194543.
     start(QThread::HighPriority);
 }
 
@@ -79,7 +78,7 @@ void EngineSideChain::receiveBuffer(const AudioInput& input,
 void EngineSideChain::writeSamples(const CSAMPLE* pBuffer, int iFrames) {
     Trace sidechain("EngineSideChain::writeSamples");
     // TODO: remove assumption of stereo buffer
-    const int kChannels = 2;
+    constexpr int kChannels = 2;
     const int iSamples = iFrames * kChannels;
     int samples_written = m_sampleFifo.write(pBuffer, iSamples);
 

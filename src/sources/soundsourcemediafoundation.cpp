@@ -49,15 +49,15 @@ const QString SoundSourceProviderMediaFoundation::kDisplayName =
         QStringLiteral("Microsoft Media Foundation");
 
 //static
-const QStringList SoundSourceProviderMediaFoundation::kSupportedFileExtensions = {
+const QStringList SoundSourceProviderMediaFoundation::kSupportedFileTypes = {
         QStringLiteral("aac"),
         QStringLiteral("m4a"),
         QStringLiteral("mp4"),
 };
 
 SoundSourceProviderPriority SoundSourceProviderMediaFoundation::getPriorityHint(
-        const QString& supportedFileExtension) const {
-    Q_UNUSED(supportedFileExtension)
+        const QString& supportedFileType) const {
+    Q_UNUSED(supportedFileType)
     // On Windows SoundSourceMediaFoundation is the preferred decoder for all
     // supported audio formats.
     return SoundSourceProviderPriority::Higher;
@@ -372,7 +372,7 @@ ReadableSampleFrames SoundSourceMediaFoundation::readSampleFramesClamped(
         SINT readerFrameIndex = m_streamUnitConverter.toFrameIndex(streamPos);
         // TODO: Fix debug assertion in else arm. It has been commented
         // out deliberately to prevent crashes in debug builds.
-        // https://bugs.launchpad.net/mixxx/+bug/1899242
+        // https://github.com/mixxxdj/mixxx/issues/10160
         if (m_currentFrameIndex == kUnknownFrameIndex) {
             // Unknown position after seeking
             m_currentFrameIndex = readerFrameIndex;

@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "util/assert.h"
+#include "util/compatibility/qhash.h"
 
 // ChannelHandle defines a unique identifier for channels of audio in the engine
 // (e.g. headphone output, master output, deck 1, microphone 3). Previously we
@@ -40,6 +41,10 @@ class ChannelHandle {
         return m_iHandle;
     }
 
+    operator int() const {
+        return m_iHandle;
+    }
+
   private:
     ChannelHandle(int iHandle)
             : m_iHandle(iHandle) {
@@ -66,6 +71,10 @@ inline bool operator==(const ChannelHandle& h1, const ChannelHandle& h2) {
     return h1.handle() == h2.handle();
 }
 
+inline bool operator==(const int& i, const ChannelHandle& h2) {
+    return i == h2.handle();
+}
+
 inline bool operator!=(const ChannelHandle& h1, const ChannelHandle& h2) {
     return h1.handle() != h2.handle();
 }
@@ -75,9 +84,9 @@ inline QDebug operator<<(QDebug stream, const ChannelHandle& h) {
     return stream;
 }
 
-inline uint qHash(
+inline qhash_seed_t qHash(
         const ChannelHandle& handle,
-        uint seed = 0) {
+        qhash_seed_t seed = 0) {
     return qHash(handle.handle(), seed);
 }
 
@@ -94,7 +103,7 @@ class ChannelHandleAndGroup {
         return m_name;
     }
 
-    inline const ChannelHandle& handle() const {
+    inline ChannelHandle handle() const {
         return m_handle;
     }
 
@@ -115,9 +124,9 @@ inline QDebug operator<<(QDebug stream, const ChannelHandleAndGroup& g) {
     return stream;
 }
 
-inline uint qHash(
+inline qhash_seed_t qHash(
         const ChannelHandleAndGroup& handleGroup,
-        uint seed = 0) {
+        qhash_seed_t seed = 0) {
     return qHash(handleGroup.handle(), seed);
 }
 
@@ -166,17 +175,21 @@ typedef std::shared_ptr<ChannelHandleFactory> ChannelHandleFactoryPointer;
 // integer value.
 template <class T>
 class ChannelHandleMap {
-    static const int kMaxExpectedGroups = 256;
+    static constexpr int kMaxExpectedGroups = 256;
     typedef QVarLengthArray<T, kMaxExpectedGroups> container_type;
   public:
     typedef typename QVarLengthArray<T, kMaxExpectedGroups>::const_iterator const_iterator;
     typedef typename QVarLengthArray<T, kMaxExpectedGroups>::iterator iterator;
 
+    ChannelHandleMap()
+            : m_dummy() {
+    }
+
     const T& at(const ChannelHandle& handle) const {
         if (!handle.valid()) {
             return m_dummy;
         }
-        return m_data.at(handle.handle());
+        return m_data.at(handle);
     }
 
     void insert(const ChannelHandle& handle, const T& value) {
@@ -184,22 +197,28 @@ class ChannelHandleMap {
             return;
         }
 
-        int iHandle = handle.handle();
-        maybeExpand(iHandle + 1);
-        m_data[iHandle] = value;
+        maybeExpand(static_cast<int>(handle) + 1);
+        m_data[handle] = value;
     }
 
     T& operator[](const ChannelHandle& handle) {
         if (!handle.valid()) {
             return m_dummy;
         }
-        int iHandle = handle.handle();
-        maybeExpand(iHandle + 1);
-        return m_data[iHandle];
+        maybeExpand(static_cast<int>(handle) + 1);
+        return m_data[handle];
     }
 
     void clear() {
         m_data.clear();
+    }
+
+    int size() const {
+        return m_data.size();
+    }
+
+    bool isEmpty() {
+        return m_data.isEmpty();
     }
 
     typename container_type::iterator begin() {
@@ -220,8 +239,16 @@ class ChannelHandleMap {
 
   private:
     inline void maybeExpand(int iSize) {
-        if (m_data.size() < iSize) {
-            m_data.resize(iSize);
+        if (QTypeInfo<T>::isComplex) {
+            // The value for complex types is initialized by QVarLengthArray
+            if (m_data.size() < iSize) {
+                m_data.resize(iSize);
+            }
+        } else {
+            // We need to initialize simple types ourselves
+            while (m_data.size() < iSize) {
+                m_data.append(T());
+            }
         }
     }
     container_type m_data;

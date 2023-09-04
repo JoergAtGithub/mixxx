@@ -5,7 +5,6 @@
 #include "moc_dlgprefsounditem.cpp"
 #include "soundio/sounddevice.h"
 #include "soundio/soundmanagerconfig.h"
-#include "util/compatibility.h"
 
 /**
  * Constructs a new preferences sound item, representing an AudioPath and SoundDevice
@@ -33,14 +32,6 @@ DlgPrefSoundItem::DlgPrefSoundItem(
     deviceComboBox->addItem(SoundManagerConfig::kEmptyComboBox,
             QVariant::fromValue(SoundDeviceId()));
 
-    // Set the focus policy for QComboBoxes (and wide QDoubleSpinBoxes) and
-    // connect them to the custom event filter below so they don't accept focus
-    // when we scroll the preferences page.
-    deviceComboBox->setFocusPolicy(Qt::StrongFocus);
-    deviceComboBox->installEventFilter(this);
-    channelComboBox->setFocusPolicy(Qt::StrongFocus);
-    channelComboBox->installEventFilter(this);
-
     connect(deviceComboBox,
             QOverload<int>::of(&QComboBox::currentIndexChanged),
             this,
@@ -54,20 +45,6 @@ DlgPrefSoundItem::DlgPrefSoundItem(
 
 DlgPrefSoundItem::~DlgPrefSoundItem() {
 
-}
-
-// Catch scroll events over comboboxes and pass them to the scroll area instead.
-bool DlgPrefSoundItem::eventFilter(QObject* obj, QEvent* e) {
-    if (e->type() == QEvent::Wheel) {
-        // Reject scrolling only if widget is unfocused.
-        // Object to widget cast is needed to check the focus state.
-        QComboBox* combo = qobject_cast<QComboBox*>(obj);
-        if (combo && !combo->hasFocus()) {
-            QApplication::sendEvent(this->parentWidget(), e);
-            return true;
-        }
-    }
-    return QObject::eventFilter(obj, e);
 }
 
 /**
@@ -168,10 +145,8 @@ void DlgPrefSoundItem::channelChanged() {
  */
 void DlgPrefSoundItem::loadPath(const SoundManagerConfig &config) {
     if (m_isInput) {
-        QMultiHash<SoundDeviceId, AudioInput> inputs(config.getInputs());
-        QHashIterator<SoundDeviceId, AudioInput> it(inputs);
-        while (it.hasNext()) {
-            it.next();
+        const auto inputDeviceMap = config.getInputs();
+        for (auto it = inputDeviceMap.cbegin(); it != inputDeviceMap.cend(); ++it) {
             if (it.value().getType() == m_type && it.value().getIndex() == m_index) {
                 setDevice(it.key());
                 setChannel(it.value().getChannelGroup().getChannelBase(),
@@ -180,10 +155,8 @@ void DlgPrefSoundItem::loadPath(const SoundManagerConfig &config) {
             }
         }
     } else {
-        QMultiHash<SoundDeviceId, AudioOutput> outputs(config.getOutputs());
-        QHashIterator<SoundDeviceId, AudioOutput> it(outputs);
-        while (it.hasNext()) {
-            it.next();
+        const auto ouputDeviceMap = config.getOutputs();
+        for (auto it = ouputDeviceMap.cbegin(); it != ouputDeviceMap.cend(); ++it) {
             if (it.value().getType() == m_type && it.value().getIndex() == m_index) {
                 setDevice(it.key());
                 setChannel(it.value().getChannelGroup().getChannelBase(),

@@ -12,10 +12,12 @@ EngineChannel::EngineChannel(const ChannelHandleAndGroup& handleGroup,
         : m_group(handleGroup),
           m_pEffectsManager(pEffectsManager),
           m_vuMeter(getGroup()),
-          m_pSampleRate(new ControlProxy("[Master]", "samplerate")),
+          m_sampleRate("[Master]", "samplerate"),
           m_sampleBuffer(nullptr),
           m_bIsPrimaryDeck(isPrimaryDeck),
-          m_bIsTalkoverChannel(isTalkoverChannel) {
+          m_active(false),
+          m_bIsTalkoverChannel(isTalkoverChannel),
+          m_channelIndex(-1) {
     m_pPFL = new ControlPushButton(ConfigKey(getGroup(), "pfl"));
     m_pPFL->setButtonMode(ControlPushButton::TOGGLE);
     m_pMaster = new ControlPushButton(ConfigKey(getGroup(), "master"));
@@ -48,7 +50,6 @@ EngineChannel::~EngineChannel() {
     delete m_pOrientationLeft;
     delete m_pOrientationRight;
     delete m_pOrientationCenter;
-    delete m_pSampleRate;
     delete m_pTalkover;
 }
 
@@ -95,13 +96,20 @@ void EngineChannel::slotOrientationCenter(double v) {
 }
 
 EngineChannel::ChannelOrientation EngineChannel::getOrientation() const {
-    double dOrientation = m_pOrientation->get();
-    if (dOrientation == LEFT) {
-        return LEFT;
-    } else if (dOrientation == CENTER) {
+    const double dOrientation = m_pOrientation->get();
+    const int iOrientation = static_cast<int>(dOrientation);
+    if (dOrientation != iOrientation) {
         return CENTER;
-    } else if (dOrientation == RIGHT) {
+    }
+    switch (iOrientation) {
+    case LEFT:
+        return LEFT;
+    case CENTER:
+        return CENTER;
+    case RIGHT:
         return RIGHT;
+    default:
+        return CENTER;
     }
     return CENTER;
 }

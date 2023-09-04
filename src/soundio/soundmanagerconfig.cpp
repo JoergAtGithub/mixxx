@@ -8,16 +8,11 @@
 #include "util/cmdlineargs.h"
 #include "util/math.h"
 
-// this (7) represents latency values from 1 ms to about 80 ms -- bkgood
-const unsigned int SoundManagerConfig::kMaxAudioBufferSizeIndex = 7;
-
 const QString SoundManagerConfig::kDefaultAPI = QStringLiteral("None");
 const QString SoundManagerConfig::kEmptyComboBox = QStringLiteral("---");
 // Sample Rate even the cheap sound Devices will support most likely
 const unsigned int SoundManagerConfig::kFallbackSampleRate = 48000;
 const unsigned int SoundManagerConfig::kDefaultDeckCount = 2;
-// audioBufferSizeIndex=5 means about 21 ms of latency which is default in trunk r2453 -- bkgood
-const int SoundManagerConfig::kDefaultAudioBufferSizeIndex = 5;
 
 const int SoundManagerConfig::kDefaultSyncBuffers = 2;
 
@@ -54,11 +49,6 @@ SoundManagerConfig::SoundManagerConfig(SoundManager* pSoundManager)
     m_configFile = QFileInfo(QDir(CmdlineArgs::Instance().getSettingsPath()).filePath(SOUNDMANAGERCONFIG_FILENAME));
 }
 
-SoundManagerConfig::~SoundManagerConfig() {
-    // don't write to disk here, it's SoundManager's responsibility
-    // to save its own configuration -- bkgood
-}
-
 /**
  * Read the SoundManagerConfig xml serialization at the predetermined
  * path
@@ -85,7 +75,8 @@ bool SoundManagerConfig::readFromDisk() {
     setForceNetworkClock(rootElement.attribute(xmlAttributeForceNetworkClock,
             "0").toUInt() != 0);
     setDeckCount(rootElement.attribute(xmlAttributeDeckCount,
-            QString(kDefaultDeckCount)).toUInt());
+                                    QString::number(kDefaultDeckCount))
+                         .toUInt());
     clearOutputs();
     clearInputs();
     QDomNodeList devElements(rootElement.elementsByTagName(xmlElementSoundDevice));
@@ -125,6 +116,9 @@ bool SoundManagerConfig::readFromDisk() {
             }
         }
 
+        QDomNodeList outElements(devElement.elementsByTagName(xmlElementOutput));
+        QDomNodeList inElements(devElement.elementsByTagName(xmlElementInput));
+
         if (devicesMatchingByName == 0) {
             continue;
         } else if (devicesMatchingByName == 1) {
@@ -157,13 +151,25 @@ bool SoundManagerConfig::readFromDisk() {
                     if (hardwareDeviceId.name == deviceIdFromFile.name
                             && hardwareDeviceId.alsaHwDevice == deviceIdFromFile.alsaHwDevice) {
                         deviceIdFromFile.portAudioIndex = hardwareDeviceId.portAudioIndex;
+                        break;
+                    }
+                }
+            } else {
+                // Check if the one of the matching devices has the configured in and output channels
+                for (const auto& soundDevice : soundDevices) {
+                    SoundDeviceId hardwareDeviceId = soundDevice->getDeviceId();
+                    if (hardwareDeviceId.name == deviceIdFromFile.name &&
+                            soundDevice->getNumOutputChannels() >=
+                                    outElements.count() &&
+                            soundDevice->getNumInputChannels() >=
+                                    inElements.count()) {
+                        deviceIdFromFile.portAudioIndex = hardwareDeviceId.portAudioIndex;
+                        break;
                     }
                 }
             }
         }
 
-        QDomNodeList outElements(devElement.elementsByTagName(xmlElementOutput));
-        QDomNodeList inElements(devElement.elementsByTagName(xmlElementInput));
         for (int j = 0; j < outElements.count(); ++j) {
             QDomElement outElement(outElements.at(j).toElement());
             if (outElement.isNull()) {
@@ -375,9 +381,28 @@ unsigned int SoundManagerConfig::getAudioBufferSizeIndex() const {
     return m_audioBufferSizeIndex;
 }
 
-// FIXME: This is incorrect when using JACK as the sound API!
-// m_audioBufferSizeIndex does not reflect JACK's buffer size.
+// This reflects the configured value only. In case of JACK the
+// setting of the JACK server is used.
 unsigned int SoundManagerConfig::getFramesPerBuffer() const {
+    if (m_api == MIXXX_PORTAUDIO_JACK_STRING) {
+        // in case of jack we configure the frames/period
+        if (m_audioBufferSizeIndex ==
+                static_cast<unsigned int>(
+                        JackAudioBufferSizeIndex::Size4096fpp)) {
+            return 4096;
+        } else if (m_audioBufferSizeIndex ==
+                static_cast<unsigned int>(
+                        JackAudioBufferSizeIndex::Size2048fpp)) {
+            return 2048;
+        }
+        // default is auto <= 1024
+        // The Jack buffer size can change at any time, so we
+        // need buffers for the maximum of 1024 (limited by Portaudio).
+        return 1024;
+    }
+
+    // With the other APIs we calc the frames per buffer form the sample rate
+
     // endless loop otherwise
     unsigned int audioBufferSizeIndex = m_audioBufferSizeIndex;
     VERIFY_OR_DEBUG_ASSERT(audioBufferSizeIndex > 0) {
@@ -394,13 +419,6 @@ unsigned int SoundManagerConfig::getFramesPerBuffer() const {
     }
     return framesPerBuffer;
 }
-
-// FIXME: This is incorrect when using JACK as the sound API!
-// m_audioBufferSizeIndex does not reflect JACK's buffer size.
-double SoundManagerConfig::getProcessingLatency() const {
-    return static_cast<double>(getFramesPerBuffer()) / m_sampleRate * 1000.0;
-}
-
 
 // Set the audio buffer size
 // @warning This IS NOT a value in milliseconds, or a number of frames per

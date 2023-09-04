@@ -3,7 +3,6 @@
 #include "control/controlpotmeter.h"
 #include "control/controlproxy.h"
 #include "moc_enginevumeter.cpp"
-#include "util/math.h"
 #include "util/sample.h"
 
 namespace {
@@ -19,7 +18,8 @@ constexpr CSAMPLE kDecaySmoothing = 0.1f;  //.16//.4
 
 } // namespace
 
-EngineVuMeter::EngineVuMeter(const QString& group) {
+EngineVuMeter::EngineVuMeter(const QString& group)
+        : m_sampleRate("[Master]", "samplerate") {
     // The VUmeter widget is controlled via a controlpotmeter, which means
     // that it should react on the setValue(int) signal.
     m_ctrlVuMeter = new ControlPotmeter(ConfigKey(group, "VuMeter"), 0., 1.);
@@ -36,9 +36,6 @@ EngineVuMeter::EngineVuMeter(const QString& group) {
                                               0., 1.);
     m_ctrlPeakIndicatorR = new ControlPotmeter(ConfigKey(group, "PeakIndicatorR"),
                                               0., 1.);
-
-    m_pSampleRate = new ControlProxy("[Master]", "samplerate", this);
-
     // Initialize the calculation:
     reset();
 }
@@ -56,7 +53,7 @@ EngineVuMeter::~EngineVuMeter()
 void EngineVuMeter::process(CSAMPLE* pIn, const int iBufferSize) {
     CSAMPLE fVolSumL, fVolSumR;
 
-    int sampleRate = (int)m_pSampleRate->get();
+    int sampleRate = static_cast<int>(m_sampleRate.get());
 
     SampleUtil::CLIP_STATUS clipped = SampleUtil::sumAbsPerChannel(&fVolSumL,
             &fVolSumR, pIn, iBufferSize);
@@ -68,11 +65,9 @@ void EngineVuMeter::process(CSAMPLE* pIn, const int iBufferSize) {
     // Are we ready to update the VU meter?:
     if (m_iSamplesCalculated > (sampleRate / kVuUpdateRate)) {
         doSmooth(m_fRMSvolumeL,
-                log10(SHRT_MAX * m_fRMSvolumeSumL
-                                / (m_iSamplesCalculated * 1000) + 1));
+                std::log10(SHRT_MAX * m_fRMSvolumeSumL / (m_iSamplesCalculated * 1000) + 1));
         doSmooth(m_fRMSvolumeR,
-                log10(SHRT_MAX * m_fRMSvolumeSumR
-                                / (m_iSamplesCalculated * 1000) + 1));
+                std::log10(SHRT_MAX * m_fRMSvolumeSumR / (m_iSamplesCalculated * 1000) + 1));
 
         const double epsilon = .0001;
 
