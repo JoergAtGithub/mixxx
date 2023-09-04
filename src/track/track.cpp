@@ -506,6 +506,7 @@ void Track::emitChangedSignalsForAllMetadata() {
     emit trackNumberChanged(getTrackNumber());
     emit trackTotalChanged(getTrackTotal());
     emit commentChanged(getComment());
+    emit bitrateChanged();
     emit bpmChanged();
     emit timesPlayedChanged();
     emit durationChanged();

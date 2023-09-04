@@ -64,7 +64,7 @@ class Track : public QObject {
     Q_PROPERTY(QString trackTotal READ getTrackTotal WRITE setTrackTotal NOTIFY trackTotalChanged)
     Q_PROPERTY(int timesPlayed READ getTimesPlayed NOTIFY timesPlayedChanged)
     Q_PROPERTY(QString comment READ getComment WRITE setComment NOTIFY commentChanged)
-    Q_PROPERTY(int bitrate READ getBitrate WRITE setBitrate) // TODO Notify needed?
+    Q_PROPERTY(int bitrate READ getBitrate WRITE setBitrate NOTIFY bitrateChanged)
     Q_PROPERTY(double bpm READ getBpm WRITE trySetBpm NOTIFY bpmChanged)
     Q_PROPERTY(QString bpmText READ getBpmText STORED false NOTIFY bpmChanged)
 
@@ -110,16 +110,16 @@ class Track : public QObject {
     }
 
     QString directory() const {
-        return QString(); // TODO return m_fileAccess.info().directory();
+        return m_fileAccess.info().toQDir().dirName();
     }
     QString baseName() const {
-        return m_fileAccess.info().baseName();
+        return m_fileAccess.info().asQFileInfo().absolutePath();
     }
     QString fileName() const {
         return m_fileAccess.info().fileName();
     }
     QString extension() const {
-        return QString(); // TODO return m_fileAccess.info().extension();
+        return m_fileAccess.info().asQFileInfo().suffix();
     }
 
     // The (refreshed) canonical location
@@ -457,6 +457,7 @@ class Track : public QObject {
     void trackNumberChanged(const QString&);
     void trackTotalChanged(const QString&);
     void commentChanged(const QString&);
+    void bitrateChanged();
     void bpmChanged();
     void keyChanged();
     void timesPlayedChanged();
