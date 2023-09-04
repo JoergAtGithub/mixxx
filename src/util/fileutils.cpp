@@ -4,7 +4,8 @@
 
 namespace {
 // see https://stackoverflow.com/questions/1976007/what-characters-are-forbidden-in-windows-and-linux-directory-names
-const auto kIllegalCharacters = QRegularExpression("([<>:\"\\|\\?\\*]|[\x01-\x1F])");
+ // Note, that the colon can be part of Windows paths starting with drive letters: C:\ 
+const auto kIllegalCharacters = QRegularExpression("([<>\"\\|\\?\\*]|[\x01-\x1F])");
 const auto kDirChars = QRegularExpression("[/\\\\]");
 } // namespace
 
