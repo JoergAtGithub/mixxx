@@ -602,10 +602,17 @@ Sampler* PlayerManager::getSampler(unsigned int sampler) const {
 }
 
 TrackPointer PlayerManager::getLastEjectedTrack() const {
-    if (m_pLibrary) {
-        return m_pLibrary->trackCollectionManager()->getTrackById(m_lastEjectedTrackId);
+    VERIFY_OR_DEBUG_ASSERT(m_pLibrary != nullptr) {
+        return nullptr;
     }
-    return nullptr;
+    return m_pLibrary->trackCollectionManager()->getTrackById(m_lastEjectedTrackId);
+}
+
+TrackPointer PlayerManager::getSecondLastEjectedTrack() const {
+    VERIFY_OR_DEBUG_ASSERT(m_pLibrary != nullptr) {
+        return nullptr;
+    }
+    return m_pLibrary->trackCollectionManager()->getTrackById(m_secondLastEjectedTrackId);
 }
 
 Microphone* PlayerManager::getMicrophone(unsigned int microphone) const {
@@ -689,10 +696,8 @@ void PlayerManager::slotLoadLocationToPlayer(
 void PlayerManager::slotLoadLocationToPlayerMaybePlay(
         const QString& location, const QString& group) {
     bool play = false;
-    LoadWhenDeckPlaying loadWhenDeckPlaying =
-            static_cast<LoadWhenDeckPlaying>(
-                    m_pConfig->getValue(kConfigKeyLoadWhenDeckPlaying,
-                            static_cast<int>(kDefaultLoadWhenDeckPlaying)));
+    LoadWhenDeckPlaying loadWhenDeckPlaying = m_pConfig->getValue(
+            kConfigKeyLoadWhenDeckPlaying, kDefaultLoadWhenDeckPlaying);
     switch (loadWhenDeckPlaying) {
     case LoadWhenDeckPlaying::AllowButStopDeck:
     case LoadWhenDeckPlaying::Reject:
@@ -772,7 +777,12 @@ void PlayerManager::slotSaveEjectedTrack(TrackPointer track) {
     VERIFY_OR_DEBUG_ASSERT(track) {
         return;
     }
-    m_lastEjectedTrackId = track->getId();
+    const TrackId id = track->getId();
+    if (id == m_lastEjectedTrackId) {
+        return;
+    }
+    m_secondLastEjectedTrackId = m_lastEjectedTrackId;
+    m_lastEjectedTrackId = id;
 }
 
 void PlayerManager::onTrackAnalysisProgress(TrackId trackId, AnalyzerProgress analyzerProgress) {

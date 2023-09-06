@@ -174,8 +174,9 @@ EngineMaster::EngineMaster(
     m_pXFaderReverse->setButtonMode(ControlPushButton::TOGGLE);
 
     m_pKeylockEngine = new ControlObject(ConfigKey(group, "keylock_engine"), true, false, true);
-    m_pKeylockEngine->set(pConfig->getValue(ConfigKey(group, "keylock_engine"),
-            static_cast<double>(EngineBuffer::defaultKeylockEngine())));
+    m_pKeylockEngine->set(static_cast<double>(
+            pConfig->getValue(ConfigKey(group, "keylock_engine"),
+                    EngineBuffer::defaultKeylockEngine())));
 
     // TODO: Make this read only and make EngineMaster decide whether
     // processing the master mix is necessary.
@@ -281,7 +282,7 @@ void EngineMaster::processChannels(int iBufferSize,
     m_activeTalkoverChannels.clear();
     m_activeChannels.clear();
 
-    //ScopedTimer timer("EngineMaster::processChannels");
+    // ScopedTimer timer(u"EngineMaster::processChannels");
     EngineChannel* pLeaderChannel = m_pEngineSync->getLeaderChannel();
     // Reserve the first place for the master channel which
     // should be processed first

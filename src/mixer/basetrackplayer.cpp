@@ -88,8 +88,7 @@ BaseTrackPlayerImpl::BaseTrackPlayerImpl(
     connect(m_pEject.get(),
             &ControlObject::valueChanged,
             this,
-            &BaseTrackPlayerImpl::slotEjectTrack,
-            Qt::DirectConnection);
+            &BaseTrackPlayerImpl::slotEjectTrack);
 
     // Get loop point control objects
     m_pLoopInPoint = make_parented<ControlProxy>(
@@ -223,6 +222,8 @@ BaseTrackPlayerImpl::BaseTrackPlayerImpl(
             ConfigKey(getGroup(), "update_replaygain_from_pregain"));
     m_pUpdateReplayGainFromPregain->connectValueChangeRequest(this,
             &BaseTrackPlayerImpl::slotUpdateReplayGainFromPregain);
+
+    m_ejectTimer.start();
 }
 
 BaseTrackPlayerImpl::~BaseTrackPlayerImpl() {
@@ -321,6 +322,20 @@ void BaseTrackPlayerImpl::slotEjectTrack(double v) {
     if (v <= 0) {
         return;
     }
+
+    mixxx::Duration elapsed = m_ejectTimer.restart();
+
+    // Double-click always restores the last replaced track, i.e. un-eject the second
+    // last track: the first click ejects or unejects, and the second click reloads.
+    if (elapsed < mixxx::Duration::fromMillis(kUnreplaceDelay)) {
+        TrackPointer lastEjected = m_pPlayerManager->getSecondLastEjectedTrack();
+        if (lastEjected) {
+            slotLoadTrack(lastEjected, false);
+        }
+        return;
+    }
+
+    // With no loaded track a single click reloads the last ejected track.
     if (!m_pLoadedTrack) {
         TrackPointer lastEjected = m_pPlayerManager->getLastEjectedTrack();
         if (lastEjected) {
@@ -562,7 +577,7 @@ void BaseTrackPlayerImpl::slotTrackLoaded(TrackPointer pNewTrack,
         }
 
         if (!m_pChannelToCloneFrom) {
-            int reset = m_pConfig->getValue<int>(
+            BaseTrackPlayer::TrackLoadReset reset = m_pConfig->getValue(
                     ConfigKey("[Controls]", "SpeedAutoReset"), RESET_PITCH);
             if (reset == RESET_SPEED || reset == RESET_PITCH_AND_SPEED) {
                 // Avoid resetting speed if sync lock is enabled and other decks with sync enabled

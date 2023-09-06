@@ -6,14 +6,7 @@
 #include <unistd.h>
 #endif
 
-// shout.h checks for WIN32 to see if we are on Windows.
-#ifdef WIN64
-#define WIN32
-#endif
 #include <shoutidjc/shout.h>
-#ifdef WIN64
-#undef WIN32
-#endif
 
 #include "broadcast/defs_broadcast.h"
 #include "control/controlpushbutton.h"
@@ -611,6 +604,12 @@ bool ShoutConnection::processConnect() {
             kLogger.warning()
                     << "processConnect() socket error."
                     << "Is socket already in use?";
+        } else if (timeout >= kConnectRetries) {
+            // Not translated, because shout_get_error() returns also English only
+            m_lastErrorStr = QStringLiteral("Connection establishment time-out");
+            kLogger.warning()
+                    << "processConnect() error:"
+                    << m_iShoutStatus << m_lastErrorStr;
         } else if (m_pProfile->getEnabled()) {
             m_lastErrorStr = shout_get_error(m_pShout);
             kLogger.warning()

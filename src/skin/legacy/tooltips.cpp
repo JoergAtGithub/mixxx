@@ -619,9 +619,13 @@ void Tooltips::addStandardTooltips() {
             << tr("Repeat")
             << tr("When active the track will repeat if you go past the end or reverse before the start.");
 
-    add("eject")
-            << tr("Eject")
-            << tr("Ejects track from the player.");
+    add("eject") << tr("Eject") << tr("Ejects track from the player.")
+                 << tr("Un-ejects when no track is loaded, i.e. reloads the "
+                       "track that was ejected last (of any deck).")
+                 << QString("%1: %2").arg(doubleClick,
+                            "Reloads the last replaced track. "
+                            "If no track is loaded reloads the second-last "
+                            "ejected track.");
 
     add("hotcue") << tr("Hotcue")
                   << QString("%1: %2").arg(leftClick,
@@ -813,6 +817,15 @@ void Tooltips::addStandardTooltips() {
             << tr("Track Key")
             << tr("Displays the musical key of the loaded track.")
             << trackTags;
+
+    add("track_comment")
+            << tr("Track Comment")
+            << tr("Displays the comment tag of the loaded track.")
+            << trackTags + "\n"
+            << dropTracksHere
+            << dragItem
+            << QString("%1: %2").arg(doubleClick, trackProperties)
+            << QString("%1: %2").arg(rightClick, trackMenu);
 
     add("text")
             << tr("Track Artist/Title")
