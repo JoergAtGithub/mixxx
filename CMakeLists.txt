@@ -2077,10 +2077,20 @@ if (AbletonLink_FOUND)
   message(STATUS "Using existing system installation of Ableton Link")
   target_link_libraries(mixxx-lib PRIVATE Ableton::Link)
 else()
-  message(STATUS "Using internal Ableton Link")
-  include(${CMAKE_CURRENT_SOURCE_DIR}/lib/ableton-link/share/ableton/AbletonLinkConfig.cmake)
+  message(STATUS "Fetch Ableton Link from GitHub")
+include(FetchContent)
+
+set(FETCHCONTENT_QUIET FALSE)
+
+  FetchContent_Declare(AbletonLink
+    GIT_REPOSITORY  https://github.com/Ableton/link.git
+    GIT_TAG         Link-3.0.6
+  )
+  FetchContent_MakeAvailable(AbletonLink)
+
+  include(${abletonlink_SOURCE_DIR}/AbletonLinkConfig.cmake)
   target_link_libraries(mixxx-lib PUBLIC Ableton::Link)
-  target_include_directories(mixxx-lib SYSTEM PUBLIC lib/ableton-link/include/)
+  target_include_directories(mixxx-lib SYSTEM PUBLIC ${abletonlink_SOURCE_DIR}/include/)
 endif()
 
 # Chromaprint
