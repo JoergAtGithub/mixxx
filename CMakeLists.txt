@@ -541,6 +541,64 @@ else()
   message(STATUS "Support for ccache: ${CCACHE_SUPPORT}")
 endif()
 
+if(NOT MSVC)
+  find_program(MOLD_EXECUTABLE mold)
+  default_option(MOLD_SUPPORT "Use 'mold' for linking" "MOLD_EXECUTABLE")
+  if(MOLD_SUPPORT)
+    if(MOLD_EXECUTABLE)
+      message(STATUS "Selecting mold as linker")
+      set(SELECT_MOLD_WITH_FUSE true)
+      # With GCC, mold is a valid '-fuse' argument only with version 12.1.0 and newer.
+      # Earlier versions must use the -B option.
+      if (GNU_GCC)
+        execute_process(
+          COMMAND gcc -dumpfullversion
+          ERROR_QUIET
+          OUTPUT_VARIABLE GCC_VERSION_STRING
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if (GCC_VERSION_STRING VERSION_LESS 12.1.0)
+          set(SELECT_MOLD_WITH_FUSE false)
+        endif()
+      endif()
+      if (SELECT_MOLD_WITH_FUSE)
+        add_link_options("-fuse-ld=mold")
+      else()
+        add_link_options("-B${MOLD_EXECUTABLE}")
+      endif()
+    else()
+      message(FATAL_ERROR "Could NOT find mold (missing executable)")
+    endif()
+  else()
+    find_program(LLD_EXECUTABLE lld)
+    if(LLD_EXECUTABLE)
+      execute_process(
+        COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=lld -Wl,--version
+        ERROR_QUIET
+        OUTPUT_VARIABLE LLD_VERSION_STRING
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+      string(REGEX MATCH "LLD ([0-9]+\\.[0-9]+\\.[0-9]+)" LLD_VERSION_MATCH "${LLD_VERSION_STRING}")
+      if(LLD_VERSION_MATCH)
+        set(LLD_VERSION ${CMAKE_MATCH_1})
+        message(STATUS "Found lld with version: ${LLD_VERSION}")
+      else()
+        message(WARNING "Failed to parse lld version from: ${LLD_VERSION_STRING}")
+      endif()
+    endif()
+    # LLD 10.0.0 does not work because of https://bugs.llvm.org/show_bug.cgi?id=45769
+    default_option(LLD_SUPPORT "Use 'lld' for linking" "LLD_EXECUTABLE;LLD_VERSION VERSION_GREATER 10.0.0")
+    if(LLD_SUPPORT)
+      if(LLD_EXECUTABLE)
+        message(STATUS "Selecting lld as linker")
+        add_link_options("-fuse-ld=lld")
+      else()
+        message(FATAL_ERROR "Could NOT find lld (missing executable)")
+      endif()
+    endif()
+  endif()
+endif()
+
 if(CMAKE_VERSION VERSION_LESS "3.7.0")
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 endif()
@@ -721,7 +779,7 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/engine/effects/engineeffectsmanager.cpp
   src/engine/enginebuffer.cpp
   src/engine/enginedelay.cpp
-  src/engine/enginemaster.cpp
+  src/engine/enginemixer.cpp
   src/engine/engineobject.cpp
   src/engine/enginepregain.cpp
   src/engine/enginesidechaincompressor.cpp
@@ -808,6 +866,7 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/library/hiddentablemodel.cpp
   src/library/itunes/itunesdao.cpp
   src/library/itunes/itunesfeature.cpp
+  src/library/itunes/itunesimporter.cpp
   src/library/itunes/itunesplaylistmodel.cpp
   src/library/itunes/itunesxmlimporter.cpp
   src/library/library_prefs.cpp
@@ -818,6 +877,7 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/library/locationdelegate.cpp
   src/library/missingtablemodel.cpp
   src/library/mixxxlibraryfeature.cpp
+  src/library/multilineeditdelegate.cpp
   src/library/parser.cpp
   src/library/parsercsv.cpp
   src/library/parserm3u.cpp
@@ -1221,6 +1281,7 @@ else()
       src/waveform/renderers/allshader/waveformrenderer.cpp
       src/waveform/renderers/allshader/waveformrendererendoftrack.cpp
       src/waveform/renderers/allshader/waveformrendererfiltered.cpp
+      src/waveform/renderers/allshader/waveformrendererhsv.cpp
       src/waveform/renderers/allshader/waveformrendererlrrgb.cpp
       src/waveform/renderers/allshader/waveformrendererpreroll.cpp
       src/waveform/renderers/allshader/waveformrendererrgb.cpp
@@ -1229,6 +1290,7 @@ else()
       src/waveform/renderers/allshader/waveformrendermark.cpp
       src/waveform/renderers/allshader/waveformrendermarkrange.cpp
       src/waveform/widgets/allshader/filteredwaveformwidget.cpp
+      src/waveform/widgets/allshader/hsvwaveformwidget.cpp
       src/waveform/widgets/allshader/lrrgbwaveformwidget.cpp
       src/waveform/widgets/allshader/rgbwaveformwidget.cpp
       src/waveform/widgets/allshader/simplewaveformwidget.cpp
@@ -1269,8 +1331,13 @@ if(APPLE)
   # will automatically insert retain/release calls on Objective-C objects.
   target_compile_options(mixxx-lib PUBLIC -fobjc-arc)
 
+  # Disable deprecation warnings for OpenGL on macOS as we won't switch to
+  # Apple's Metal API in the foreseeable future.
+  target_compile_definitions(mixxx-lib PUBLIC GL_SILENCE_DEPRECATION)
+
   target_sources(mixxx-lib PRIVATE
     src/util/darkappearance.mm
+    src/util/macosversion.mm
   )
 
   option(MACOS_ITUNES_LIBRARY "Native macOS iTunes/Music.app library integration" ON)
@@ -1749,23 +1816,6 @@ endif()
 # Tests
 #
 
-# CMake + googletest: https://crascit.com/2015/07/25/cmake-gtest/
-
-# Prevent GoogleTest from overriding our compiler/linker options
-# when building with Visual Studio
-set(gtest_force_shared_crt ON CACHE BOOL "Pass Mixxx compiler/linker options to GoogleTest" FORCE)
-
-# Prevent installation of GoogleTest libraries
-set(INSTALL_GTEST OFF CACHE BOOL "Disable installation of GoogleTest" FORCE)
-
-# Add googletest directly to our build. This adds the following targets:
-# gtest, gtest_main, gmock and gmock_main
-message(STATUS "Adding goolgletest targets gtest, gtest_main, gmock and gmock_main")
-add_subdirectory(
-  "${CMAKE_CURRENT_SOURCE_DIR}/lib/googletest"
-  "${CMAKE_CURRENT_BINARY_DIR}/lib/googletest"
-)
-
 add_executable(mixxx-test
   src/test/analyserwaveformtest.cpp
   src/test/analyzersilence_test.cpp
@@ -1806,7 +1856,7 @@ add_executable(mixxx-test
   src/test/enginebuffertest.cpp
   src/test/engineeffectsdelay_test.cpp
   src/test/enginefilterbiquadtest.cpp
-  src/test/enginemastertest.cpp
+  src/test/enginemixertest.cpp
   src/test/enginemicrophonetest.cpp
   src/test/enginesynctest.cpp
   src/test/fileinfo_test.cpp
@@ -1815,8 +1865,7 @@ add_executable(mixxx-test
   src/test/hotcuecontrol_test.cpp
   src/test/imageutils_test.cpp
   src/test/indexrange_test.cpp
-  # TODO: reanable this after https://github.com/mixxxdj/mixxx/pull/11666
-  # src/test/itunesxmlimportertest.cpp
+  src/test/itunesxmlimportertest.cpp
   src/test/keyutilstest.cpp
   src/test/lcstest.cpp
   src/test/learningutilstest.cpp
@@ -1877,24 +1926,12 @@ add_executable(mixxx-test
   src/test/wwidgetstack_test.cpp
   src/util/moc_included_test.cpp
 )
+find_package(GTest CONFIG REQUIRED)
 set_target_properties(mixxx-test PROPERTIES AUTOMOC ON)
-target_link_libraries(mixxx-test PRIVATE mixxx-lib mixxx-gitinfostore gtest gmock)
+target_link_libraries(mixxx-test PRIVATE mixxx-lib mixxx-gitinfostore GTest::gtest GTest::gmock)
 
-#
-# Benchmark tests
-#
-
-# Disable testing of google/benchmark
-set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-
-# Prevent installation of google/benchmark artifacts
-set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "Disable installation of google/benchmark" FORCE)
-
-add_subdirectory(
-  "${CMAKE_CURRENT_SOURCE_DIR}/lib/benchmark"
-  "${CMAKE_CURRENT_BINARY_DIR}/lib/benchmark"
-)
-target_link_libraries(mixxx-test PRIVATE benchmark)
+find_package(benchmark)
+target_link_libraries(mixxx-test PRIVATE benchmark::benchmark)
 
 # Test Suite
 include(CTest)
@@ -2066,7 +2103,7 @@ option(ENGINEPRIME "Support for library export to Denon Engine Prime" ON)
 if(ENGINEPRIME)
   # libdjinterop does not currently have a stable ABI, so we fetch sources for a specific tag, build here, and link
   # statically.  This situation should be reviewed once libdjinterop hits version 1.x.
-  set(LIBDJINTEROP_VERSION 0.19.1)
+  set(LIBDJINTEROP_VERSION 0.19.2)
   # Look whether an existing installation of libdjinterop matches the required version.
   find_package(DjInterop  ${LIBDJINTEROP_VERSION} EXACT CONFIG)
   if(NOT DjInterop_FOUND)
@@ -2102,7 +2139,7 @@ if(ENGINEPRIME)
       URL
         "https://github.com/xsco/libdjinterop/archive/refs/tags/${LIBDJINTEROP_VERSION}.tar.gz"
         "https://launchpad.net/~xsco/+archive/ubuntu/djinterop/+sourcefiles/libdjinterop/${LIBDJINTEROP_VERSION}-0ubuntu1/libdjinterop_${LIBDJINTEROP_VERSION}.orig.tar.gz"
-      URL_HASH SHA256=fd03a7ed54bf4e58da0075b517a6e7382546227a1ac165769987d57e1cf5e36e
+      URL_HASH SHA256=2f44b43a612b5fccc5bcba4d6c9e463ba8cd637edc9ab2e5dc19173d00c5f4eb
       DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloads"
       DOWNLOAD_NAME "libdjinterop-${LIBDJINTEROP_VERSION}.tar.gz"
       INSTALL_DIR ${DJINTEROP_INSTALL_DIR}
@@ -2113,11 +2150,11 @@ if(ENGINEPRIME)
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
         -DCMAKE_PREFIX_PATH=${PIPE_DELIMITED_CMAKE_PREFIX_PATH}
-        -DCMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}
         -DCMAKE_INSTALL_LIBDIR:PATH=lib
         -DCMAKE_MODULE_PATH:PATH=${CMAKE_MODULE_PATH}
-        -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT}
-        -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+        -$<IF:$<BOOL:${CMAKE_TOOLCHAIN_FILE}>,D,U>CMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}
+        -$<IF:$<BOOL:${CMAKE_OSX_DEPLOYMENT}>,D,U>CMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT}
+        -$<IF:$<BOOL:${CMAKE_OSX_ARCHITECTURES}>,D,U>CMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
         -DCMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}
         -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
         -DSYSTEM_SQLITE=${DJINTEROP_SYSTEM_SQLITE}
@@ -2211,10 +2248,10 @@ if(KEYFINDER)
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
         -DCMAKE_PREFIX_PATH=${PIPE_DELIMITED_CMAKE_PREFIX_PATH}
-        -DCMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}
         -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
-        -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT}
-        -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+        -$<IF:$<BOOL:${CMAKE_TOOLCHAIN_FILE}>,D,U>CMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}
+        -$<IF:$<BOOL:${CMAKE_OSX_DEPLOYMENT}>,D,U>CMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT}
+        -$<IF:$<BOOL:${CMAKE_OSX_ARCHITECTURES}>,D,U>CMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
         -DCMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}
         -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
         -DBUILD_TESTING=OFF
@@ -2263,11 +2300,6 @@ elseif(GNU_GCC OR LLVM_CLANG)
   target_compile_options(FpClassify PRIVATE -ffp-contract=on -fno-fast-math)
 endif()
 target_link_libraries(mixxx-lib PRIVATE FpClassify)
-
-# googletest
-# Required to use the macro FRIEND_TEST from <gtest/gtest_prod.h>
-# in production code
-target_include_directories(mixxx-lib SYSTEM PUBLIC "${gtest_SOURCE_DIR}/include")
 
 # LAME
 find_package(mp3lame REQUIRED)
@@ -2325,7 +2357,7 @@ target_link_libraries(mixxx-lib PRIVATE ${PortMidi_LIBRARIES})
 
 # Protobuf
 add_subdirectory(src/proto)
-target_link_libraries(mixxx-lib PRIVATE mixxx-proto)
+target_link_libraries(mixxx-lib PUBLIC mixxx-proto)
 
 # Rigtorp SPSC Queue
 # https://github.com/rigtorp/SPSCQueue
@@ -2787,7 +2819,7 @@ if(FAAD)
     src/sources/soundsourcem4a.cpp
     src/sources/libfaadloader.cpp
   )
-  target_compile_definitions(mixxx-lib PRIVATE __FAAD__)
+  target_compile_definitions(mixxx-lib PUBLIC __FAAD__)
   if(MP4v2_FOUND)
     target_compile_definitions(mixxx-lib PRIVATE __MP4V2__)
     target_link_libraries(mixxx-lib PRIVATE MP4v2::MP4v2)
@@ -2996,6 +3028,7 @@ if(MEDIAFOUNDATION)
   )
   target_link_libraries(mixxx-lib PRIVATE
     ${MediaFoundation_LIBRARIES}
+    Version.lib
   )
 endif()
 

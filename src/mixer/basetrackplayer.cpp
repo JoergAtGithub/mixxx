@@ -8,7 +8,7 @@
 #include "engine/controls/enginecontrol.h"
 #include "engine/engine.h"
 #include "engine/enginebuffer.h"
-#include "engine/enginemaster.h"
+#include "engine/enginemixer.h"
 #include "engine/sync/enginesync.h"
 #include "mixer/playerinfo.h"
 #include "mixer/playermanager.h"
@@ -40,16 +40,16 @@ BaseTrackPlayer::BaseTrackPlayer(PlayerManager* pParent, const QString& group)
 BaseTrackPlayerImpl::BaseTrackPlayerImpl(
         PlayerManager* pParent,
         UserSettingsPointer pConfig,
-        EngineMaster* pMixingEngine,
+        EngineMixer* pMixingEngine,
         EffectsManager* pEffectsManager,
         EngineChannel::ChannelOrientation defaultOrientation,
         const ChannelHandleAndGroup& handleGroup,
-        bool defaultMaster,
+        bool defaultMainMix,
         bool defaultHeadphones,
         bool primaryDeck)
         : BaseTrackPlayer(pParent, handleGroup.name()),
           m_pConfig(pConfig),
-          m_pEngineMaster(pMixingEngine),
+          m_pEngineMixer(pMixingEngine),
           m_pLoadedTrack(),
           m_pPrevFailedTrackId(),
           m_replaygainPending(false),
@@ -71,8 +71,8 @@ BaseTrackPlayerImpl::BaseTrackPlayerImpl(
     EngineBuffer* pEngineBuffer = m_pChannel->getEngineBuffer();
     pMixingEngine->addChannel(m_pChannel);
 
-    // Set the routing option defaults for the master and headphone mixes.
-    m_pChannel->setMaster(defaultMaster);
+    // Set the routing option defaults for the main and headphone mixes.
+    m_pChannel->setMainMix(defaultMainMix);
     m_pChannel->setPfl(defaultHeadphones);
 
     // Connect our signals and slots with the EngineBuffer's signals and
@@ -88,8 +88,7 @@ BaseTrackPlayerImpl::BaseTrackPlayerImpl(
     connect(m_pEject.get(),
             &ControlObject::valueChanged,
             this,
-            &BaseTrackPlayerImpl::slotEjectTrack,
-            Qt::DirectConnection);
+            &BaseTrackPlayerImpl::slotEjectTrack);
 
     // Get loop point control objects
     m_pLoopInPoint = make_parented<ControlProxy>(
@@ -583,7 +582,7 @@ void BaseTrackPlayerImpl::slotTrackLoaded(TrackPointer pNewTrack,
             if (reset == RESET_SPEED || reset == RESET_PITCH_AND_SPEED) {
                 // Avoid resetting speed if sync lock is enabled and other decks with sync enabled
                 // are playing, as this would change the speed of already playing decks.
-                if (!m_pEngineMaster->getEngineSync()->otherSyncedPlaying(getGroup())) {
+                if (!m_pEngineMixer->getEngineSync()->otherSyncedPlaying(getGroup())) {
                     m_pRateRatio->set(1.0);
                 }
             }
@@ -635,14 +634,14 @@ TrackPointer BaseTrackPlayerImpl::getLoadedTrack() const {
 }
 
 void BaseTrackPlayerImpl::slotCloneDeck() {
-    Syncable* syncable = m_pEngineMaster->getEngineSync()->pickNonSyncSyncTarget(m_pChannel);
+    Syncable* syncable = m_pEngineMixer->getEngineSync()->pickNonSyncSyncTarget(m_pChannel);
     if (syncable) {
         slotCloneChannel(syncable->getChannel());
     }
 }
 
 void BaseTrackPlayerImpl::slotCloneFromGroup(const QString& group) {
-    EngineChannel* pChannel = m_pEngineMaster->getChannel(group);
+    EngineChannel* pChannel = m_pEngineMixer->getChannel(group);
     if (!pChannel) {
         return;
     }
@@ -697,7 +696,7 @@ void BaseTrackPlayerImpl::slotLoadTrackFromSampler(double d) {
 }
 
 void BaseTrackPlayerImpl::loadTrackFromGroup(const QString& group) {
-    EngineChannel* pChannel = m_pEngineMaster->getChannel(group);
+    EngineChannel* pChannel = m_pEngineMixer->getChannel(group);
     if (!pChannel) {
         return;
     }
