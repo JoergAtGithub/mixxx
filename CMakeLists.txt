@@ -127,7 +127,7 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
   endif()
 endif()
 
-option(QT6 "Build with Qt6" OFF)
+option(QT6 "Build with Qt6" ON)
 option(QML "Build with QML" OFF)
 option(QOPENGL "Use QOpenGLWindow based widget instead of QGLWidget" ON)
 
@@ -154,7 +154,7 @@ if(APPLE)
     message(FATAL_ERROR "'xcode-select -v' failed with '${XCODE_SELECT_RESULT}'. You may need to install Xcode and run 'sudo xcode-select --install'.")
   endif()
 
-  if(VCPKG_TARGET_TRIPLET STREQUAL "arm64-osx-min1100")
+  if(VCPKG_TARGET_TRIPLET MATCHES "^arm64-osx")
     # Minimum macOS version for arm64 Support
     set(CMAKE_OSX_DEPLOYMENT_TARGET 11.0 CACHE STRING "Minimum macOS version the build will be able to run on")
     set(CMAKE_OSX_ARCHITECTURES arm64 CACHE STRING "The target architecture")
@@ -783,7 +783,7 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/engine/effects/engineeffectsmanager.cpp
   src/engine/enginebuffer.cpp
   src/engine/enginedelay.cpp
-  src/engine/enginemaster.cpp
+  src/engine/enginemixer.cpp
   src/engine/engineobject.cpp
   src/engine/enginepregain.cpp
   src/engine/enginesidechaincompressor.cpp
@@ -1099,7 +1099,6 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/util/mac.cpp
   src/util/moc_included_test.cpp
   src/util/movinginterquartilemean.cpp
-  src/util/performancetimer.cpp
   src/util/rangelist.cpp
   src/util/readaheadsamplebuffer.cpp
   src/util/ringdelaybuffer.cpp
@@ -1286,6 +1285,7 @@ else()
       src/waveform/renderers/allshader/waveformrenderer.cpp
       src/waveform/renderers/allshader/waveformrendererendoftrack.cpp
       src/waveform/renderers/allshader/waveformrendererfiltered.cpp
+      src/waveform/renderers/allshader/waveformrendererhsv.cpp
       src/waveform/renderers/allshader/waveformrendererlrrgb.cpp
       src/waveform/renderers/allshader/waveformrendererpreroll.cpp
       src/waveform/renderers/allshader/waveformrendererrgb.cpp
@@ -1294,6 +1294,7 @@ else()
       src/waveform/renderers/allshader/waveformrendermark.cpp
       src/waveform/renderers/allshader/waveformrendermarkrange.cpp
       src/waveform/widgets/allshader/filteredwaveformwidget.cpp
+      src/waveform/widgets/allshader/hsvwaveformwidget.cpp
       src/waveform/widgets/allshader/lrrgbwaveformwidget.cpp
       src/waveform/widgets/allshader/rgbwaveformwidget.cpp
       src/waveform/widgets/allshader/simplewaveformwidget.cpp
@@ -1340,6 +1341,7 @@ if(APPLE)
 
   target_sources(mixxx-lib PRIVATE
     src/util/darkappearance.mm
+    src/util/macosversion.mm
   )
 
   option(MACOS_ITUNES_LIBRARY "Native macOS iTunes/Music.app library integration" ON)
@@ -1803,12 +1805,17 @@ if(MSVC)
 endif()
 
 if(WIN32 AND NOT QT6)
-  # Qt 5 loads these ANGLE DLLs at runtime if the graphics driver is blocklisted.
-  # Qt does not link these and vcpkg does not build them as a dependency of Qt,
-  # so copy them manually.
-  find_file(EGL_DLL libEGL.dll PATH_SUFFIXES ${CMAKE_INSTALL_BINDIR})
-  find_file(GLESv2_DLL libGLESv2.dll PATH_SUFFIXES ${CMAKE_INSTALL_BINDIR})
-  install(FILES ${EGL_DLL} ${GLESv2_DLL} DESTINATION "${MIXXX_INSTALL_BINDIR}")
+  # Qt 5 loads these ANGLE DLLs at runtime if the graphics driver is on the ignore list.
+  # It does not work with Debug, because the debug version is compiled without the a d suffix
+  find_package(unofficial-angle CONFIG REQUIRED)
+  install(IMPORTED_RUNTIME_ARTIFACTS
+    unofficial::angle::libEGL
+    unofficial::angle::libGLESv2
+    CONFIGURATIONS RelWithDebInfo Release
+    DESTINATION "${MIXXX_INSTALL_BINDIR}"
+    RUNTIME_DEPENDENCY_SET mixxx
+    COMPONENT applocal)
+  set(APPLOCAL_COMPONENT_DEFINED true)
 endif()
 
 #
@@ -1830,6 +1837,7 @@ add_executable(mixxx-test
   src/test/broadcastsettings_test.cpp
   src/test/cache_test.cpp
   src/test/channelhandle_test.cpp
+  src/test/chrono_clock_resolution_test.cpp
   src/test/colorconfig_test.cpp
   src/test/colormapperjsproxy_test.cpp
   src/test/colorpalette_test.cpp
@@ -1837,6 +1845,7 @@ add_executable(mixxx-test
   src/test/controller_mapping_validation_test.cpp
   src/test/controllerscriptenginelegacy_test.cpp
   src/test/controlobjecttest.cpp
+  src/test/controlobjectaliastest.cpp
   src/test/controlobjectscripttest.cpp
   src/test/coreservicestest.cpp
   src/test/coverartcache_test.cpp
@@ -1855,7 +1864,7 @@ add_executable(mixxx-test
   src/test/enginebuffertest.cpp
   src/test/engineeffectsdelay_test.cpp
   src/test/enginefilterbiquadtest.cpp
-  src/test/enginemastertest.cpp
+  src/test/enginemixertest.cpp
   src/test/enginemicrophonetest.cpp
   src/test/enginesynctest.cpp
   src/test/formatter_test.cpp
@@ -1866,8 +1875,7 @@ add_executable(mixxx-test
   src/test/hotcuecontrol_test.cpp
   src/test/imageutils_test.cpp
   src/test/indexrange_test.cpp
-  # TODO: reanable this after https://github.com/mixxxdj/mixxx/pull/11666
-  # src/test/itunesxmlimportertest.cpp
+  src/test/itunesxmlimportertest.cpp
   src/test/keyutilstest.cpp
   src/test/lcstest.cpp
   src/test/learningutilstest.cpp
@@ -2538,6 +2546,14 @@ else()
   if(QT6 AND (WIN32 OR APPLE))
     # Qt6 does not automatically install plugins like in Qt 5
 
+    find_package(libjpeg-turbo CONFIG REQUIRED)
+    install(IMPORTED_RUNTIME_ARTIFACTS
+      # QJpegPlugin dependency
+      libjpeg-turbo::jpeg
+      DESTINATION "${MIXXX_INSTALL_DATADIR}"
+      RUNTIME_DEPENDENCY_SET mixxx
+      COMPONENT applocal)
+
     install(IMPORTED_RUNTIME_ARTIFACTS
       # platform plugins
       Qt${QT_VERSION_MAJOR}::QOffscreenIntegrationPlugin
@@ -2912,7 +2928,7 @@ if(FAAD)
     src/sources/soundsourcem4a.cpp
     src/sources/libfaadloader.cpp
   )
-  target_compile_definitions(mixxx-lib PRIVATE __FAAD__)
+  target_compile_definitions(mixxx-lib PUBLIC __FAAD__)
   if(MP4v2_FOUND)
     target_compile_definitions(mixxx-lib PRIVATE __MP4V2__)
     target_link_libraries(mixxx-lib PRIVATE MP4v2::MP4v2)
@@ -3121,6 +3137,7 @@ if(MEDIAFOUNDATION)
   )
   target_link_libraries(mixxx-lib PRIVATE
     ${MediaFoundation_LIBRARIES}
+    Version.lib
   )
 endif()
 
@@ -3278,6 +3295,14 @@ if(WAVPACK)
   target_sources(mixxx-lib PRIVATE src/sources/soundsourcewv.cpp)
   target_compile_definitions(mixxx-lib PUBLIC __WV__)
   target_link_libraries(mixxx-lib PRIVATE WavPack::wavpack)
+endif()
+
+if (APPLOCAL_COMPONENT_DEFINED)
+    set(CPACK_COMPONENT_applocal_HIDDEN TRUE)
+    # In order to run Mixx from the build directory install applocal components
+    add_custom_command(
+        TARGET mixxx POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -DCOMPONENT=applocal -DCMAKE_INSTALL_PREFIX="${CMAKE_CURRENT_BINARY_DIR}" -P cmake_install.cmake)
 endif()
 
 # Configure file with build options
