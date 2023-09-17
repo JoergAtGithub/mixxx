@@ -2339,6 +2339,7 @@ add_custom_command(TARGET mixxxformatter POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Grantlee5::defaulttags> $<TARGET_FILE_DIR:mixxxformatter>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Grantlee5::defaultfilters> $<TARGET_FILE_DIR:mixxxformatter>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Grantlee5::loadertags> $<TARGET_FILE_DIR:mixxxformatter>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Grantlee5::Templates> $<TARGET_FILE_DIR:mixxxformatter>
 )
 
 # LAME
