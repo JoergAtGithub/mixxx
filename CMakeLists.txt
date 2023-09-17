@@ -2578,6 +2578,16 @@ else()
       RUNTIME_DEPENDENCY_SET mixxx
       COMPONENT applocal)
 
+    install(IMPORTED_RUNTIME_ARTIFACTS
+      mixxxformatter
+      Grantlee5::defaulttags
+      Grantlee5::defaultfilters
+      Grantlee5::loadertags
+      Grantlee5::Templates
+      DESTINATION "${MIXXX_INSTALL_DATADIR}/grantlee/${Grantlee5_VERSION_MAJOR}.${Grantlee5_VERSION_MINOR}"
+      RUNTIME_DEPENDENCY_SET mixxx
+      COMPONENT applocal)
+
     if(WIN32)
       install(IMPORTED_RUNTIME_ARTIFACTS Qt${QT_VERSION_MAJOR}::QWindowsIntegrationPlugin
         DESTINATION "${MIXXX_INSTALL_DATADIR}/platforms"
