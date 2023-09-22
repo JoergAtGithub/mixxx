@@ -108,15 +108,14 @@ class Track : public QObject {
         }
         return m_fileAccess.info().location();
     }
-
     QString directory() const {
-        return m_fileAccess.info().toQDir().dirName();
+        return m_fileAccess.info().asQFileInfo().dir().dirName();
     }
     QString baseName() const {
-        return m_fileAccess.info().asQFileInfo().absolutePath();
+        return m_fileAccess.info().asQFileInfo().baseName();
     }
     QString fileName() const {
-        return m_fileAccess.info().fileName();
+        return m_fileAccess.info().asQFileInfo().fileName();
     }
     QString extension() const {
         return m_fileAccess.info().asQFileInfo().suffix();
