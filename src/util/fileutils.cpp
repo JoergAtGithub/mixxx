@@ -13,7 +13,8 @@ QString FileUtils::safeFilename(const QString& input, const QString& replacement
     auto output = QString(input);
     output.replace(kDirChars, "/");
     bool windowsDriveLetter = false;
-    if ((output[0].toUpper() >= 'A' && output[0].toUpper() <= 'Z' && output[1] == ':')) {
+    if (output.size() > 2 && output[0].toUpper() >= 'A' &&
+            output[0].toUpper() <= 'Z' && output[1] == ':') {
         windowsDriveLetter = true;
     }
     output.replace(kIllegalCharacters, replacement);
@@ -36,7 +37,8 @@ QString FileUtils::escapeFileName(
     output.replace(kDirChars, dirReplaceChar);
 
     bool windowsDriveLetter = false;
-    if ((output[0].toUpper() >= 'A' && output[0].toUpper() <= 'Z' && output[1] == ':')) {
+    if (output.size() > 2 && output[0].toUpper() >= 'A' &&
+            output[0].toUpper() <= 'Z' && output[1] == ':') {
         windowsDriveLetter = true;
     }
     output.replace(kIllegalCharacters, fileReplaceChar);

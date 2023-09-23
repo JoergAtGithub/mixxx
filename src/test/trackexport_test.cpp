@@ -308,7 +308,8 @@ TEST_F(TrackExporterTest, MungeFilename) {
     tracks.append(track1);
     tracks.append(track2);
     auto pattern = QStringLiteral(
-            "{{ track.fileName }}");
+            "{{track.baseName}}{% if dup %}-{{dup|zeropad:\"4\"}}{% endif %}"
+            ".{{track.extension}}");
     TrackExportWorker worker(m_exportDir.canonicalPath(), tracks);
     worker.setPattern(&pattern);
     m_answerer.reset(new FakeOverwriteAnswerer(&worker));

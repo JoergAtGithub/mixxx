@@ -28,7 +28,7 @@ const auto kResultOk = QStringLiteral("ok");
 const auto kResultCantCreateDirectory = QStringLiteral("Could not create folder");
 const auto kResultCantCreateFile = QStringLiteral("Could not create file");
 const auto kDefaultPattern = QStringLiteral(
-        "{{ track.basename }}{% if dup %}-{{dup}}{% endif %}"
+        "{{track.baseName}}{% if dup %}-{{dup|zeropad:\"4\"}}{% endif %}"
         ".{{track.extension}}");
 const auto kEmptyMsg = QLatin1String("");
 } // namespace
