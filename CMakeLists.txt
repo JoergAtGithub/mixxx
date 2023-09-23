@@ -2311,8 +2311,15 @@ elseif(GNU_GCC OR LLVM_CLANG)
 endif()
 target_link_libraries(mixxx-lib PRIVATE FpClassify)
 
-# Grantlee5
-find_package(Grantlee5 REQUIRED NAMES grantlee grantlee5 )
+# Grantlee5 (5.3.0 is the first version with Qt6 support)
+find_package(Grantlee5 5.3.0 NAMES grantlee grantlee5 )
+
+if(NOT Grantlee5_FOUND)
+      message(FATAL_ERROR "No Grantlee5 for Qt6 available")
+else()
+    # An existing installation of Grantlee5 is available.
+    message(STATUS "Use existing system installation of Grantlee5")
+endif()
 
 target_link_libraries(mixxx-lib PUBLIC
   Grantlee5::Templates
