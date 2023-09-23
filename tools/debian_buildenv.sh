@@ -68,7 +68,6 @@ case "$1" in
             libgmock-dev \
             libgtest-dev \
             libgl1-mesa-dev \
-            libgrantlee5-dev \
             libhidapi-dev \
             libid3tag0-dev \
             liblilv-dev \
