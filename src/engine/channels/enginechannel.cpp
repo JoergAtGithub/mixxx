@@ -12,7 +12,7 @@ EngineChannel::EngineChannel(const ChannelHandleAndGroup& handleGroup,
         : m_group(handleGroup),
           m_pEffectsManager(pEffectsManager),
           m_vuMeter(getGroup()),
-          m_sampleRate("[Master]", "samplerate"),
+          m_sampleRate(QStringLiteral("[App]"), QStringLiteral("samplerate")),
           m_sampleBuffer(nullptr),
           m_bIsPrimaryDeck(isPrimaryDeck),
           m_active(false),
@@ -22,8 +22,7 @@ EngineChannel::EngineChannel(const ChannelHandleAndGroup& handleGroup,
     m_pPFL->setButtonMode(ControlPushButton::TOGGLE);
     m_pMainMix = new ControlPushButton(ConfigKey(getGroup(), "main_mix"));
     m_pMainMix->setButtonMode(ControlPushButton::POWERWINDOW);
-    ControlDoublePrivate::insertAlias(
-            ConfigKey(getGroup(), "master"), ConfigKey(getGroup(), "main_mix"));
+    m_pMainMix->addAlias(ConfigKey(getGroup(), QStringLiteral("master")));
     m_pOrientation = new ControlPushButton(ConfigKey(getGroup(), "orientation"));
     m_pOrientation->setButtonMode(ControlPushButton::TOGGLE);
     m_pOrientation->setStates(3);

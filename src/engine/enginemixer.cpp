@@ -28,6 +28,12 @@
 #include "util/timer.h"
 #include "util/trace.h"
 
+namespace {
+const QString kAppGroup = QStringLiteral("[App]");
+const QString kLegacyGroup = QStringLiteral("[Master]");
+const QString kMainGroup = QStringLiteral("[Main]");
+} // namespace
+
 EngineMixer::EngineMixer(
         UserSettingsPointer pConfig,
         const QString& group,
@@ -42,6 +48,7 @@ EngineMixer::EngineMixer(
           m_headphoneGainOld(1.0),
           m_balleftOld(1.0),
           m_balrightOld(1.0),
+          m_numMicsConfigured(0),
           m_mainHandle(registerChannelGroup(group)),
           m_headphoneHandle(registerChannelGroup("[Headphone]")),
           m_mainOutputHandle(registerChannelGroup("[MasterOutput]")),
@@ -67,16 +74,28 @@ EngineMixer::EngineMixer(
     m_pWorkerScheduler->start(QThread::HighPriority);
 
     // Main sample rate
-    m_pMainSampleRate = new ControlObject(ConfigKey(group, "samplerate"), true, true);
-    m_pMainSampleRate->set(44100.);
+    m_pSampleRate = new ControlObject(
+            ConfigKey(kAppGroup, QStringLiteral("samplerate")), true, true);
+    m_pSampleRate->addAlias(ConfigKey(group, QStringLiteral("samplerate")));
+    m_pSampleRate->set(44100.);
 
     // Latency control
-    m_pMainLatency = new ControlObject(ConfigKey(group, "latency"),
+    m_pOutputLatencyMs = new ControlObject(
+            ConfigKey(kAppGroup, QStringLiteral("output_latency_ms")),
             true,
             true); // reported latency (sometimes correct)
-    m_pAudioLatencyOverloadCount = new ControlObject(ConfigKey(group, "audio_latency_overload_count"), true, true);
-    m_pAudioLatencyUsage = new ControlPotmeter(ConfigKey(group, "audio_latency_usage"), 0.0, 0.25);
-    m_pAudioLatencyOverload  = new ControlPotmeter(ConfigKey(group, "audio_latency_overload"), 0.0, 1.0);
+    m_pOutputLatencyMs->addAlias(ConfigKey(kLegacyGroup, QStringLiteral("latency")));
+    m_pAudioLatencyOverloadCount = new ControlObject(
+            ConfigKey(kAppGroup, QStringLiteral("audio_latency_overload_count")));
+    m_pAudioLatencyOverloadCount->addAlias(ConfigKey(
+            kLegacyGroup, QStringLiteral("audio_latency_overload_count")));
+    m_pAudioLatencyUsage = new ControlObject(
+            ConfigKey(kAppGroup, QStringLiteral("audio_latency_usage")));
+    m_pAudioLatencyUsage->addAlias(ConfigKey(kLegacyGroup, QStringLiteral("audio_latency_usage")));
+    m_pAudioLatencyOverload = new ControlObject(
+            ConfigKey(kAppGroup, QStringLiteral("audio_latency_overload")));
+    m_pAudioLatencyOverload->addAlias(
+            ConfigKey(kLegacyGroup, QStringLiteral("audio_latency_overload")));
 
     // Sync controller
     m_pEngineSync = new EngineSync(pConfig);
@@ -100,26 +119,23 @@ EngineMixer::EngineMixer(
 
     // Legacy: the main "gain" control used to be named "volume" in Mixxx
     // 1.11.0 and earlier. See issue #7413.
-    ControlDoublePrivate::insertAlias(ConfigKey(group, "volume"),
-                                      ConfigKey(group, "gain"));
+    m_pMainGain->addAlias(ConfigKey(group, QStringLiteral("volume")));
 
     // VU meter:
-    m_pVumeter = new EngineVuMeter(group);
+    m_pVumeter = new EngineVuMeter(kMainGroup, kLegacyGroup);
 
-    m_pMainDelay = new EngineDelay(group, ConfigKey(group, "delay"));
-    m_pHeadDelay = new EngineDelay(group, ConfigKey(group, "headDelay"));
-    m_pBoothDelay = new EngineDelay(group, ConfigKey(group, "boothDelay"));
-    m_pLatencyCompensationDelay = new EngineDelay(group,
-        ConfigKey(group, "microphoneLatencyCompensation"));
-    m_pNumMicsConfigured = new ControlObject(ConfigKey(group, "num_mics_configured"));
+    m_pMainDelay = new EngineDelay(ConfigKey(group, "delay"));
+    m_pHeadDelay = new EngineDelay(ConfigKey(group, "headDelay"));
+    m_pBoothDelay = new EngineDelay(ConfigKey(group, "boothDelay"));
+    m_pLatencyCompensationDelay =
+            new EngineDelay(ConfigKey(group, "microphoneLatencyCompensation"));
 
     // Headphone volume
     m_pHeadGain = new ControlAudioTaperPot(ConfigKey(group, "headGain"), -14, 14, 0.5);
 
     // Legacy: the headphone "headGain" control used to be named "headVolume" in
     // Mixxx 1.11.0 and earlier. See issue #7413.
-    ControlDoublePrivate::insertAlias(ConfigKey(group, "headVolume"),
-                                      ConfigKey(group, "headGain"));
+    m_pHeadGain->addAlias(ConfigKey(group, QStringLiteral("headVolume")));
 
     // Headphone mix (left/right)
     m_pHeadMix = new ControlPotmeter(ConfigKey(group, "headMix"),-1.,1.);
@@ -173,7 +189,7 @@ EngineMixer::EngineMixer(
             ConfigKey(EngineXfader::kXfaderConfigKey, "xFaderReverse"));
     m_pXFaderReverse->setButtonMode(ControlPushButton::TOGGLE);
 
-    m_pKeylockEngine = new ControlObject(ConfigKey(group, "keylock_engine"), true, false, true);
+    m_pKeylockEngine = new ControlObject(ConfigKey(kAppGroup, QStringLiteral("keylock_engine")));
     m_pKeylockEngine->set(pConfig->getValue(ConfigKey(group, "keylock_engine"),
             static_cast<double>(EngineBuffer::defaultKeylockEngine())));
 
@@ -214,7 +230,6 @@ EngineMixer::~EngineMixer() {
     delete m_pHeadDelay;
     delete m_pBoothDelay;
     delete m_pLatencyCompensationDelay;
-    delete m_pNumMicsConfigured;
 
     delete m_pXFaderReverse;
     delete m_pXFaderCalibration;
@@ -222,8 +237,8 @@ EngineMixer::~EngineMixer() {
     delete m_pXFaderMode;
 
     delete m_pEngineSync;
-    delete m_pMainSampleRate;
-    delete m_pMainLatency;
+    delete m_pSampleRate;
+    delete m_pOutputLatencyMs;
     delete m_pAudioLatencyOverloadCount;
     delete m_pAudioLatencyUsage;
     delete m_pAudioLatencyOverload;
@@ -404,7 +419,7 @@ void EngineMixer::process(const int iBufferSize) {
     bool boothEnabled = m_pBoothEnabled->toBool();
     bool headphoneEnabled = m_pHeadphoneEnabled->toBool();
 
-    m_sampleRate = mixxx::audio::SampleRate::fromDouble(m_pMainSampleRate->get());
+    m_sampleRate = mixxx::audio::SampleRate::fromDouble(m_pSampleRate->get());
     // TODO: remove assumption of stereo buffer
     constexpr unsigned int kChannels = 2;
     const unsigned int iFrames = iBufferSize / kChannels;
@@ -503,7 +518,7 @@ void EngineMixer::process(const int iBufferSize) {
         m_pTalkoverDucking->processKey(m_pTalkover, iBufferSize);
         break;
     case EngineTalkoverDucking::MANUAL:
-        m_pTalkoverDucking->setAboveThreshold(m_activeTalkoverChannels.size());
+        m_pTalkoverDucking->setAboveThreshold(!m_activeTalkoverChannels.isEmpty());
         break;
     default:
         DEBUG_ASSERT("!Unknown Ducking mode");
@@ -617,7 +632,7 @@ void EngineMixer::process(const int iBufferSize) {
             }
 
             // Mix talkover into main mix
-            if (m_pNumMicsConfigured->get() > 0) {
+            if (m_numMicsConfigured > 0) {
                 SampleUtil::add(m_pMain, m_pTalkover, iBufferSize);
             }
 
@@ -644,7 +659,7 @@ void EngineMixer::process(const int iBufferSize) {
             }
 
             // Mix talkover with main
-            if (m_pNumMicsConfigured->get() > 0) {
+            if (m_numMicsConfigured > 0) {
                 SampleUtil::add(m_pMain, m_pTalkover, iBufferSize);
             }
 
@@ -712,7 +727,7 @@ void EngineMixer::process(const int iBufferSize) {
             if (sidechainMixRequired()) {
                 SampleUtil::copy(m_pSidechainMix, m_pMain, iBufferSize);
 
-                if (m_pNumMicsConfigured->get() > 0) {
+                if (m_numMicsConfigured > 0) {
                     // The talkover signal Mixxx receives is delayed by the round trip latency.
                     // There is an output latency between the time Mixxx processes the audio
                     // and the user hears it. So if the microphone user plays on beat with
@@ -1021,7 +1036,7 @@ void EngineMixer::onOutputDisconnected(const AudioOutput& output) {
 void EngineMixer::onInputConnected(const AudioInput& input) {
     switch (input.getType()) {
     case AudioPathType::Microphone:
-        m_pNumMicsConfigured->set(m_pNumMicsConfigured->get() + 1);
+        m_numMicsConfigured++;
         break;
     case AudioPathType::Auxiliary:
         // We don't track enabled auxiliary inputs.
@@ -1040,7 +1055,7 @@ void EngineMixer::onInputConnected(const AudioInput& input) {
 void EngineMixer::onInputDisconnected(const AudioInput& input) {
     switch (input.getType()) {
     case AudioPathType::Microphone:
-        m_pNumMicsConfigured->set(m_pNumMicsConfigured->get() - 1);
+        m_numMicsConfigured--;
         break;
     case AudioPathType::Auxiliary:
         // We don't track enabled auxiliary inputs.
