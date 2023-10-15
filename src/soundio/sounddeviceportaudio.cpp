@@ -8,6 +8,7 @@
 
 #include "control/controlobject.h"
 #include "control/controlproxy.h"
+#include "sounddevicenetwork.h"
 #include "soundio/sounddevice.h"
 #include "soundio/soundmanager.h"
 #include "soundio/soundmanagerutil.h"
@@ -77,6 +78,7 @@ int paV19CallbackClkRef(const void *inputBuffer, void *outputBuffer,
 
 const QRegularExpression kAlsaHwDeviceRegex("(.*) \\((plug)?(hw:(\\d)+(,(\\d)+))?\\)");
 
+const QString kAppGroup = QStringLiteral("[App]");
 } // anonymous namespace
 
 SoundDevicePortAudio::SoundDevicePortAudio(UserSettingsPointer config,
@@ -93,7 +95,7 @@ SoundDevicePortAudio::SoundDevicePortAudio(UserSettingsPointer config,
           m_outputDrift(false),
           m_inputDrift(false),
           m_bSetThreadPriority(false),
-          m_masterAudioLatencyUsage("[Master]", "audio_latency_usage"),
+          m_audioLatencyUsage(kAppGroup, QStringLiteral("audio_latency_usage")),
           m_framesSinceAudioLatencyUsageUpdate(0),
           m_syncBuffers(2),
           m_invalidTimeInfoCount(0),
@@ -102,7 +104,7 @@ SoundDevicePortAudio::SoundDevicePortAudio(UserSettingsPointer config,
           m_meanOutputLatency(MovingInterquartileMean(501)) {
     // Setting parent class members:
     m_hostAPI = Pa_GetHostApiInfo(deviceInfo->hostApi)->name;
-    m_dSampleRate = deviceInfo->defaultSampleRate;
+    m_sampleRate = mixxx::audio::SampleRate::fromDouble(deviceInfo->defaultSampleRate);
     if (m_deviceTypeId == paALSA) {
         // PortAudio gives the device name including the ALSA hw device. The
         // ALSA hw device is an only somewhat reliable identifier; it may change
@@ -123,8 +125,8 @@ SoundDevicePortAudio::SoundDevicePortAudio(UserSettingsPointer config,
     }
     m_deviceId.portAudioIndex = devIndex;
     m_strDisplayName = QString::fromUtf8(deviceInfo->name);
-    m_iNumInputChannels = m_deviceInfo->maxInputChannels;
-    m_iNumOutputChannels = m_deviceInfo->maxOutputChannels;
+    m_numInputChannels = mixxx::audio::ChannelCount(m_deviceInfo->maxInputChannels);
+    m_numOutputChannels = mixxx::audio::ChannelCount(m_deviceInfo->maxOutputChannels);
 
     m_inputParams.device = 0;
     m_inputParams.channelCount = 0;
@@ -212,8 +214,8 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
     }
 
     // Sample rate
-    if (m_dSampleRate <= 0) {
-        m_dSampleRate = 44100.0;
+    if (!m_sampleRate.isValid()) {
+        m_sampleRate = SoundManagerConfig::kMixxxDefaultSampleRate;
     }
 
     SINT framesPerBuffer = m_configFramesPerBuffer;
@@ -231,8 +233,8 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
     } else {
         qDebug() << "framesPerBuffer:" << framesPerBuffer;
     }
-    double bufferMSec = framesPerBuffer / m_dSampleRate * 1000;
-    qDebug() << "Requested sample rate: " << m_dSampleRate << "Hz and buffer size:"
+    double bufferMSec = framesPerBuffer / m_sampleRate.toDouble() * 1000;
+    qDebug() << "Requested sample rate: " << m_sampleRate << "Hz and buffer size:"
              << bufferMSec << "ms";
 
     qDebug() << "Output channels:" << m_outputParams.channelCount
@@ -343,7 +345,7 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
     err = Pa_OpenStream(&pStream,
             pInputParams,
             pOutputParams,
-            m_dSampleRate,
+            m_sampleRate.toDouble(),
             framesPerBuffer,
             paClipOff, // Stream flags
             pCallback,
@@ -381,16 +383,18 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
 
     // Get the actual details of the stream & update Mixxx's data
     const PaStreamInfo* streamDetails = Pa_GetStreamInfo(pStream);
-    m_dSampleRate = streamDetails->sampleRate;
+    m_sampleRate = mixxx::audio::SampleRate::fromDouble(streamDetails->sampleRate);
     m_outputLatencyMillis = streamDetails->outputLatency * 1000;
-    qDebug() << "   Actual sample rate: " << m_dSampleRate << "Hz, latency:"
+    qDebug() << "   Actual sample rate: " << m_sampleRate << "Hz, latency:"
              << m_outputLatencyMillis << "ms";
 
     if (isClkRefDevice) {
         // Update the samplerate and latency ControlObjects, which allow the
         // waveform view to properly correct for the latency.
-        ControlObject::set(ConfigKey("[Master]", "latency"), m_outputLatencyMillis);
-        ControlObject::set(ConfigKey("[Master]", "samplerate"), m_dSampleRate);
+        ControlObject::set(
+                ConfigKey(kAppGroup, QStringLiteral("output_latency_ms")),
+                m_outputLatencyMillis);
+        ControlObject::set(ConfigKey(kAppGroup, QStringLiteral("samplerate")), m_sampleRate);
         m_invalidTimeInfoCount = 0;
         m_clkRefTimer.start();
 
@@ -669,7 +673,7 @@ void SoundDevicePortAudio::writeProcess(SINT framesPerBuffer) {
                     if (m_outputDrift) {
                         //qDebug() << "SoundDevicePortAudio::writeProcess() skip one frame"
                         //        << (float)writeAvailable / outChunkSize << (float)readAvailable / outChunkSize;
-                    	copyCount = qMin(readAvailable, copyCount + m_iNumOutputChannels);
+                        copyCount = qMin(readAvailable, copyCount + m_numOutputChannels);
                     } else {
                         m_outputDrift = true;
                     }
@@ -1051,7 +1055,7 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
 
     PaTime callbackEntrytoDacSecs = timeInfo->outputBufferDacTime
             - timeInfo->currentTime;
-    double bufferSizeSec = framesPerBuffer / m_dSampleRate;
+    double bufferSizeSec = framesPerBuffer / m_sampleRate.toDouble();
 
     // Use Ableton's HostTimeFilter class to create a smooth linear regression
     // between absolute sound card time and absolute host time
@@ -1128,14 +1132,14 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
 void SoundDevicePortAudio::updateAudioLatencyUsage(
         const SINT framesPerBuffer) {
     m_framesSinceAudioLatencyUsageUpdate += framesPerBuffer;
-    if (m_framesSinceAudioLatencyUsageUpdate > (m_dSampleRate / kCpuUsageUpdateRate)) {
+    if (m_framesSinceAudioLatencyUsageUpdate > (m_sampleRate.toDouble() / kCpuUsageUpdateRate)) {
         double secInAudioCb = m_timeInAudioCallback.toDoubleSeconds();
-        m_masterAudioLatencyUsage.set(
-                secInAudioCb / (m_framesSinceAudioLatencyUsageUpdate / m_dSampleRate));
+        m_audioLatencyUsage.set(
+                secInAudioCb / (m_framesSinceAudioLatencyUsageUpdate / m_sampleRate.toDouble()));
         m_timeInAudioCallback = mixxx::Duration::fromSeconds(0);
         m_framesSinceAudioLatencyUsageUpdate = 0;
-        //qDebug() << m_pMasterAudioLatencyUsage
-        //         << m_pMasterAudioLatencyUsage->get();
+        // qDebug() << m_audioLatencyUsage
+        //          << m_audioLatencyUsage->get();
     }
     // measure time in Audio callback at the very last
     m_timeInAudioCallback += m_clkRefTimer.elapsed();

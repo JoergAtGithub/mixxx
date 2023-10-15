@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QVarLengthArray>
+#include <atomic>
 
 #include "audio/types.h"
 #include "control/controlobject.h"
@@ -13,6 +14,7 @@
 #include "recording/recordingmanager.h"
 #include "soundio/soundmanager.h"
 #include "soundio/soundmanagerutil.h"
+#include "util/samplebuffer.h"
 
 class EngineWorkerScheduler;
 class EngineBuffer;
@@ -32,22 +34,22 @@ class EngineTalkoverDucking;
 class EngineDelay;
 
 // The number of channels to pre-allocate in various structures in the
-// engine. Prevents memory allocation in EngineMaster::addChannel.
+// engine. Prevents memory allocation in EngineMixer::addChannel.
 static constexpr int kPreallocatedChannels = 64;
 
-class EngineMaster : public QObject, public AudioSource {
+class EngineMixer : public QObject, public AudioSource {
     Q_OBJECT
   public:
-    EngineMaster(UserSettingsPointer pConfig,
+    EngineMixer(UserSettingsPointer pConfig,
             const QString& group,
             EffectsManager* pEffectsManager,
             ChannelHandleFactoryPointer pChannelHandleFactory,
             bool bEnableSidechain);
-    virtual ~EngineMaster();
+    ~EngineMixer() override;
 
     // Get access to the sample buffers. None of these are thread safe. Only to
     // be called by SoundManager.
-    const CSAMPLE* buffer(const AudioOutput& output) const;
+    const CSAMPLE* buffer(const AudioOutput& output) const override;
 
     ChannelHandleAndGroup registerChannelGroup(const QString& group) {
         return ChannelHandleAndGroup(
@@ -62,8 +64,8 @@ class EngineMaster : public QObject, public AudioSource {
     // these methods are called the callback is guaranteed to be inactive
     // (SoundManager closes all devices before calling these). This may change
     // in the future.
-    virtual void onOutputConnected(const AudioOutput& output);
-    virtual void onOutputDisconnected(const AudioOutput& output);
+    void onOutputConnected(const AudioOutput& output) override;
+    void onOutputDisconnected(const AudioOutput& output) override;
     void onInputConnected(const AudioInput& input);
     void onInputDisconnected(const AudioInput& input);
 
@@ -95,7 +97,7 @@ class EngineMaster : public QObject, public AudioSource {
     }
 
     // These are really only exposed for tests to use.
-    const CSAMPLE* getMasterBuffer() const;
+    const CSAMPLE* getMainBuffer() const;
     const CSAMPLE* getBoothBuffer() const;
     const CSAMPLE* getHeadphoneBuffer() const;
     const CSAMPLE* getOutputBusBuffer(unsigned int i) const;
@@ -107,19 +109,18 @@ class EngineMaster : public QObject, public AudioSource {
         return m_pEngineSideChain;
     }
 
-    CSAMPLE_GAIN getMasterGain(int channelIndex) const;
+    CSAMPLE_GAIN getMainGain(int channelIndex) const;
 
     struct ChannelInfo {
         ChannelInfo(int index)
                 : m_pChannel(NULL),
-                  m_pBuffer(NULL),
                   m_pVolumeControl(NULL),
                   m_pMuteControl(NULL),
                   m_index(index) {
         }
         ChannelHandle m_handle;
         EngineChannel* m_pChannel;
-        CSAMPLE* m_pBuffer;
+        mixxx::SampleBuffer m_pBuffer;
         ControlObject* m_pVolumeControl;
         ControlPushButton* m_pMuteControl;
         GroupFeatureState m_features;
@@ -136,7 +137,7 @@ class EngineMaster : public QObject, public AudioSource {
         virtual ~GainCalculator() = default;
         virtual CSAMPLE_GAIN getGain(ChannelInfo* pChannelInfo) const = 0;
     };
-    class PflGainCalculator : public GainCalculator {
+    class PflGainCalculator final : public GainCalculator {
       public:
         inline CSAMPLE_GAIN getGain(ChannelInfo* pChannelInfo) const override {
             Q_UNUSED(pChannelInfo);
@@ -149,13 +150,13 @@ class EngineMaster : public QObject, public AudioSource {
       private:
         CSAMPLE_GAIN m_dGain;
     };
-    class TalkoverGainCalculator : public GainCalculator {
+    class TalkoverGainCalculator final : public GainCalculator {
       public:
         inline CSAMPLE_GAIN getGain(ChannelInfo* pChannelInfo) const override {
             return static_cast<CSAMPLE_GAIN>(pChannelInfo->m_pVolumeControl->get());
         }
     };
-    class OrientationVolumeGainCalculator : public GainCalculator {
+    class OrientationVolumeGainCalculator final : public GainCalculator {
       public:
         OrientationVolumeGainCalculator()
                 : m_dLeftGain(1.0),
@@ -164,10 +165,10 @@ class EngineMaster : public QObject, public AudioSource {
                   m_dTalkoverDuckingGain(1.0) {
         }
 
-        inline CSAMPLE_GAIN getGain(ChannelInfo* pChannelInfo) const {
+        inline CSAMPLE_GAIN getGain(ChannelInfo* pChannelInfo) const override {
             const CSAMPLE_GAIN channelVolume = static_cast<CSAMPLE_GAIN>(
                     pChannelInfo->m_pVolumeControl->get());
-            const CSAMPLE_GAIN orientationGain = EngineMaster::gainForOrientation(
+            const CSAMPLE_GAIN orientationGain = EngineMixer::gainForOrientation(
                     pChannelInfo->m_pChannel->getOrientation(),
                     m_dLeftGain,
                     m_dCenterGain,
@@ -196,10 +197,10 @@ class EngineMaster : public QObject, public AudioSource {
         // These are out of order with how they are listed in DlgPrefSound for backwards
         // compatibility with Mixxx 2.0 user settings. In Mixxx 2.0, before the
         // booth output was added, this was a binary option without
-        // the MASTER_AND_BOOTH mode.
-        MASTER = 0,
-        DIRECT_MONITOR,
-        MASTER_AND_BOOTH
+        // the MainAndBooth mode.
+        Main = 0,
+        DirectMonitor,
+        MainAndBooth,
     };
 
     template<typename T, unsigned int CAPACITY>
@@ -246,12 +247,12 @@ class EngineMaster : public QObject, public AudioSource {
     };
 
   protected:
-    // The master buffer is protected so it can be accessed by test subclasses.
-    CSAMPLE* m_pMaster;
+    // The main buffer is protected so it can be accessed by test subclasses.
+    mixxx::SampleBuffer m_main;
 
     // ControlObjects for switching off unnecessary processing
     // These are protected so tests can set them
-    ControlObject* m_pMasterEnabled;
+    ControlObject* m_pMainEnabled;
     ControlObject* m_pHeadphoneEnabled;
     ControlObject* m_pBoothEnabled;
 
@@ -265,9 +266,9 @@ class EngineMaster : public QObject, public AudioSource {
             std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac);
 
     ChannelHandleFactoryPointer m_pChannelHandleFactory;
-    void applyMasterEffects(int iBufferSize);
+    void applyMainEffects(int bufferSize);
     void processHeadphones(
-            const CSAMPLE_GAIN masterMixGainInHeadphones,
+            const CSAMPLE_GAIN mainMixGainInHeadphones,
             int iBufferSize);
     bool sidechainMixRequired() const;
 
@@ -276,9 +277,9 @@ class EngineMaster : public QObject, public AudioSource {
     // List of channels added to the engine.
     QVarLengthArray<ChannelInfo*, kPreallocatedChannels> m_channels;
 
-    // The previous gain of each channel for each mixing output (master,
+    // The previous gain of each channel for each mixing output (main,
     // headphone, talkover).
-    QVarLengthArray<GainCache, kPreallocatedChannels> m_channelMasterGainCache;
+    QVarLengthArray<GainCache, kPreallocatedChannels> m_channelMainGainCache;
     QVarLengthArray<GainCache, kPreallocatedChannels> m_channelHeadphoneGainCache;
     QVarLengthArray<GainCache, kPreallocatedChannels> m_channelTalkoverGainCache;
 
@@ -291,27 +292,26 @@ class EngineMaster : public QObject, public AudioSource {
     mixxx::audio::SampleRate m_sampleRate;
 
     // Mixing buffers for each output.
-    CSAMPLE* m_pOutputBusBuffers[3];
-    CSAMPLE* m_pBooth;
-    CSAMPLE* m_pHead;
-    CSAMPLE* m_pTalkover;
-    CSAMPLE* m_pTalkoverHeadphones;
-    CSAMPLE* m_pSidechainMix;
+    mixxx::SampleBuffer m_outputBusBuffers[3];
+    mixxx::SampleBuffer m_booth;
+    mixxx::SampleBuffer m_head;
+    mixxx::SampleBuffer m_talkover;
+    mixxx::SampleBuffer m_talkoverHeadphones;
+    mixxx::SampleBuffer m_sidechainMix;
 
     EngineWorkerScheduler* m_pWorkerScheduler;
     EngineSync* m_pEngineSync;
 
-    ControlObject* m_pMasterGain;
+    ControlObject* m_pMainGain;
     ControlObject* m_pBoothGain;
     ControlObject* m_pHeadGain;
-    ControlObject* m_pMasterSampleRate;
-    ControlObject* m_pMasterLatency;
+    ControlObject* m_pSampleRate;
+    ControlObject* m_pOutputLatencyMs;
     ControlObject* m_pAudioLatencyOverloadCount;
-    ControlObject* m_pNumMicsConfigured;
-    ControlPotmeter* m_pAudioLatencyUsage;
-    ControlPotmeter* m_pAudioLatencyOverload;
+    ControlObject* m_pAudioLatencyUsage;
+    ControlObject* m_pAudioLatencyOverload;
     EngineTalkoverDucking* m_pTalkoverDucking;
-    EngineDelay* m_pMasterDelay;
+    EngineDelay* m_pMainDelay;
     EngineDelay* m_pHeadDelay;
     EngineDelay* m_pBoothDelay;
     EngineDelay* m_pLatencyCompensationDelay;
@@ -331,23 +331,24 @@ class EngineMaster : public QObject, public AudioSource {
 
     PflGainCalculator m_headphoneGain;
     TalkoverGainCalculator m_talkoverGain;
-    OrientationVolumeGainCalculator m_masterGain;
-    CSAMPLE_GAIN m_masterGainOld;
+    OrientationVolumeGainCalculator m_mainGain;
+    CSAMPLE_GAIN m_mainGainOld;
     CSAMPLE_GAIN m_boothGainOld;
-    CSAMPLE_GAIN m_headphoneMasterGainOld;
+    CSAMPLE_GAIN m_headphoneMainGainOld;
     CSAMPLE_GAIN m_headphoneGainOld;
     CSAMPLE_GAIN m_balleftOld;
     CSAMPLE_GAIN m_balrightOld;
-    const ChannelHandleAndGroup m_masterHandle;
+    std::atomic<unsigned int> m_numMicsConfigured;
+    const ChannelHandleAndGroup m_mainHandle;
     const ChannelHandleAndGroup m_headphoneHandle;
-    const ChannelHandleAndGroup m_masterOutputHandle;
+    const ChannelHandleAndGroup m_mainOutputHandle;
     const ChannelHandleAndGroup m_busTalkoverHandle;
     const ChannelHandleAndGroup m_busCrossfaderLeftHandle;
     const ChannelHandleAndGroup m_busCrossfaderCenterHandle;
     const ChannelHandleAndGroup m_busCrossfaderRightHandle;
 
     // Mix two Mono channels. This is useful for outdoor gigs
-    ControlObject* m_pMasterMonoMixdown;
+    ControlObject* m_pMainMonoMixdown;
     ControlObject* m_pMicMonitorMode;
 
     volatile bool m_bBusOutputConnected[3];

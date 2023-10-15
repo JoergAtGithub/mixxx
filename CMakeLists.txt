@@ -127,7 +127,7 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
   endif()
 endif()
 
-option(QT6 "Build with Qt6" OFF)
+option(QT6 "Build with Qt6" ON)
 option(QML "Build with QML" OFF)
 option(QOPENGL "Use QOpenGLWindow based widget instead of QGLWidget" ON)
 
@@ -154,7 +154,7 @@ if(APPLE)
     message(FATAL_ERROR "'xcode-select -v' failed with '${XCODE_SELECT_RESULT}'. You may need to install Xcode and run 'sudo xcode-select --install'.")
   endif()
 
-  if(VCPKG_TARGET_TRIPLET STREQUAL "arm64-osx-min1100")
+  if(VCPKG_TARGET_TRIPLET MATCHES "^arm64-osx")
     # Minimum macOS version for arm64 Support
     set(CMAKE_OSX_DEPLOYMENT_TARGET 11.0 CACHE STRING "Minimum macOS version the build will be able to run on")
     set(CMAKE_OSX_ARCHITECTURES arm64 CACHE STRING "The target architecture")
@@ -174,6 +174,7 @@ if(APPLE)
 endif()
 
 project(mixxx VERSION 2.5.0)
+enable_language(C CXX)
 # Work around missing version suffixes support https://gitlab.kitware.com/cmake/cmake/-/issues/16716
 set(MIXXX_VERSION_PRERELEASE "alpha") # set to "alpha" "beta" or ""
 
@@ -438,7 +439,7 @@ elseif(GNU_GCC OR LLVM_CLANG)
     # Clang sanitizers.
     # Note: It is only included in -O on machines where it does not
     # interfere with debugging
-    if(NOT PROFILING AND NOT CLANG_SANITIZERS)
+    if(NOT PROFILING AND NOT SANITIZERS)
       add_compile_options(-fomit-frame-pointer)
     endif()
 
@@ -783,7 +784,7 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/engine/effects/engineeffectsmanager.cpp
   src/engine/enginebuffer.cpp
   src/engine/enginedelay.cpp
-  src/engine/enginemaster.cpp
+  src/engine/enginemixer.cpp
   src/engine/engineobject.cpp
   src/engine/enginepregain.cpp
   src/engine/enginesidechaincompressor.cpp
@@ -1008,6 +1009,7 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/skin/legacy/pixmapsource.cpp
   src/skin/legacy/skincontext.cpp
   src/skin/legacy/tooltips.cpp
+  src/skin/skincontrols.cpp
   src/skin/skinloader.cpp
   src/soundio/sounddevice.cpp
   src/soundio/sounddevicenetwork.cpp
@@ -1104,7 +1106,6 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/util/rotary.cpp
   src/util/runtimeloggingcategory.cpp
   src/util/sample.cpp
-  src/util/samplebuffer.cpp
   src/util/sandbox.cpp
   src/util/semanticversion.cpp
   src/util/screensaver.cpp
@@ -1197,6 +1198,164 @@ add_library(mixxx-lib STATIC EXCLUDE_FROM_ALL
   src/widget/wwidget.cpp
   src/widget/wwidgetgroup.cpp
   src/widget/wwidgetstack.cpp
+)
+target_precompile_headers(mixxx-lib PUBLIC
+  src/audio/frame.h
+  src/audio/signalinfo.h
+  src/audio/streaminfo.h
+  src/audio/types.h
+  src/control/control.h
+  src/control/controlaudiotaperpot.h
+  src/control/controlbehavior.h
+  src/control/controlcompressingproxy.h
+  src/control/controleffectknob.h
+  src/control/controlencoder.h
+  src/control/controlindicator.h
+  src/control/controlindicatortimer.h
+  src/control/controllinpotmeter.h
+  src/control/controllogpotmeter.h
+  src/control/controlmodel.h
+  src/control/controlobject.h
+  src/control/controlobjectscript.h
+  src/control/controlpotmeter.h
+  src/control/controlproxy.h
+  src/control/controlpushbutton.h
+  src/control/controlsortfiltermodel.h
+  src/control/controlttrotary.h
+  src/control/controlvalue.h
+  src/control/convert.h
+  src/control/pollingcontrolproxy.h
+  src/controllers/defs_controllers.h
+  src/defs_urls.h
+  src/effects/defs.h
+  src/engine/channelhandle.h
+  src/engine/engine.h
+  src/errordialoghandler.h
+  src/track/track.h
+  src/track/track_decl.h
+  src/track/trackid.h
+  src/track/trackinfo.h
+  src/track/trackiterator.h
+  src/track/trackmetadata.h
+  src/track/tracknumbers.h
+  src/track/trackrecord.h
+  src/track/trackref.h
+  src/util/alphabetafilter.h
+  src/util/assert.h
+  src/util/battery/battery.h
+  src/util/cache.h
+  src/util/circularbuffer.h
+  src/util/class.h
+  src/util/cmdlineargs.h
+  src/util/color/color.h
+  src/util/color/colorpalette.h
+  src/util/color/predefinedcolorpalettes.h
+  src/util/color/rgbcolor.h
+  src/util/colorcomponents.h
+  src/util/compatibility/qatomic.h
+  src/util/compatibility/qbytearray.h
+  src/util/compatibility/qhash.h
+  src/util/compatibility/qmutex.h
+  src/util/console.h
+  src/util/counter.h
+  src/util/datetime.h
+  src/util/db/dbconnection.h
+  src/util/db/dbconnectionpool.h
+  src/util/db/dbconnectionpooled.h
+  src/util/db/dbconnectionpooler.h
+  src/util/db/dbentity.h
+  src/util/db/dbfieldindex.h
+  src/util/db/dbid.h
+  src/util/db/dbnamedentity.h
+  src/util/db/fwdsqlquery.h
+  src/util/db/fwdsqlqueryselectresult.h
+  src/util/db/sqlite.h
+  src/util/db/sqllikewildcards.h
+  src/util/db/sqlqueryfinisher.h
+  src/util/db/sqlstorage.h
+  src/util/db/sqlstringformatter.h
+  src/util/db/sqlsubselectmode.h
+  src/util/db/sqltransaction.h
+  src/util/debug.h
+  src/util/defs.h
+  src/util/denormalsarezero.h
+  src/util/desktophelper.h
+  src/util/dnd.h
+  src/util/duration.h
+  src/util/event.h
+  src/util/experiment.h
+  src/util/fifo.h
+  src/util/file.h
+  src/util/fileaccess.h
+  src/util/fileinfo.h
+  src/util/filename.h
+  src/util/font.h
+  src/util/fpclassify.h
+  src/util/gitinfostore.h
+  src/util/imagefiledata.h
+  src/util/imageutils.h
+  src/util/indexrange.h
+  src/util/itemiterator.h
+  src/util/lcs.h
+  src/util/logger.h
+  src/util/logging.h
+  src/util/mac.h
+  src/util/macros.h
+  src/util/math.h
+  src/util/memory.h
+  src/util/messagepipe.h
+  src/util/movinginterquartilemean.h
+  src/util/mutex.h
+  src/util/optional.h
+  src/util/painterscope.h
+  src/util/parented_ptr.h
+  src/util/path.h
+  src/util/performancetimer.h
+  src/util/platform.h
+  src/util/qt.h
+  src/util/quuid.h
+  src/util/rampingvalue.h
+  src/util/rangelist.h
+  src/util/readaheadsamplebuffer.h
+  src/util/reference.h
+  src/util/regex.h
+  src/util/rescaler.h
+  src/util/ringdelaybuffer.h
+  src/util/rotary.h
+  src/util/runtimeloggingcategory.h
+  src/util/safelywritablefile.h
+  src/util/sample.h
+  src/util/sample_autogen.h
+  src/util/samplebuffer.h
+  src/util/sandbox.h
+  src/util/scopedoverridecursor.h
+  src/util/screensaver.h
+  src/util/screensavermanager.h
+  src/util/semanticversion.h
+  src/util/singleton.h
+  src/util/span.h
+  src/util/stat.h
+  src/util/statmodel.h
+  src/util/statsmanager.h
+  src/util/string.h
+  src/util/tapfilter.h
+  src/util/task.h
+  src/util/taskmonitor.h
+  src/util/thread_affinity.h
+  src/util/thread_annotations.h
+  src/util/threadcputimer.h
+  src/util/time.h
+  src/util/timer.h
+  src/util/trace.h
+  src/util/translations.h
+  src/util/types.h
+  src/util/unique_ptr_vector.h
+  src/util/valuetransformer.h
+  src/util/versionstore.h
+  src/util/widgethelper.h
+  src/util/workerthread.h
+  src/util/workerthreadscheduler.h
+  src/util/xml.h
 )
 if(QML)
   target_sources(mixxx-lib PRIVATE
@@ -1320,6 +1479,8 @@ else()
   endif()
 endif()
 
+set_source_files_properties(src/util/moc_included_test.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+
 set_target_properties(mixxx-lib PROPERTIES AUTOMOC ON AUTOUIC ON CXX_CLANG_TIDY "${CLANG_TIDY}")
 target_include_directories(mixxx-lib PUBLIC src "${CMAKE_CURRENT_BINARY_DIR}/src")
 if(UNIX AND NOT APPLE)
@@ -1328,6 +1489,8 @@ if(UNIX AND NOT APPLE)
 endif()
 
 if(APPLE)
+  enable_language(OBJC OBJCXX)
+
   # Enable Automatic Reference Counting (ARC) when compiling Objective-C(++).
   # This frees us from having to worry about memory management when interfacing
   # with Apple frameworks (e.g. as in itunesmacosimporter.mm) since the compiler
@@ -1355,7 +1518,7 @@ endif()
 
 # QML Debugging
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  target_compile_definitions(mixxx-lib PRIVATE QT_QML_DEBUG)
+  target_compile_definitions(mixxx-lib PUBLIC QT_QML_DEBUG)
   message(STATUS "Enabling QML Debugging! This poses a security risk as Mixxx will open a TCP port for debugging")
 endif()
 
@@ -1392,9 +1555,10 @@ if(MSVC)
     # Warning Level 3 (production quality)
     target_compile_options(mixxx-lib PUBLIC /W3)
     # _HAS_DEPRECATED_RESULT_OF is needed to compile AbletonLink with MSVC in C++20 mode (upstream fix is expected in AbletonLink 3.0.6: https://github.com/Ableton/link/issues/119)
+    # WIN32_LEAN_AND_MEAN prevents "Winsock.h already included", when compiling the ASIO dependecy of Ableton Link
     target_compile_definitions(mixxx-lib PUBLIC _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING _HAS_DEPRECATED_RESULT_OF _CRT_SECURE_NO_WARNINGS)
   endif()
-else()
+ else()
   # TODO: Add -Wtrampolines, not yet supported by clazy
   target_compile_options(mixxx-lib PUBLIC -Wall -Wextra $<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual> -Wfloat-conversion -Werror=return-type -Wformat=2 -Wformat-security -Wvla -Wundef)
   if(WARNINGS_PEDANTIC)
@@ -1455,6 +1619,9 @@ if(WIN32)
   # _WIN32_WINNT_WIN7 = 0x0601
   target_compile_definitions(mixxx-lib PUBLIC WINVER=0x0601)
   target_compile_definitions(mixxx-lib PUBLIC _WIN32_WINNT=0x0601)
+  # Exclude Win32 APIs such as Cryptography, DDE, RPC, Shell, and Windows Sockets where including Windows.h.
+  # This prevents "Winsock.h already included", when compiling the ASIO dependecy of Ableton Link.
+  target_compile_definitions(mixxx-lib PUBLIC WIN32_LEAN_AND_MEAN)
   if(MSVC)
     target_compile_definitions(mixxx-lib PUBLIC _USE_MATH_DEFINES)
   endif()
@@ -1805,12 +1972,17 @@ if(MSVC)
 endif()
 
 if(WIN32 AND NOT QT6)
-  # Qt 5 loads these ANGLE DLLs at runtime if the graphics driver is blocklisted.
-  # Qt does not link these and vcpkg does not build them as a dependency of Qt,
-  # so copy them manually.
-  find_file(EGL_DLL libEGL.dll PATH_SUFFIXES ${CMAKE_INSTALL_BINDIR})
-  find_file(GLESv2_DLL libGLESv2.dll PATH_SUFFIXES ${CMAKE_INSTALL_BINDIR})
-  install(FILES ${EGL_DLL} ${GLESv2_DLL} DESTINATION "${MIXXX_INSTALL_BINDIR}")
+  # Qt 5 loads these ANGLE DLLs at runtime if the graphics driver is on the ignore list.
+  # It does not work with Debug, because the debug version is compiled without the a d suffix
+  find_package(unofficial-angle CONFIG REQUIRED)
+  install(IMPORTED_RUNTIME_ARTIFACTS
+    unofficial::angle::libEGL
+    unofficial::angle::libGLESv2
+    CONFIGURATIONS RelWithDebInfo Release
+    DESTINATION "${MIXXX_INSTALL_BINDIR}"
+    RUNTIME_DEPENDENCY_SET mixxx
+    COMPONENT applocal)
+  set(APPLOCAL_COMPONENT_DEFINED true)
 endif()
 
 #
@@ -1840,7 +2012,9 @@ add_executable(mixxx-test
   src/test/controller_mapping_validation_test.cpp
   src/test/controllerscriptenginelegacy_test.cpp
   src/test/controlobjecttest.cpp
+  src/test/controlobjectaliastest.cpp
   src/test/controlobjectscripttest.cpp
+  src/test/controlpotmetertest.cpp
   src/test/coreservicestest.cpp
   src/test/coverartcache_test.cpp
   src/test/coverartutils_test.cpp
@@ -1858,7 +2032,7 @@ add_executable(mixxx-test
   src/test/enginebuffertest.cpp
   src/test/engineeffectsdelay_test.cpp
   src/test/enginefilterbiquadtest.cpp
-  src/test/enginemastertest.cpp
+  src/test/enginemixertest.cpp
   src/test/enginemicrophonetest.cpp
   src/test/enginesynctest.cpp
   src/test/fileinfo_test.cpp
@@ -1867,8 +2041,7 @@ add_executable(mixxx-test
   src/test/hotcuecontrol_test.cpp
   src/test/imageutils_test.cpp
   src/test/indexrange_test.cpp
-  # TODO: reanable this after https://github.com/mixxxdj/mixxx/pull/11666
-  # src/test/itunesxmlimportertest.cpp
+  src/test/itunesxmlimportertest.cpp
   src/test/keyutilstest.cpp
   src/test/lcstest.cpp
   src/test/learningutilstest.cpp
@@ -1929,6 +2102,7 @@ add_executable(mixxx-test
   src/test/wwidgetstack_test.cpp
   src/util/moc_included_test.cpp
 )
+target_precompile_headers(mixxx-test REUSE_FROM mixxx-lib)
 find_package(GTest CONFIG REQUIRED)
 set_target_properties(mixxx-test PROPERTIES AUTOMOC ON)
 target_link_libraries(mixxx-test PRIVATE mixxx-lib mixxx-gitinfostore GTest::gtest GTest::gmock)
@@ -2075,7 +2249,7 @@ find_package(AbletonLink NAMES AbletonLink ableton ableton-link ableton-link-dev
 
 if (AbletonLink_FOUND)
   message(STATUS "Using existing system installation of Ableton Link")
-  target_link_libraries(mixxx-lib PRIVATE Ableton::Link)
+  target_link_libraries(mixxx-lib PUBLIC Ableton::Link)
 else()
   message(STATUS "Fetch Ableton Link from GitHub")
 include(FetchContent)
@@ -2137,7 +2311,7 @@ option(ENGINEPRIME "Support for library export to Denon Engine Prime" ON)
 if(ENGINEPRIME)
   # libdjinterop does not currently have a stable ABI, so we fetch sources for a specific tag, build here, and link
   # statically.  This situation should be reviewed once libdjinterop hits version 1.x.
-  set(LIBDJINTEROP_VERSION 0.19.2)
+  set(LIBDJINTEROP_VERSION 0.20.0)
   # Look whether an existing installation of libdjinterop matches the required version.
   find_package(DjInterop  ${LIBDJINTEROP_VERSION} EXACT CONFIG)
   if(NOT DjInterop_FOUND)
@@ -2173,7 +2347,7 @@ if(ENGINEPRIME)
       URL
         "https://github.com/xsco/libdjinterop/archive/refs/tags/${LIBDJINTEROP_VERSION}.tar.gz"
         "https://launchpad.net/~xsco/+archive/ubuntu/djinterop/+sourcefiles/libdjinterop/${LIBDJINTEROP_VERSION}-0ubuntu1/libdjinterop_${LIBDJINTEROP_VERSION}.orig.tar.gz"
-      URL_HASH SHA256=2f44b43a612b5fccc5bcba4d6c9e463ba8cd637edc9ab2e5dc19173d00c5f4eb
+      URL_HASH SHA256=0cf85b30629b59277437e2be7e8073c22797e8749920ba2dd5e72c21e14d68db
       DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloads"
       DOWNLOAD_NAME "libdjinterop-${LIBDJINTEROP_VERSION}.tar.gz"
       INSTALL_DIR ${DJINTEROP_INSTALL_DIR}
@@ -2375,7 +2549,7 @@ target_link_libraries(mixxx-lib PRIVATE Vorbis::vorbis Vorbis::vorbisenc Vorbis:
 
 # PortAudio
 find_package(PortAudio REQUIRED)
-target_link_libraries(mixxx-lib PRIVATE PortAudio::PortAudio)
+target_link_libraries(mixxx-lib PUBLIC PortAudio::PortAudio)
 
 # PortAudio Ring Buffer
 add_library(PortAudioRingBuffer STATIC EXCLUDE_FROM_ALL
@@ -2398,11 +2572,17 @@ target_link_libraries(mixxx-lib PUBLIC mixxx-proto)
 target_include_directories(mixxx-lib SYSTEM PUBLIC lib/rigtorp/SPSCQueue/include)
 
 # Qt
+set(QT_EXTRA_COMPONENTS "")
 if(QT6)
   find_package(QT 6.2 NAMES Qt6 COMPONENTS Core REQUIRED)
-  set(QT6_NEW_COMPONENTS "SvgWidgets;Core5Compat")
+  list(APPEND QT_EXTRA_COMPONENTS "SvgWidgets")
+  list(APPEND QT_EXTRA_COMPONENTS "Core5Compat")
 else()
   find_package(QT 5.12 NAMES Qt5 COMPONENTS Core REQUIRED)
+endif()
+if(QML)
+  list(APPEND QT_EXTRA_COMPONENTS "Quick")
+  list(APPEND QT_EXTRA_COMPONENTS "QuickControls2")
 endif()
 find_package(Qt${QT_VERSION_MAJOR}
   COMPONENTS
@@ -2419,7 +2599,7 @@ find_package(Qt${QT_VERSION_MAJOR}
     Test
     Widgets
     Xml
-    ${QT6_NEW_COMPONENTS}
+    ${QT_EXTRA_COMPONENTS}
   REQUIRED
 )
 # PUBLIC is required below to find included headers
@@ -2437,8 +2617,8 @@ target_link_libraries(mixxx-lib PUBLIC
   Qt${QT_VERSION_MAJOR}::Test
   Qt${QT_VERSION_MAJOR}::Widgets
   Qt${QT_VERSION_MAJOR}::Xml)
-if(QT6)
-  foreach(COMPONENT ${QT6_NEW_COMPONENTS})
+if(QT_EXTRA_COMPONENTS)
+  foreach(COMPONENT ${QT_EXTRA_COMPONENTS})
     target_link_libraries(mixxx-lib PUBLIC Qt6::${COMPONENT})
   endforeach()
 endif()
@@ -2628,14 +2808,14 @@ elseif(UNIX AND NOT APPLE)
   else()
     find_package(X11 REQUIRED)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
-    target_link_libraries(mixxx-lib PRIVATE Qt5::X11Extras)
+    target_link_libraries(mixxx-lib PUBLIC Qt5::X11Extras)
   endif()
   if(${X11_FOUND})
     target_include_directories(mixxx-lib SYSTEM PUBLIC "${X11_INCLUDE_DIR}")
     target_link_libraries(mixxx-lib PRIVATE "${X11_LIBRARIES}")
   endif()
   find_package(Qt${QT_VERSION_MAJOR} COMPONENTS DBus REQUIRED)
-  target_link_libraries(mixxx-lib PRIVATE
+  target_link_libraries(mixxx-lib PUBLIC
     Qt${QT_VERSION_MAJOR}::DBus
   )
 elseif(WIN32)
@@ -2865,26 +3045,26 @@ if(CLANG_COLORDIAG)
 endif()
 
 # Clang Sanitizers
-set(CLANG_SANITIZERS "")
-option(CLANG_ASAN "Clang Address Sanitizer" OFF)
-if(CLANG_ASAN)
-  list(APPEND CLANG_SANITIZERS "address")
+set(SANITIZERS "")
+option(SANITIZE_ADDRESS "Address Sanitizer" OFF)
+if(SANITIZE_ADDRESS)
+  list(APPEND SANITIZERS "address")
 endif()
-option(CLANG_UBSAN "Clang Undefined Behaviour Sanitizer" OFF)
-if(CLANG_UBSAN)
-  list(APPEND CLANG_SANITIZERS "undefined")
+option(SANITIZE_UNDEFINED "Clang Undefined Behaviour Sanitizer" OFF)
+if(SANITIZE_UNDEFINED)
+  list(APPEND SANITIZERS "undefined")
 endif()
-option(CLANG_TSAN "Clang Thread Sanitizer" OFF)
-if(CLANG_TSAN)
-  list(APPEND CLANG_SANITIZERS "thread")
+option(SANITIZE_THREAD "Clang Thread Sanitizer" OFF)
+if(SANITIZE_THREAD)
+  list(APPEND SANITIZERS "thread")
 endif()
-if(NOT CLANG_SANITIZERS STREQUAL "")
-  if(NOT LLVM_CLANG)
-    message(FATAL_ERROR "Clang Sanitizers are only available when using Clang.")
+if(NOT SANITIZERS STREQUAL "")
+  if(NOT (LLVM_CLANG OR GNU_GCC))
+    message(FATAL_ERROR "Sanitizers are only available on Clang or GCC")
   endif()
-  list(JOIN CLANG_SANITIZERS "," CLANG_SANITZERS_JOINED)
-  target_compile_options(mixxx-lib PUBLIC -fsanitize=${CLANG_SANITZERS_JOINED})
-  target_link_options(mixxx-lib PUBLIC -fsanitize=${CLANG_SANITZERS_JOINED})
+  list(JOIN SANITIZERS "," SANITZERS_JOINED)
+  target_compile_options(mixxx-lib PUBLIC -fsanitize=${SANITZERS_JOINED})
+  target_link_options(mixxx-lib PUBLIC -fsanitize=${SANITZERS_JOINED})
 endif()
 
 # CoreAudio MP3/AAC Decoder
@@ -2903,7 +3083,7 @@ if(COREAUDIO)
     APPEND_STRING
     PROPERTY COMPILE_OPTIONS -Wno-deprecated-anon-enum-enum-conversion
   )
-  target_compile_definitions(mixxx-lib PRIVATE __COREAUDIO__)
+  target_compile_definitions(mixxx-lib PUBLIC __COREAUDIO__)
   target_include_directories(mixxx-lib SYSTEM PUBLIC lib/apple)
 endif()
 
@@ -2922,9 +3102,9 @@ if(FAAD)
     src/sources/soundsourcem4a.cpp
     src/sources/libfaadloader.cpp
   )
-  target_compile_definitions(mixxx-lib PRIVATE __FAAD__)
+  target_compile_definitions(mixxx-lib PUBLIC __FAAD__)
   if(MP4v2_FOUND)
-    target_compile_definitions(mixxx-lib PRIVATE __MP4V2__)
+    target_compile_definitions(mixxx-lib PUBLIC __MP4V2__)
     target_link_libraries(mixxx-lib PRIVATE MP4v2::MP4v2)
   else()
     target_link_libraries(mixxx-lib PRIVATE MP4::MP4)
@@ -3289,6 +3469,14 @@ if(WAVPACK)
   target_sources(mixxx-lib PRIVATE src/sources/soundsourcewv.cpp)
   target_compile_definitions(mixxx-lib PUBLIC __WV__)
   target_link_libraries(mixxx-lib PRIVATE WavPack::wavpack)
+endif()
+
+if (APPLOCAL_COMPONENT_DEFINED)
+    set(CPACK_COMPONENT_applocal_HIDDEN TRUE)
+    # In order to run Mixx from the build directory install applocal components
+    add_custom_command(
+        TARGET mixxx POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -DCOMPONENT=applocal -DCMAKE_INSTALL_PREFIX="${CMAKE_CURRENT_BINARY_DIR}" -P cmake_install.cmake)
 endif()
 
 # Configure file with build options

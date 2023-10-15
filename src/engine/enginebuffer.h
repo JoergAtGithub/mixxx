@@ -8,6 +8,7 @@
 #include <initializer_list>
 
 #include "audio/frame.h"
+#include "audio/types.h"
 #include "control/controlvalue.h"
 #include "engine/bufferscalers/enginebufferscalerubberband.h"
 #include "engine/cachingreader/cachingreader.h"
@@ -48,7 +49,7 @@ class EngineBufferScaleRubberBand;
 class EngineSync;
 class EngineWorkerScheduler;
 class VisualPlayPosition;
-class EngineMaster;
+class EngineMixer;
 
 class EngineBuffer : public EngineObject {
      Q_OBJECT
@@ -91,8 +92,10 @@ class EngineBuffer : public EngineObject {
             KeylockEngine::RubberBandFaster,
             KeylockEngine::RubberBandFiner};
 
-    EngineBuffer(const QString& group, UserSettingsPointer pConfig,
-                 EngineChannel* pChannel, EngineMaster* pMixingEngine);
+    EngineBuffer(const QString& group,
+            UserSettingsPointer pConfig,
+            EngineChannel* pChannel,
+            EngineMixer* pMixingEngine);
     virtual ~EngineBuffer();
 
     void bindWorkers(EngineWorkerScheduler* pWorkerScheduler);
@@ -113,7 +116,7 @@ class EngineBuffer : public EngineObject {
             mixxx::audio::FramePos endPositon,
             bool enabled);
     // Sets pointer to other engine buffer/channel
-    void setEngineMaster(EngineMaster*);
+    void setEngineMixer(EngineMixer*);
 
     // Queues a new seek position. Use SEEK_EXACT or SEEK_STANDARD as seekType
     void queueNewPlaypos(mixxx::audio::FramePos newpos, enum SeekRequest seekType);
@@ -217,7 +220,7 @@ class EngineBuffer : public EngineObject {
     void slotTrackLoading();
     void slotTrackLoaded(
             TrackPointer pTrack,
-            int trackSampleRate,
+            mixxx::audio::SampleRate trackSampleRate,
             double trackNumSamples);
     void slotTrackLoadFailed(TrackPointer pTrack,
             const QString& reason);
@@ -373,7 +376,6 @@ class EngineBuffer : public EngineObject {
     ControlPushButton* m_pSlipButton;
 
     ControlObject* m_pQuantize;
-    ControlObject* m_pMasterRate;
     ControlPotmeter* m_playposSlider;
     ControlProxy* m_pSampleRate;
     ControlProxy* m_pKeylockEngine;

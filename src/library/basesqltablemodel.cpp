@@ -330,15 +330,15 @@ void BaseSqlTableModel::select() {
     // number of total rows returned by the query
     DEBUG_ASSERT(trackIdToRows.size() <= rowInfos.size());
 
-    // We're done! Issue the update signals and replace the master maps.
+    // We're done! Issue the update signals and replace the main maps.
     replaceRows(
             std::move(rowInfos),
             std::move(trackIdToRows));
     // Both rowInfo and trackIdToRows (might) have been moved and
     // must not be used afterwards!
 
-    qDebug() << this << "select() took" << time.elapsed().debugMillisWithUnit()
-             << m_rowInfo.size();
+    qDebug() << this << "select() returned" << m_rowInfo.size()
+             << "results in" << time.elapsed().debugMillisWithUnit();
 }
 
 void BaseSqlTableModel::setTable(QString tableName,
