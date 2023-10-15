@@ -157,6 +157,7 @@ void AbletonLink::reinitLeaderParams(double beatDistance, mixxx::Bpm baseBpm, mi
 }
 
 void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
+    Q_UNUSED(bpm)
 }
 
 void AbletonLink::onCallbackStart(int sampleRate,
