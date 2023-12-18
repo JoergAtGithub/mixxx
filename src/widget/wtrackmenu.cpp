@@ -1,10 +1,9 @@
 #include "widget/wtrackmenu.h"
 
-#include <qlist.h>
-
 #include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QInputDialog>
+#include <QList>
 #include <QListWidget>
 #include <QModelIndex>
 #include <QVBoxLayout>
@@ -15,20 +14,20 @@
 #include "control/controlobject.h"
 #include "control/controlproxy.h"
 #include "library/coverartutils.h"
-#include "library/dao/trackdao.h"
 #include "library/dao/trackschema.h"
 #include "library/dlgtagfetcher.h"
 #include "library/dlgtrackinfo.h"
 #include "library/dlgtrackmetadataexport.h"
 #include "library/externaltrackcollection.h"
 #include "library/library.h"
-#include "library/librarytablemodel.h"
 #include "library/trackcollection.h"
 #include "library/trackcollectionmanager.h"
 #include "library/trackmodel.h"
 #include "library/trackmodeliterator.h"
 #include "library/trackprocessing.h"
+#include "library/trackset/crate/crate.h"
 #include "library/trackset/crate/cratefeaturehelper.h"
+#include "library/trackset/crate/cratesummary.h"
 #include "mixer/playermanager.h"
 #include "moc_wtrackmenu.cpp"
 #include "preferences/colorpalettesettings.h"
@@ -43,13 +42,10 @@
 #include "util/widgethelper.h"
 #include "widget/findonwebmenufactory.h"
 #include "widget/wcolorpickeraction.h"
-#include "widget/wcoverartlabel.h"
 #include "widget/wcoverartmenu.h"
 #include "widget/wfindonwebmenu.h"
 #include "widget/wsearchrelatedtracksmenu.h"
-#include "widget/wskincolor.h"
 #include "widget/wstarrating.h"
-#include "widget/wwidget.h"
 
 namespace {
 const QString kAppGroup = QStringLiteral("[App]");
@@ -569,7 +565,7 @@ void WTrackMenu::setupActions() {
         m_pMetadataMenu->addAction(m_pExportMetadataAct);
 
         for (const auto& updateInExternalTrackCollection :
-                qAsConst(m_updateInExternalTrackCollections)) {
+                std::as_const(m_updateInExternalTrackCollections)) {
             m_pMetadataUpdateExternalCollectionsMenu->addAction(
                     updateInExternalTrackCollection.action);
         }
@@ -582,7 +578,7 @@ void WTrackMenu::setupActions() {
                     this,
                     [this] {
                         for (const auto& updateInExternalTrackCollection :
-                                qAsConst(m_updateInExternalTrackCollections)) {
+                                std::as_const(m_updateInExternalTrackCollections)) {
                             updateInExternalTrackCollection.action->setEnabled(
                                     updateInExternalTrackCollection
                                             .externalTrackCollection
@@ -664,23 +660,29 @@ void WTrackMenu::setupActions() {
     }
 }
 
-bool WTrackMenu::isAnyTrackBpmLocked() const {
+std::pair<bool, bool> WTrackMenu::getTrackBpmLockStates() const {
+    bool anyBpmLocked = false;
+    bool anyBpmNotLocked = false;
     if (m_pTrackModel) {
-        const int column =
-                m_pTrackModel->fieldIndex(LIBRARYTABLE_BPM_LOCK);
+        const int column = m_pTrackModel->fieldIndex(LIBRARYTABLE_BPM_LOCK);
         for (const auto& trackIndex : m_trackIndexList) {
-            QModelIndex bpmLockedIndex =
-                    trackIndex.sibling(trackIndex.row(), column);
+            QModelIndex bpmLockedIndex = trackIndex.sibling(trackIndex.row(), column);
             if (bpmLockedIndex.data().toBool()) {
-                return true;
+                anyBpmLocked = true;
+            } else {
+                anyBpmNotLocked = true;
+            }
+            if (anyBpmLocked && anyBpmNotLocked) {
+                break;
             }
         }
     } else {
-        if (m_pTrack && m_pTrack->isBpmLocked()) {
-            return true;
+        if (m_pTrack) {
+            anyBpmLocked = m_pTrack->isBpmLocked();
+            anyBpmNotLocked = !anyBpmLocked;
         }
     }
-    return false;
+    return std::pair<bool, bool>(anyBpmLocked, anyBpmNotLocked);
 }
 
 std::optional<std::optional<mixxx::RgbColor>> WTrackMenu::getCommonTrackColor() const {
@@ -879,13 +881,15 @@ void WTrackMenu::updateMenus() {
 
     if (featureIsEnabled(Feature::Reset) ||
             featureIsEnabled(Feature::BPM)) {
-        const bool anyBpmLocked = isAnyTrackBpmLocked();
+        bool anyBpmLocked;
+        bool anyBpmNotLocked;
+        std::tie(anyBpmLocked, anyBpmNotLocked) = getTrackBpmLockStates();
         if (featureIsEnabled(Feature::Reset)) {
             m_pClearBeatsAction->setEnabled(!anyBpmLocked);
         }
         if (featureIsEnabled(Feature::BPM)) {
             m_pBpmUnlockAction->setEnabled(anyBpmLocked);
-            m_pBpmLockAction->setEnabled(!anyBpmLocked);
+            m_pBpmLockAction->setEnabled(anyBpmNotLocked);
             m_pBpmDoubleAction->setEnabled(!anyBpmLocked);
             m_pBpmHalveAction->setEnabled(!anyBpmLocked);
             m_pBpmTwoThirdsAction->setEnabled(!anyBpmLocked);

@@ -4410,7 +4410,7 @@ var NLMMK3 = (function () {
 	    waveform_zoom: {
 	      group: `[${type}${i}]`,
 	      name: 'waveform_zoom',
-	      type: '1.0 - 6.0'
+	      type: '1.0 - 10.0'
 	    },
 	    waveform_zoom_up: {
 	      group: `[${type}${i}]`,
@@ -4903,7 +4903,7 @@ var NLMMK3 = (function () {
 	  start(interval) {
 	    if (this._state == null) {
 	      const started = Date.now();
-	      const handle = engine.beginTimer(interval, this.task);
+	      const handle = engine.beginTimer(interval, this.task.bind(this));
 	      this._state = {
 	        handle,
 	        started

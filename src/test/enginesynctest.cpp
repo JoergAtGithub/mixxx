@@ -356,8 +356,8 @@ TEST_F(EngineSyncTest, DisableInternalLeaderWhilePlaying) {
     ProcessBuffer();
 
     // This is not allowed, Internal should still be leader.
-    EXPECT_TRUE(isFollower(m_sInternalClockGroup));
-    EXPECT_EQ(0, pButtonLeaderSync->get());
+    EXPECT_TRUE(isSoftLeader(m_sInternalClockGroup));
+    EXPECT_EQ(1, pButtonLeaderSync->get());
 }
 
 TEST_F(EngineSyncTest, DisableSyncOnLeader) {
@@ -372,20 +372,20 @@ TEST_F(EngineSyncTest, DisableSyncOnLeader) {
     mixxx::BeatsPointer pBeats2 = mixxx::Beats::fromConstTempo(
             m_pTrack2->getSampleRate(), mixxx::audio::kStartFramePos, mixxx::Bpm(130));
     m_pTrack2->trySetBeats(pBeats2);
-    // Set deck two to explicit leader.
+    // Set deck two to leader, but this is not allowed because it's stopped.
     auto pButtonSyncLeader2 =
             std::make_unique<ControlProxy>(m_sGroup2, "sync_leader");
     pButtonSyncLeader2->set(1.0);
     ProcessBuffer();
-    EXPECT_TRUE(isFollower(m_sGroup1));
-    EXPECT_TRUE(isExplicitLeader(m_sGroup2));
+    EXPECT_TRUE(isSoftLeader(m_sGroup1));
+    EXPECT_TRUE(isFollower(m_sGroup2));
 
     // Set deck 2 to playing, now it becomes explicit leader.
     ControlObject::getControl(ConfigKey(m_sGroup2, "play"))->set(1.0);
     // The request to become leader is queued, so we have to process a buffer.
     ProcessBuffer();
     EXPECT_TRUE(isFollower(m_sGroup1));
-    EXPECT_TRUE(isExplicitLeader(m_sGroup2));
+    EXPECT_TRUE(isSoftLeader(m_sGroup2));
 
     // Unset enabled on channel2, it should work.
     auto pButtonSyncEnabled2 =
@@ -401,11 +401,13 @@ TEST_F(EngineSyncTest, InternalLeaderSetFollowerSliderMoves) {
     // If internal is leader, and we turn on a follower, the slider should move.
     auto pButtonLeaderSyncInternal = std::make_unique<ControlProxy>(
             m_sInternalClockGroup, "sync_leader");
-    auto pLeaderSyncSlider =
+    auto pInternalClockBpm =
             std::make_unique<ControlProxy>(m_sInternalClockGroup, "bpm");
 
-    pLeaderSyncSlider->set(100.0);
+    pInternalClockBpm->set(100.0);
+    // Request internal clock to become SyncMode::LeaderExplicit
     pButtonLeaderSyncInternal->set(1);
+    EXPECT_TRUE(isExplicitLeader(m_sInternalClockGroup));
 
     // Set the file bpm of channel 1 to 80 bpm.
     mixxx::BeatsPointer pBeats1 = mixxx::Beats::fromConstTempo(
@@ -416,6 +418,9 @@ TEST_F(EngineSyncTest, InternalLeaderSetFollowerSliderMoves) {
             std::make_unique<ControlProxy>(m_sGroup1, "sync_mode");
     pButtonLeaderSync1->set(static_cast<double>(SyncMode::Follower));
     ProcessBuffer();
+
+    EXPECT_TRUE(isFollower(m_sGroup1));
+    EXPECT_TRUE(isExplicitLeader(m_sInternalClockGroup));
 
     EXPECT_DOUBLE_EQ(getRateSliderValue(1.25),
             ControlObject::getControl(ConfigKey(m_sGroup1, "rate"))->get());
@@ -552,7 +557,7 @@ TEST_F(EngineSyncTest, SetExplicitLeaderByLights) {
     ProcessBuffer();
 
     // The sync lock should now be channel 1.
-    EXPECT_TRUE(isExplicitLeader(m_sGroup1));
+    EXPECT_TRUE(isSoftLeader(m_sGroup1));
 
     // Set channel 2 to be follower.
     pButtonSyncEnabled2->set(1);
@@ -566,24 +571,40 @@ TEST_F(EngineSyncTest, SetExplicitLeaderByLights) {
 
     // Now channel 2 should be leader, and channel 1 should be a follower.
     EXPECT_TRUE(isFollower(m_sGroup1));
-    EXPECT_TRUE(isExplicitLeader(m_sGroup2));
+    EXPECT_TRUE(isSoftLeader(m_sGroup2));
 
     // Now back again.
     pButtonSyncLeader1->set(1);
     ProcessBuffer();
 
     // Now channel 1 should be leader, and channel 2 should be a follower.
-    EXPECT_TRUE(isExplicitLeader(m_sGroup1));
+    EXPECT_TRUE(isSoftLeader(m_sGroup1));
     EXPECT_TRUE(isFollower(m_sGroup2));
 
-    // Now set channel 1 to not-leader. The system will choose deck 2 as the next best
-    // option for soft leader
+    // Now set channel 1 to not-leader.
+    // This will choose automatically a Soft Leader, so it chooses the other deck.
     pButtonSyncLeader1->set(0);
     ProcessBuffer();
 
     EXPECT_TRUE(isFollower(m_sInternalClockGroup));
+    EXPECT_TRUE(isFollower(m_sGroup1));
+    EXPECT_TRUE(isSoftLeader(m_sGroup2));
+
+    // Try again without playing
+    pButtonSyncLeader1->set(1);
+    ProcessBuffer();
+
     EXPECT_TRUE(isSoftLeader(m_sGroup1));
     EXPECT_TRUE(isFollower(m_sGroup2));
+
+    ControlObject::set(ConfigKey(m_sGroup1, "play"), 0.0);
+    pButtonSyncLeader1->set(0);
+    ProcessBuffer();
+
+    // Now the m_sGroup2 should be leader because m_sGroup1 can't lead without playing
+    EXPECT_TRUE(isFollower(m_sInternalClockGroup));
+    EXPECT_TRUE(isSoftLeader(m_sGroup2));
+    EXPECT_TRUE(isFollower(m_sGroup1));
 }
 
 TEST_F(EngineSyncTest, SetExplicitLeaderByLightsNoTracks) {
@@ -2377,7 +2398,7 @@ TEST_F(EngineSyncTest, FollowerUserTweakPreservedInLeaderChange) {
     ControlObject::set(ConfigKey(m_sGroup1, "play"), 1.0);
     ControlObject::set(ConfigKey(m_sGroup2, "play"), 1.0);
 
-    EXPECT_TRUE(isExplicitLeader(m_sGroup1));
+    EXPECT_TRUE(isSoftLeader(m_sGroup1));
     EXPECT_TRUE(isFollower(m_sGroup2));
 
     ProcessBuffer();
@@ -2397,7 +2418,7 @@ TEST_F(EngineSyncTest, FollowerUserTweakPreservedInLeaderChange) {
     ControlObject::getControl(ConfigKey(m_sGroup2, "sync_leader"))->set(1);
     ProcessBuffer();
     EXPECT_TRUE(isFollower(m_sGroup1));
-    EXPECT_TRUE(isExplicitLeader(m_sGroup2));
+    EXPECT_TRUE(isSoftLeader(m_sGroup2));
 
     for (int i = 0; i < 10; ++i) {
         ProcessBuffer();
@@ -2430,7 +2451,7 @@ TEST_F(EngineSyncTest, FollowerUserTweakPreservedInSyncDisable) {
     m_pChannel2->getEngineBuffer()
             ->m_pBpmControl->m_dUserOffset.setValue(0.3);
 
-    EXPECT_TRUE(isExplicitLeader(m_sGroup1));
+    EXPECT_TRUE(isSoftLeader(m_sGroup1));
     EXPECT_TRUE(isFollower(m_sGroup2));
 
     ProcessBuffer();
@@ -2461,7 +2482,7 @@ TEST_F(EngineSyncTest, LeaderUserTweakPreservedInLeaderChange) {
     ControlObject::set(ConfigKey(m_sGroup1, "play"), 1.0);
     ControlObject::set(ConfigKey(m_sGroup2, "play"), 1.0);
 
-    EXPECT_TRUE(isExplicitLeader(m_sGroup1));
+    EXPECT_TRUE(isSoftLeader(m_sGroup1));
     EXPECT_TRUE(isFollower(m_sGroup2));
 
     ProcessBuffer();
@@ -2485,7 +2506,7 @@ TEST_F(EngineSyncTest, LeaderUserTweakPreservedInLeaderChange) {
     ControlObject::getControl(ConfigKey(m_sGroup2, "sync_leader"))->set(1);
     ProcessBuffer();
     EXPECT_TRUE(isFollower(m_sGroup1));
-    EXPECT_TRUE(isExplicitLeader(m_sGroup2));
+    EXPECT_TRUE(isSoftLeader(m_sGroup2));
 
     for (int i = 0; i < 10; ++i) {
         ProcessBuffer();

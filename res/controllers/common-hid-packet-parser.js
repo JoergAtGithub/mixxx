@@ -1233,38 +1233,6 @@ class HIDController {
          */
         this.deckSwitchMap = {1: 2, 2: 1, 3: 4, 4: 3, undefined: 1};
 
-        /**
-         * Standard target groups available in mixxx.
-         *
-         * This is used by HID packet parser to recognize group parameters we should try sending to mixxx.
-         * @type {string[]}
-         */
-        this.valid_groups = [
-            "[Channel1]",
-            "[Channel2]",
-            "[Channel3]",
-            "[Channel4]",
-            "[Sampler1]",
-            "[Sampler2]",
-            "[Sampler3]",
-            "[Sampler4]",
-            "[Sampler5]",
-            "[Sampler6]",
-            "[Sampler7]",
-            "[Sampler8]",
-            "[Master]",
-            "[PreviewDeck1]",
-            "[Effects]",
-            "[Playlist]",
-            "[Flanger]",
-            "[Microphone]",
-            "[EffectRack1_EffectUnit1]",
-            "[EffectRack1_EffectUnit2]",
-            "[EffectRack1_EffectUnit3]",
-            "[EffectRack1_EffectUnit4]",
-            "[InternalClock]"
-        ];
-
         //
         /**
          * Set to value in ms to update Outputs periodically
@@ -1357,34 +1325,36 @@ class HIDController {
         return `[Channel${deck}]`;
     }
     /**
-     * Map virtual deck names to real deck group. If group is already
-     * a real mixxx group value, just return it as it without mapping.
-     * @param {string} group Control group name e.g. "[Channel1]"
+     * Map virtual deck names ("deck, "deck1", "deck2") to real deck group. If group is already a
+     * real mixxx group value, just return it as it without mapping.
+     * @param {string} group Control group name e.g. "[Channel1]" or "deck" or "deck1".
      * @returns {string} Channel
      */
     resolveGroup(group) {
-        const channel_name = /\[Channel[0-9]+\]/;
-        if (group !== undefined && group.match(channel_name)) {
-            return group;
-        }
-        if (this.valid_groups.indexOf(group) !== -1) {
-            return group;
-        }
         if (group === "deck" || group === undefined) {
             if (this.activeDeck === undefined) {
                 return undefined;
             }
             return `[Channel${this.activeDeck}]`;
         }
-        if (this.activeDeck === 1 || this.activeDeck === 2) {
-            if (group === "deck1") { return "[Channel1]"; }
-            if (group === "deck2") { return "[Channel2]"; }
+        if (group === "deck1") {
+            if (this.activeDeck === 1 || this.activeDeck === 2) {
+                return "[Channel1]";
+            }
+            if (this.activeDeck === 3 || this.activeDeck === 4) {
+                return "[Channel3]";
+            }
+            return undefined;
+        } else if (group === "deck2") {
+            if (this.activeDeck === 1 || this.activeDeck === 2) {
+                return "[Channel2]";
+            }
+            if (this.activeDeck === 3 || this.activeDeck === 4) {
+                return "[Channel4]";
+            }
+            return undefined;
         }
-        if (this.activeDeck === 3 || this.activeDeck === 4) {
-            if (group === "deck1") { return "[Channel3]"; }
-            if (group === "deck2") { return "[Channel4]"; }
-        }
-        return undefined;
+        return group;
     }
     /**
      * Find Output control matching give group and name
@@ -1741,16 +1711,10 @@ class HIDController {
             return this.resolveGroup(field.mapped_group);
         }
         const group = field.group;
-        if (group === undefined) {
-            if (this.activeDeck !== undefined) {
-                return `[Channel${this.activeDeck}]`;
-            }
+        if (group === "deck" || group === "deck1" || group === "deck2") {
+            return group;
         }
-        if (this.valid_groups.indexOf(group) !== -1) {
-            // console.log(`Resolving group ${group}`);
-            return this.resolveGroup(group);
-        }
-        return group;
+        return this.resolveGroup(group);
     }
     /**
      * Get active control name from field
@@ -2111,9 +2075,12 @@ class HIDController {
                                 continue;
                             }
                             const bitControlGroup = this.resolveGroup(bit.mapped_group);
+                            if (bitControlGroup === undefined) {
+                                console.warn("HIDController.switchDeck: resolvedGroup(bit.mapped_group) returned undefined");
+                            }
                             engine.connectControl(
                                 bitControlGroup, bit.mapped_name, bit.mapped_callback, true);
-                            engine.connectControl(new_group, bit.mapped_name, bit.mapped_callback);
+                            engine.makeConnection(new_group, bit.mapped_name, bit.mapped_callback);
                             const value = engine.getValue(new_group, bit.mapped_name);
                             console.log(`Bit ${bit.group}.${bit.name} value ${value}`);
                             if (value) {
@@ -2134,9 +2101,12 @@ class HIDController {
                         continue;
                     }
                     const fieldControlGroup = this.resolveGroup(field.mapped_group);
+                    if (fieldControlGroup === undefined) {
+                        console.warn("HIDController.switchDeck: resolvedGroup(field.mapped_group) returned undefined");
+                    }
                     engine.connectControl(
                         fieldControlGroup, field.mapped_name, field.mapped_callback, true);
-                    engine.connectControl(new_group, field.mapped_name, field.mapped_callback);
+                    engine.makeConnection(new_group, field.mapped_name, field.mapped_callback);
                     const value = engine.getValue(new_group, field.mapped_name);
                     if (value) {
                         this.setOutput(
@@ -2176,10 +2146,13 @@ class HIDController {
             return;
         }
         const controlgroup = this.resolveGroup(m_group);
+        if (controlgroup === undefined) {
+            console.warn("HIDController.linkOutput: resolvedGroup(m_group) returned undefined");
+        }
         field.mapped_group = m_group;
         field.mapped_name = m_name;
         field.mapped_callback = callback;
-        engine.connectControl(controlgroup, m_name, callback);
+        engine.makeConnection(controlgroup, m_name, callback);
         if (engine.getValue(controlgroup, m_name)) {
             this.setOutput(m_group, m_name, this.LEDColors.on);
         } else {
@@ -2203,6 +2176,9 @@ class HIDController {
             return;
         }
         const controlgroup = this.resolveGroup(field.mapped_group);
+        if (controlgroup === undefined) {
+            console.warn("HIDController.unlinkOutput: resolvedGroup(field.mapped_group) returned undefined");
+        }
         engine.connectControl(controlgroup, field.mapped_name, callback, true);
         field.mapped_group = undefined;
         field.mapped_name = undefined;

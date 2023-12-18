@@ -1,22 +1,17 @@
 #include "engine/controls/bpmcontrol.h"
 
-#include <QStringList>
-
 #include "control/controllinpotmeter.h"
 #include "control/controlobject.h"
 #include "control/controlproxy.h"
 #include "control/controlpushbutton.h"
-#include "engine/channels/enginechannel.h"
+#include "engine/effects/groupfeaturestate.h"
 #include "engine/enginebuffer.h"
-#include "engine/enginemixer.h"
 #include "moc_bpmcontrol.cpp"
 #include "track/beatutils.h"
 #include "track/track.h"
-#include "util/assert.h"
 #include "util/duration.h"
 #include "util/logger.h"
 #include "util/math.h"
-#include "waveform/visualplayposition.h"
 
 namespace {
 const mixxx::Logger kLogger("BpmControl");
@@ -1022,7 +1017,9 @@ mixxx::Bpm BpmControl::updateLocalBpm() {
     const mixxx::BeatsPointer pBeats = m_pBeats;
     const FrameInfo info = frameInfo();
     if (pBeats) {
-        localBpm = pBeats->getBpmAroundPosition(info.currentPosition, kLocalBpmSpan);
+        if (info.currentPosition.isValid() && info.currentPosition != kInitialPlayPosition) {
+            localBpm = pBeats->getBpmAroundPosition(info.currentPosition, kLocalBpmSpan);
+        }
         if (!localBpm.isValid()) {
             localBpm = pBeats->getBpmInRange(mixxx::audio::kStartFramePos, info.trackEndPosition);
         }

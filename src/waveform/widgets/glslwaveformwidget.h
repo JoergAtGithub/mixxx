@@ -2,7 +2,6 @@
 
 #include "waveform/widgets/glwaveformwidgetabstract.h"
 
-class GLSLWaveformRendererSignal;
 
 class GLSLWaveformWidget : public GLWaveformWidgetAbstract {
     Q_OBJECT
@@ -18,7 +17,7 @@ class GLSLWaveformWidget : public GLWaveformWidgetAbstract {
             GlslType type);
     ~GLSLWaveformWidget() override = default;
 
-    void resize(int width, int height) override;
+    void resizeRenderer(int width, int height, float devicePixelRatio) override;
 
   protected:
     void castToQWidget() override;

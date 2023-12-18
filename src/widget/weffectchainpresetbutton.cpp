@@ -3,6 +3,10 @@
 #include <QCheckBox>
 #include <QWidgetAction>
 
+#include "effects/effectparameter.h"
+#include "effects/effectparameterslotbase.h"
+#include "effects/presets/effectchainpreset.h"
+#include "effects/presets/effectpreset.h"
 #include "effects/presets/effectpresetmanager.h"
 #include "moc_weffectchainpresetbutton.cpp"
 #include "util/parented_ptr.h"
@@ -26,8 +30,10 @@ void WEffectChainPresetButton::setup(const QDomNode& node, const SkinContext& co
     m_pChain = EffectWidgetUtils::getEffectChainFromNode(
             node, context, m_pEffectsManager);
     VERIFY_OR_DEBUG_ASSERT(m_pChain) {
-        SKIN_WARNING(node, context)
-                << "EffectChainPresetButton node could not attach to effect chain";
+        SKIN_WARNING(node,
+                context,
+                QStringLiteral("EffectChainPresetButton node could not attach "
+                               "to effect chain"));
         return;
     }
     connect(m_pChain.get(),
@@ -91,6 +97,11 @@ void WEffectChainPresetButton::populateMenu() {
     if (!presetIsReadOnly) {
         m_pMenu->addAction(tr("Update Preset"), this, [this]() {
             m_pChainPresetManager->updatePreset(m_pChain);
+        });
+    }
+    if (!presetIsReadOnly && !m_pChain->presetName().isEmpty()) {
+        m_pMenu->addAction(tr("Rename Preset"), this, [this]() {
+            m_pChainPresetManager->renamePreset(m_pChain->presetName());
         });
     }
     m_pMenu->addAction(tr("Save As New Preset..."), this, [this]() {

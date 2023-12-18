@@ -1,9 +1,9 @@
 #include "controllers/legacycontrollermappingfilehandler.h"
 
-#include "controllers/controllermanager.h"
 #include "controllers/defs_controllers.h"
 #include "controllers/hid/legacyhidcontrollermappingfilehandler.h"
 #include "controllers/midi/legacymidicontrollermappingfilehandler.h"
+#include "util/xml.h"
 
 namespace {
 
@@ -33,6 +33,9 @@ QFileInfo findScriptFile(std::shared_ptr<LegacyControllerMapping> mapping,
 // static
 std::shared_ptr<LegacyControllerMapping> LegacyControllerMappingFileHandler::loadMapping(
         const QFileInfo& mappingFile, const QDir& systemMappingsPath) {
+    if (mappingFile.path().isEmpty()) {
+        return nullptr;
+    }
     if (!mappingFile.exists() || !mappingFile.isReadable()) {
         qDebug() << "Mapping" << mappingFile.absoluteFilePath()
                  << "does not exist or is unreadable.";

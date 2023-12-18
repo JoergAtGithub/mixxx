@@ -1,16 +1,17 @@
 #include "widget/weffectchainpresetselector.h"
 
 #include <QAbstractItemView>
-#include <QPaintEvent>
 #include <QStyleOption>
 #include <QStylePainter>
-#include <QtDebug>
 
 #include "effects/chains/quickeffectchain.h"
 #include "effects/effectsmanager.h"
-#include "library/library_decl.h"
+#include "effects/presets/effectchainpreset.h"
+#include "effects/presets/effectpreset.h"
 #include "moc_weffectchainpresetselector.cpp"
 #include "widget/effectwidgetutils.h"
+
+class QPaintEvent;
 
 WEffectChainPresetSelector::WEffectChainPresetSelector(
         QWidget* pParent, EffectsManager* pEffectsManager)
@@ -31,8 +32,10 @@ void WEffectChainPresetSelector::setup(const QDomNode& node, const SkinContext& 
             node, context, m_pEffectsManager);
 
     VERIFY_OR_DEBUG_ASSERT(m_pChain != nullptr) {
-        SKIN_WARNING(node, context)
-                << "EffectChainPresetSelector node could not attach to EffectChain";
+        SKIN_WARNING(node,
+                context,
+                QStringLiteral("EffectChainPresetSelector node could not "
+                               "attach to EffectChain"));
         return;
     }
 
