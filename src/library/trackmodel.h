@@ -25,7 +25,8 @@ class TrackModel {
             : m_db(db),
               m_settingsNamespace(settingsNamespace),
               m_iDefaultSortColumn(-1),
-              m_eDefaultSortOrder(Qt::AscendingOrder) {
+              m_eDefaultSortOrder(Qt::AscendingOrder),
+              m_confirmHideRemoveTracks(true) {
     }
     virtual ~TrackModel() {}
 
@@ -139,6 +140,16 @@ class TrackModel {
     virtual void removeTracks(const QModelIndexList& indices) {
         Q_UNUSED(indices);
     }
+    virtual void cutTracks(const QModelIndexList& indices) {
+        Q_UNUSED(indices);
+    }
+    virtual void copyTracks(const QModelIndexList& indices) const {
+        Q_UNUSED(indices);
+    }
+    virtual QList<int> pasteTracks(const QModelIndex& index) {
+        Q_UNUSED(index);
+        return QList<int>();
+    }
     virtual void hideTracks(const QModelIndexList& indices) {
         Q_UNUSED(indices);
     }
@@ -151,6 +162,14 @@ class TrackModel {
     virtual int addTracks(const QModelIndex& index, const QList<QString>& locations) {
         Q_UNUSED(index);
         Q_UNUSED(locations);
+        return 0;
+    }
+    virtual int addTracksWithTrackIds(const QModelIndex& index,
+            const QList<TrackId>& tracks,
+            int* pOutInsertionPos) {
+        Q_UNUSED(index);
+        Q_UNUSED(tracks);
+        Q_UNUSED(pOutInsertionPos);
         return 0;
     }
     virtual void moveTrack(const QModelIndex& sourceIndex,
@@ -219,6 +238,13 @@ class TrackModel {
     /// @param baseOnly return only a identifier for the whole subsystem
     virtual QString modelKey(bool noSearch) const = 0;
 
+    virtual bool getRequireConfirmationToHideRemoveTracks() {
+        return m_confirmHideRemoveTracks;
+    }
+    virtual void setRequireConfirmationToHideRemoveTracks(bool require) {
+        m_confirmHideRemoveTracks = require;
+    }
+
     virtual bool updateTrackGenre(
             Track* pTrack,
             const QString& genre) const = 0;
@@ -234,5 +260,6 @@ class TrackModel {
     QList<int> m_emptyColumns;
     int m_iDefaultSortColumn;
     Qt::SortOrder m_eDefaultSortOrder;
+    bool m_confirmHideRemoveTracks;
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(TrackModel::Capabilities)

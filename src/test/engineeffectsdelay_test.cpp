@@ -11,13 +11,18 @@
 
 #include <QTest>
 #include <QtDebug>
-#include <span>
 
 #include "engine/engine.h"
 #include "test/mixxxtest.h"
 #include "util/sample.h"
 #include "util/samplebuffer.h"
+#include "util/span.h"
 #include "util/types.h"
+
+#ifndef GTEST_FLAG_SET
+// Available in GoogleTest v1.12.0.
+#define GTEST_FLAG_SET(name, value) (void)(::testing::GTEST_FLAG(name) = value)
+#endif
 
 namespace {
 

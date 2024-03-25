@@ -2,13 +2,14 @@
 
 #include <QFont>
 #include <QStandardItemModel>
-#include <QWidget>
 #include <memory>
 
 #include "library/library_decl.h"
 #include "preferences/dialog/dlgpreferencepage.h"
 #include "preferences/dialog/ui_dlgpreflibrarydlg.h"
 #include "preferences/usersettings.h"
+
+class QWidget;
 
 class DlgPrefLibrary : public DlgPreferencePage, public Ui::DlgPrefLibraryDlg  {
     Q_OBJECT
@@ -18,6 +19,13 @@ class DlgPrefLibrary : public DlgPreferencePage, public Ui::DlgPrefLibraryDlg  {
         AddToAutoDJBottom = 1,
         AddToAutoDJTop = 2,
         Ignore = 3,
+    };
+
+    enum class CoverArtFetcherQuality {
+        Low = 0,
+        Medium = 1,
+        High = 2,
+        Highest = 3,
     };
 
     DlgPrefLibrary(
@@ -54,11 +62,14 @@ class DlgPrefLibrary : public DlgPreferencePage, public Ui::DlgPrefLibraryDlg  {
     void slotSelectFont();
     void slotSyncTrackMetadataToggled();
     void slotSearchDebouncingTimeoutMillisChanged(int);
+    void slotBpmColumnPrecisionChanged(int bpmPrecision);
     void slotSeratoMetadataExportClicked(bool);
 
   private:
     void initializeDirList();
     void setLibraryFont(const QFont& font);
+    void updateSearchLineEditHistoryOptions();
+    void setSeratoMetadataEnabled(bool shouldSyncTrackMetadata);
 
     QStandardItemModel m_dirListModel;
     UserSettingsPointer m_pConfig;

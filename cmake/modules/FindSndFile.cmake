@@ -1,5 +1,5 @@
 # This file is part of Mixxx, Digital DJ'ing software.
-# Copyright (C) 2001-2023 Mixxx Development Team
+# Copyright (C) 2001-2024 Mixxx Development Team
 # Distributed under the GNU General Public Licence (GPL) version 2 or any later
 # later version. See the LICENSE file for details.
 
@@ -50,24 +50,27 @@ endif()
 
 find_path(SndFile_INCLUDE_DIR
   NAMES sndfile.h
-  PATHS ${PC_SndFile_INCLUDE_DIRS}
+  HINTS ${PC_SndFile_INCLUDE_DIRS}
   PATH_SUFFIXES sndfile
   DOC "SndFile include directory")
 mark_as_advanced(SndFile_INCLUDE_DIR)
 
 find_library(SndFile_LIBRARY
   NAMES sndfile sndfile-1
-  PATHS ${PC_SndFile_LIBRARY_DIRS}
+  HINTS ${PC_SndFile_LIBRARY_DIRS}
   DOC "SndFile library"
 )
 mark_as_advanced(SndFile_LIBRARY)
 
+if(DEFINED PC_SndFile_VERSION AND NOT PC_SndFile_VERSION STREQUAL "")
+  set(SndFile_VERSION "${PC_SndFile_VERSION}")
+endif()
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
   SndFile
-  DEFAULT_MSG
-  SndFile_LIBRARY
-  SndFile_INCLUDE_DIR
+  REQUIRED_VARS SndFile_LIBRARY SndFile_INCLUDE_DIR
+  VERSION_VAR SndFile_VERSION
 )
 
 file(STRINGS "${SndFile_INCLUDE_DIR}/sndfile.h" SndFile_SUPPORTS_SET_COMPRESSION_LEVEL REGEX ".*SFC_SET_COMPRESSION_LEVEL.*")

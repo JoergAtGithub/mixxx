@@ -1,24 +1,27 @@
 #include "widget/weffectparameternamebase.h"
 
 #include <QDrag>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QMimeData>
-#include <QtDebug>
 
+#include "effects/effectknobparameterslot.h"
+#include "effects/effectparameterslotbase.h"
 #include "effects/effectslot.h"
-#include "effects/effectsmanager.h"
+#include "moc_weffectparameternamebase.cpp"
+#include "util/math.h"
 
 namespace {
 const QString kMimeTextDelimiter = QStringLiteral("\n");
-// for rounding the value display to 2 decimals
-constexpr int kValDecimals = 100;
 } // anonymous namespace
 
 WEffectParameterNameBase::WEffectParameterNameBase(
         QWidget* pParent, EffectsManager* pEffectsManager)
         : WLabel(pParent),
           m_pEffectsManager(pEffectsManager),
-          m_text("") {
+          m_widthHint(0) {
     setAcceptDrops(true);
+    setCursor(Qt::OpenHandCursor);
     parameterUpdated();
     // When the parameter value changed it is display briefly.
     // Set up the timer that restores the parameter name.
@@ -48,6 +51,8 @@ void WEffectParameterNameBase::setEffectParameterSlot(
 }
 
 void WEffectParameterNameBase::parameterUpdated() {
+    int valueWidth = 0;
+    QFontMetrics metrics(font());
     if (m_pParameterSlot) {
         if (!m_pParameterSlot->shortName().isEmpty()) {
             m_text = m_pParameterSlot->shortName();
@@ -57,17 +62,54 @@ void WEffectParameterNameBase::parameterUpdated() {
         setBaseTooltip(QString("%1\n%2").arg(
                 m_pParameterSlot->name(),
                 m_pParameterSlot->description()));
+        EffectManifestParameterPointer pManifest = m_pParameterSlot->getManifest();
+        if (!pManifest.isNull()) {
+            m_unitString = m_pParameterSlot->getManifest()->unitString();
+            if (!m_unitString.isEmpty()) {
+                m_unitString.prepend(QChar(' '));
+            }
+            double maxValue = m_pParameterSlot->getManifest()->getMaximum();
+            double minValue = m_pParameterSlot->getManifest()->getMaximum();
+            QString maxValueString = QString::number(maxValue - 0.01) + m_unitString;
+            QString minValueString = QString::number(minValue + 0.01) + m_unitString;
+            valueWidth = math_max(
+                    metrics.size(0, maxValueString).width(),
+                    metrics.size(0, minValueString).width());
+        } else {
+            m_unitString = QString();
+        }
     } else {
+        m_unitString = QString();
         m_text = kNoEffectString;
         setBaseTooltip(tr("No effect loaded."));
     }
+    // frameWidth() is the maximum of the sum of margin, border and padding
+    // width of the left and the right side.
+    m_widthHint = math_max(
+                          valueWidth,
+                          metrics.size(0, m_text).width()) +
+            2 * frameWidth();
     setText(m_text);
+    m_parameterUpdated = true;
 }
 
 void WEffectParameterNameBase::showNewValue(double newValue) {
-    double newValRounded =
-            std::ceil(newValue * kValDecimals) / kValDecimals;
-    setText(QString::number(newValRounded));
+    // Don't show the value for a newly loaded parameter. 'valueChanged' is emitted
+    // if this parameter is linked to the Meta knob
+    if (m_parameterUpdated) {
+        m_parameterUpdated = false;
+        return;
+    }
+    int absVal = abs(static_cast<int>(round(newValue)));
+    int tenPowDecimals = 1; // omit decimals
+    if (absVal < 100) {     // 0-99: round to 2 decimals
+        tenPowDecimals = 100;
+    } else if (absVal < 1000) { // 100-999: round to 1 decimal
+        tenPowDecimals = 10;
+    }
+    double dispVal = round(newValue * tenPowDecimals) / tenPowDecimals;
+
+    setText(QString::number(dispVal) + m_unitString);
     m_displayNameResetTimer.start();
 }
 
@@ -124,4 +166,11 @@ const QString WEffectParameterNameBase::mimeTextIdentifier() const {
     return QStringLiteral("Mixxx effect parameter ") +
             QString::number(
                     static_cast<int>(m_pParameterSlot->parameterType()));
+}
+
+QSize WEffectParameterNameBase::sizeHint() const {
+    // make sure the sizeHint is not changing because of the label or value string
+    QSize size = WLabel::sizeHint();
+    size.setWidth(m_widthHint);
+    return size;
 }

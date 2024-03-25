@@ -1,11 +1,10 @@
 #include "widget/wcoverartlabel.h"
 
-#include <QtDebug>
+#include <QContextMenuEvent>
 
 #include "library/coverartutils.h"
 #include "library/dlgcoverartfullsize.h"
 #include "moc_wcoverartlabel.cpp"
-#include "track/track.h"
 #include "widget/wcoverartmenu.h"
 
 namespace {
@@ -84,6 +83,10 @@ void WCoverArtLabel::loadTrack(TrackPointer pTrack) {
     m_pLoadedTrack = pTrack;
 }
 
+void WCoverArtLabel::loadData(const QByteArray& data) {
+    m_Data = data;
+}
+
 void WCoverArtLabel::mousePressEvent(QMouseEvent* event) {
     if (m_pCoverMenu != nullptr && m_pCoverMenu->isVisible()) {
         return;
@@ -92,8 +95,14 @@ void WCoverArtLabel::mousePressEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton) {
         if (m_pDlgFullSize->isVisible()) {
             m_pDlgFullSize->close();
-        } else if (!m_loadedCover.isNull()) {
-            m_pDlgFullSize->init(m_pLoadedTrack);
+        } else {
+            if (m_loadedCover.isNull()) {
+                return;
+            } else if (!m_pLoadedTrack && !m_Data.isNull()) {
+                m_pDlgFullSize->initFetchedCoverArt(m_Data);
+            } else {
+                m_pDlgFullSize->init(m_pLoadedTrack);
+            }
         }
     }
 }

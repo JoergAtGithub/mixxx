@@ -1,11 +1,6 @@
 #pragma once
 
-#include <QObject>
-#include <QScopedPointer>
-#include <QString>
-
 #include "engine/channels/enginechannel.h"
-#include "engine/channels/enginedeck.h"
 #include "mixer/baseplayer.h"
 #include "preferences/usersettings.h"
 #include "track/replaygain.h"
@@ -14,12 +9,16 @@
 #include "util/color/rgbcolor.h"
 #include "util/memory.h"
 #include "util/parented_ptr.h"
+#include "util/performancetimer.h"
 
-class EngineMaster;
+class EngineMixer;
 class ControlObject;
-class ControlPotmeter;
 class ControlProxy;
 class EffectsManager;
+class QString;
+class EngineDeck;
+
+constexpr int kUnreplaceDelay = 500;
 
 // Interface for not leaking implementation details of BaseTrackPlayer into the
 // rest of Mixxx. Also makes testing a lot easier.
@@ -38,12 +37,18 @@ class BaseTrackPlayer : public BasePlayer {
 
     virtual TrackPointer getLoadedTrack() const = 0;
     virtual void setupEqControls() = 0;
+    virtual bool isTrackMenuControlAvailable() {
+        return false;
+    };
+    virtual void ensureStarControlsArePrepared(){};
 
   public slots:
     virtual void slotLoadTrack(TrackPointer pTrack, bool bPlay = false) = 0;
     virtual void slotCloneFromGroup(const QString& group) = 0;
     virtual void slotCloneDeck() = 0;
     virtual void slotEjectTrack(double) = 0;
+    virtual void slotSetTrackRating(int){};
+    virtual void slotSetAndConfirmTrackMenuControl(bool){};
 
   signals:
     void newTrackLoaded(TrackPointer pLoadedTrack);
@@ -51,6 +56,9 @@ class BaseTrackPlayer : public BasePlayer {
     void loadingTrack(TrackPointer pNewTrack, TrackPointer pOldTrack);
     void playerEmpty();
     void noVinylControlInputConfigured();
+    void trackRatingChanged(int rating);
+    void trackMenuChangeRequest(bool show);
+    void trackRatingChangeRequest(int change);
 };
 
 class BaseTrackPlayerImpl : public BaseTrackPlayer {
@@ -58,24 +66,35 @@ class BaseTrackPlayerImpl : public BaseTrackPlayer {
   public:
     BaseTrackPlayerImpl(PlayerManager* pParent,
             UserSettingsPointer pConfig,
-            EngineMaster* pMixingEngine,
+            EngineMixer* pMixingEngine,
             EffectsManager* pEffectsManager,
             EngineChannel::ChannelOrientation defaultOrientation,
             const ChannelHandleAndGroup& handleGroup,
-            bool defaultMaster,
+            bool defaultMainMix,
             bool defaultHeadphones,
             bool primaryDeck);
     ~BaseTrackPlayerImpl() override;
 
     TrackPointer getLoadedTrack() const final;
 
-    // TODO(XXX): Only exposed to let the passthrough AudioInput get
-    // connected. Delete me when EngineMaster supports AudioInput assigning.
+    /// TODO(XXX): Only exposed to let the passthrough AudioInput get
+    /// connected. Delete me when EngineMixer supports AudioInput assigning.
     EngineDeck* getEngineDeck() const;
 
     void setupEqControls() final;
 
-    // For testing, loads a fake track.
+    /// Returns true if PushButton has been created and no slot is currently
+    /// connected to trackMenuChangeRequest().
+    /// PushButtons persist skin reload, connected widgets don't, i.e. the
+    /// connection is removed on skin reload and available again afterwards.
+    bool isTrackMenuControlAvailable() final;
+
+    /// Controls to change the star rating.
+    /// Created on request only, because we need them only when there is
+    /// a star rating widget for this player.
+    void ensureStarControlsArePrepared() final;
+
+    /// For testing, loads a fake track.
     TrackPointer loadFakeTrack(bool bPlay, double filebpm);
 
   public slots:
@@ -86,16 +105,22 @@ class BaseTrackPlayerImpl : public BaseTrackPlayer {
     void slotTrackLoaded(TrackPointer pNewTrack, TrackPointer pOldTrack);
     void slotLoadFailed(TrackPointer pTrack, const QString& reason);
     void slotSetReplayGain(mixxx::ReplayGain replayGain);
-    // When the replaygain is adjusted, we modify the track pregain
-    // to compensate so there is no audible change in volume.
+    /// When the replaygain is adjusted, we modify the track pregain
+    /// to compensate so there is no audible change in volume.
     void slotAdjustReplayGain(mixxx::ReplayGain replayGain);
     void slotSetTrackColor(const mixxx::RgbColor::optional_t& color);
+    void slotSetTrackRating(int rating) final;
+    /// Called via signal from WTrackProperty. Just set and confirm as requested.
+    void slotSetAndConfirmTrackMenuControl(bool visible) final;
     void slotPlayToggled(double);
 
   private slots:
     void slotCloneChannel(EngineChannel* pChannel);
     void slotCloneFromDeck(double deck);
     void slotCloneFromSampler(double sampler);
+    void loadTrackFromGroup(const QString& group);
+    void slotLoadTrackFromDeck(double deck);
+    void slotLoadTrackFromSampler(double sampler);
     void slotTrackColorChangeRequest(double value);
     void slotVinylControlEnabled(double v);
     void slotWaveformZoomValueChangeRequest(double pressed);
@@ -116,18 +141,24 @@ class BaseTrackPlayerImpl : public BaseTrackPlayer {
     void disconnectLoadedTrack();
 
     UserSettingsPointer m_pConfig;
-    EngineMaster* m_pEngineMaster;
+    EngineMixer* m_pEngineMixer;
     TrackPointer m_pLoadedTrack;
     TrackId m_pPrevFailedTrackId;
     EngineDeck* m_pChannel;
     bool m_replaygainPending;
     EngineChannel* m_pChannelToCloneFrom;
 
+    PerformanceTimer m_ejectTimer;
+
     std::unique_ptr<ControlPushButton> m_pEject;
 
     // Deck clone control
     std::unique_ptr<ControlObject> m_pCloneFromDeck;
     std::unique_ptr<ControlObject> m_pCloneFromSampler;
+
+    // Load track from other deck/sampler
+    std::unique_ptr<ControlObject> m_pLoadTrackFromDeck;
+    std::unique_ptr<ControlObject> m_pLoadTrackFromSampler;
 
     // Track color control
     std::unique_ptr<ControlObject> m_pTrackColor;
@@ -145,13 +176,24 @@ class BaseTrackPlayerImpl : public BaseTrackPlayer {
     // TODO() these COs are reconnected during runtime
     // This may lock the engine
     std::unique_ptr<ControlObject> m_pFileBPM;
+    std::unique_ptr<ControlObject> m_pVisualBpm;
     parented_ptr<ControlProxy> m_pKey;
+    std::unique_ptr<ControlObject> m_pVisualKey;
+
+    std::unique_ptr<ControlObject> m_pTimeElapsed;
+    std::unique_ptr<ControlObject> m_pTimeRemaining;
+    std::unique_ptr<ControlObject> m_pEndOfTrack;
 
     std::unique_ptr<ControlPushButton> m_pShiftCuesEarlier;
     std::unique_ptr<ControlPushButton> m_pShiftCuesEarlierSmall;
     std::unique_ptr<ControlPushButton> m_pShiftCuesLater;
     std::unique_ptr<ControlPushButton> m_pShiftCuesLaterSmall;
     std::unique_ptr<ControlObject> m_pShiftCues;
+
+    std::unique_ptr<ControlPushButton> m_pShowTrackMenuControl;
+
+    std::unique_ptr<ControlPushButton> m_pStarsUp;
+    std::unique_ptr<ControlPushButton> m_pStarsDown;
 
     std::unique_ptr<ControlObject> m_pUpdateReplayGainFromPregain;
 

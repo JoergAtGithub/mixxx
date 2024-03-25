@@ -1,42 +1,27 @@
 #include "widget/wtrackproperty.h"
 
+#include <QApplication>
 #include <QDebug>
 #include <QUrl>
 
-#include "control/controlobject.h"
+#include "control/controlpushbutton.h"
 #include "moc_wtrackproperty.cpp"
+#include "skin/legacy/skincontext.h"
 #include "track/track.h"
 #include "util/dnd.h"
 #include "widget/wtrackmenu.h"
-
-namespace {
-constexpr WTrackMenu::Features kTrackMenuFeatures =
-        WTrackMenu::Feature::SearchRelated |
-        WTrackMenu::Feature::Playlist |
-        WTrackMenu::Feature::Crate |
-        WTrackMenu::Feature::Metadata |
-        WTrackMenu::Feature::Reset |
-        WTrackMenu::Feature::Analyze |
-        WTrackMenu::Feature::BPM |
-        WTrackMenu::Feature::Color |
-        WTrackMenu::Feature::RemoveFromDisk |
-        WTrackMenu::Feature::FileBrowser |
-        WTrackMenu::Feature::Properties |
-        WTrackMenu::Feature::UpdateReplayGainFromPregain |
-        WTrackMenu::Feature::FindOnWeb |
-        WTrackMenu::Feature::SelectInLibrary;
-} // namespace
 
 WTrackProperty::WTrackProperty(
         QWidget* pParent,
         UserSettingsPointer pConfig,
         Library* pLibrary,
-        const QString& group)
+        const QString& group,
+        bool isMainDeck)
         : WLabel(pParent),
           m_group(group),
           m_pConfig(pConfig),
-          m_pTrackMenu(make_parented<WTrackMenu>(
-                  this, pConfig, pLibrary, kTrackMenuFeatures)) {
+          m_pLibrary(pLibrary),
+          m_isMainDeck(isMainDeck) {
     setAcceptDrops(true);
 }
 
@@ -47,12 +32,17 @@ WTrackProperty::~WTrackProperty() {
 void WTrackProperty::setup(const QDomNode& node, const SkinContext& context) {
     WLabel::setup(node, context);
 
-    m_property = context.selectString(node, "Property");
+    QString property = context.selectString(node, "Property");
+    if (property.isEmpty()) {
+        return;
+    }
 
     // Check if property with that name exists in Track class
-    if (Track::staticMetaObject.indexOfProperty(m_property.toUtf8().constData()) == -1) {
-        qWarning() << "WTrackProperty: Unknown track property:" << m_property;
+    if (Track::staticMetaObject.indexOfProperty(property.toUtf8().constData()) == -1) {
+        qWarning() << "WTrackProperty: Unknown track property:" << property;
+        return;
     }
+    m_property = property;
 }
 
 void WTrackProperty::slotTrackLoaded(TrackPointer pTrack) {
@@ -84,7 +74,11 @@ void WTrackProperty::slotTrackChanged(TrackId trackId) {
 
 void WTrackProperty::updateLabel() {
     if (m_pCurrentTrack) {
-        QVariant property = m_pCurrentTrack->property(m_property.toUtf8().constData());
+        if (m_property.isEmpty()) {
+            return;
+        }
+        QVariant property =
+                m_pCurrentTrack->property(m_property.toUtf8().constData());
         if (property.isValid() && property.canConvert<QString>()) {
             setText(property.toString());
             return;
@@ -101,10 +95,12 @@ void WTrackProperty::mouseMoveEvent(QMouseEvent* event) {
 
 void WTrackProperty::mouseDoubleClickEvent(QMouseEvent* event) {
     Q_UNUSED(event);
-    if (m_pCurrentTrack) {
-        m_pTrackMenu->loadTrack(m_pCurrentTrack, m_group);
-        m_pTrackMenu->slotShowDlgTrackInfo();
+    if (!m_pCurrentTrack) {
+        return;
     }
+    ensureTrackMenuIsCreated();
+    m_pTrackMenu->loadTrack(m_pCurrentTrack, m_group);
+    m_pTrackMenu->showDlgTrackInfo(m_property);
 }
 
 void WTrackProperty::dragEnterEvent(QDragEnterEvent* event) {
@@ -118,8 +114,88 @@ void WTrackProperty::dropEvent(QDropEvent* event) {
 void WTrackProperty::contextMenuEvent(QContextMenuEvent* event) {
     event->accept();
     if (m_pCurrentTrack) {
+        ensureTrackMenuIsCreated();
         m_pTrackMenu->loadTrack(m_pCurrentTrack, m_group);
-        // Create the right-click menu
+        // Show the right-click menu
         m_pTrackMenu->popup(event->globalPos());
     }
+}
+
+void WTrackProperty::ensureTrackMenuIsCreated() {
+    if (m_pTrackMenu.get() != nullptr) {
+        return;
+    }
+
+    m_pTrackMenu = make_parented<WTrackMenu>(
+            this, m_pConfig, m_pLibrary, WTrackMenu::kDeckTrackMenuFeatures);
+
+    // The show control exists only for main decks.
+    if (!m_isMainDeck) {
+        return;
+    }
+    // When a track menu for this deck is shown/hidden via contextMenuEvent
+    // or pushbutton, it emits trackMenuVisible(bool).
+    // The pushbutton is created in BaseTrackPlayer which, on value change requests,
+    // also emits a signal which is connected to our slotShowTrackMenuChangeRequest().
+    connect(m_pTrackMenu,
+            &WTrackMenu::trackMenuVisible,
+            this,
+            [this](bool visible) {
+                ControlObject::set(ConfigKey(m_group, kShowTrackMenuKey),
+                        visible ? 1.0 : 0.0);
+            });
+}
+
+/// This slot handles show/hide requests originating from both pushbutton changes
+/// and WTrackMenu's show/hide signals.
+/// If the request matches the menu state we only set the control value accordingly.
+/// Otherwise, we show/hide the menu as requested. This will result in another
+/// change request originating from the menu, then it's a match and we setAndConfirm()
+void WTrackProperty::slotShowTrackMenuChangeRequest(bool show) {
+    // Ignore no-op
+    if ((ControlObject::get(ConfigKey(m_group, kShowTrackMenuKey)) > 0) == show) {
+        return;
+    }
+
+    // Check for any open track menu.
+    // If this is a show request, hide all other menus (decks and library).
+    // Assumes there can only be one visible menu per deck
+    bool confirmShow = false;
+    const QWidgetList topLevelWidgets = QApplication::topLevelWidgets();
+    for (QWidget* pWidget : topLevelWidgets) {
+        // Ignore other popups and hidden track menus
+        WTrackMenu* pTrackMenu = qobject_cast<WTrackMenu*>(pWidget);
+        if (pTrackMenu && pTrackMenu->isVisible()) {
+            if (show) {
+                if (pTrackMenu->getDeckGroup() == m_group) {
+                    // Don't return, yet, maybe we still need to hide other menus.
+                    confirmShow = true;
+                } else {
+                    // Hide other menus
+                    pTrackMenu->close();
+                }
+            } else if (pTrackMenu->getDeckGroup() == m_group) {
+                // Hide this deck's menu, ignore other menus
+                pTrackMenu->close();
+                return;
+            }
+        }
+    }
+
+    // If we reach this, this is either a hide request but no menu was found for
+    // this deck, or this is a show request and we've found an open menu.
+    if (!show || confirmShow) {
+        emit setAndConfirmTrackMenuControl(show);
+        return;
+    }
+
+    // This is a show request and there was no open menu found for this deck.
+    // Pop up menu as if we right-clicked at the center of this widget
+    // Note: this widget may be hidden so the position may be unexpected,
+    // though this is okay as long as all variants of deckN are on the same
+    // side of the mixer.
+    QContextMenuEvent event(QContextMenuEvent::Mouse,
+            QPoint(),
+            mapToGlobal(rect().center()));
+    contextMenuEvent(&event);
 }

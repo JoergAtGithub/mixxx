@@ -153,7 +153,7 @@
      </property>
      <layout class="QGridLayout" name="gridLayout_track_table_view">
 
-      <item row="1" column="0" colspan="2">
+      <item row="1" column="0" colspan="3">
        <widget class="QCheckBox" name="checkBoxEditMetadataSelectedClicked">
         <property name="text">
          <string>Edit metadata after clicking selected track</string>
@@ -161,7 +161,7 @@
        </widget>
       </item>
 
-      <item row="2" column="0">
+      <item row="2" column="0" colspan="3">
        <widget class="QLabel" name="doubeClickActionLabel">
         <property name="text">
          <string>Track Double-Click Action:</string>
@@ -172,7 +172,7 @@
        </widget>
       </item>
 
-      <item row="3" column="0">
+      <item row="3" column="0" colspan="3">
        <widget class="QRadioButton" name="radioButton_dbclick_deck">
         <property name="text">
          <string>Load track to next available deck</string>
@@ -182,24 +182,47 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
+      <item row="4" column="0" colspan="3">
        <widget class="QRadioButton" name="radioButton_dbclick_bottom">
         <property name="text">
          <string>Add track to Auto DJ queue (bottom)</string>
         </property>
        </widget>
       </item>
-      <item row="5" column="0">
+      <item row="5" column="0" colspan="3">
        <widget class="QRadioButton" name="radioButton_dbclick_top">
         <property name="text">
          <string>Add track to Auto DJ queue (top)</string>
         </property>
        </widget>
       </item>
-      <item row="6" column="0">
+      <item row="6" column="0" colspan="3">
        <widget class="QRadioButton" name="radioButton_dbclick_ignore">
         <property name="text">
          <string>Ignore</string>
+        </property>
+       </widget>
+      </item>
+
+      <item row="7" column="0">
+       <widget class="QLabel" name="label_bpm_precision">
+        <property name="text">
+         <string>BPM display precision:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeft|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1" colspan="2">
+       <widget class="QSpinBox" name="spinbox_bpm_precision">
+       </widget>
+      </item>
+
+      <item row="8" column="0" colspan="3">
+       <widget class="QCheckBox" name="checkbox_played_track_color">
+        <property name="text">
+         <string>Grey out played tracks</string>
         </property>
        </widget>
       </item>
@@ -215,7 +238,7 @@
      </property>
      <layout class="QGridLayout" name="gridLayout_history">
 
-      <item row="1" column="0" colspan="2">
+      <item row="1" column="0">
        <widget class="QLabel" name="label_history_track_duplicate_distance">
         <property name="text">
          <string>Track duplicate distance</string>
@@ -228,7 +251,7 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="2">
+      <item row="1" column="1" colspan="2">
        <widget class="QSpinBox" name="spinbox_history_track_duplicate_distance">
         <property name="toolTip">
          <string>When playing a track again log it to the session history only if more than N other tracks have been played in the meantime</string>
@@ -245,7 +268,7 @@
        </widget>
       </item>
 
-      <item row="2" column="0" colspan="2">
+      <item row="2" column="0">
        <widget class="QLabel" name="label_history_cleanup">
         <property name="toolTip">
          <string>History playlist with less than N tracks will be deleted&lt;br/&gt;&lt;br/&gt;Note: the cleanup will be performed during startup and shutdown of Mixxx.</string>
@@ -258,7 +281,7 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="2">
+      <item row="2" column="1" colspan="2">
        <widget class="QSpinBox" name="spinbox_history_min_tracks_to_keep">
         <property name="minimum">
          <number>1</number>
@@ -297,7 +320,7 @@
          <string>Library Row Height:</string>
         </property>
         <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         <set>Qt::AlignLeft|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
@@ -324,7 +347,7 @@
          <string>Library Font:</string>
         </property>
         <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         <set>Qt::AlignLeft|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
@@ -349,7 +372,7 @@
          <string>Search-as-you-type timeout:</string>
         </property>
         <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         <set>Qt::AlignLeft|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
@@ -357,6 +380,21 @@
        <widget class="QSpinBox" name="searchDebouncingTimeoutSpinBox">
         <property name="suffix">
          <string> ms</string>
+        </property>
+       </widget>
+      </item>
+
+      <item row="4" column="0" colspan="3">
+       <widget class="QCheckBox" name="checkBoxEnableSearchCompletions">
+        <property name="text">
+         <string>Enable search completions</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0" colspan="3">
+       <widget class="QCheckBox" name="checkBoxEnableSearchHistoryShortcuts">
+        <property name="text">
+         <string>Enable search history keyboard shortcuts</string>
         </property>
        </widget>
       </item>
@@ -439,12 +477,84 @@
         <property name="topMargin">
          <number>10</number>
         </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
        </widget>
       </item>
       <item row="7" column="0">
-       <widget class="QLabel" name="label_10">
+       <widget class="QLabel" name="label_11">
         <property name="text">
          <string>You will need to restart Mixxx for these settings to take effect.</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+
+   <item>
+    <widget class="QGroupBox" name="groupBox_cover_art_fetcher">
+     <property name="title">
+      <string>Preferred Cover Art Fetcher Resolution</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_cover_art_fetcher">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_12">
+        <property name="text">
+         <string>Fetch cover art from coverartarchive.com by using Import Metadata From Musicbrainz.</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_13">
+        <property name="text">
+         <string>Note: ">1200 px" can fetch up to very large cover arts.</string>
+        </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QRadioButton" name="radioButton_cover_art_fetcher_highest">
+        <property name="text">
+         <string>>1200 px (if available)</string>
+        </property>
+        <property name="checked">
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QRadioButton" name="radioButton_cover_art_fetcher_high">
+        <property name="text">
+         <string>1200 px (if available)</string>
+        </property>
+        <property name="checked">
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QRadioButton" name="radioButton_cover_art_fetcher_medium">
+        <property name="text">
+         <string>500 px</string>
+        </property>
+        <property name="checked">
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QRadioButton" name="radioButton_cover_art_fetcher_lowest">
+        <property name="text">
+         <string>250 px</string>
+        </property>
+        <property name="checked">
         </property>
        </widget>
       </item>
@@ -533,6 +643,8 @@
   <tabstop>radioButton_dbclick_bottom</tabstop>
   <tabstop>radioButton_dbclick_top</tabstop>
   <tabstop>radioButton_dbclick_ignore</tabstop>
+  <tabstop>spinbox_bpm_precision</tabstop>
+  <tabstop>checkbox_played_track_color</tabstop>
   <tabstop>spinbox_history_track_duplicate_distance</tabstop>
   <tabstop>spinbox_history_min_tracks_to_keep</tabstop>
   <tabstop>checkBox_use_relative_path</tabstop>
@@ -540,12 +652,18 @@
   <tabstop>libraryFont</tabstop>
   <tabstop>libraryFontButton</tabstop>
   <tabstop>searchDebouncingTimeoutSpinBox</tabstop>
+  <tabstop>checkBoxEnableSearchCompletions</tabstop>
+  <tabstop>checkBoxEnableSearchHistoryShortcuts</tabstop>
   <tabstop>checkBox_show_rhythmbox</tabstop>
   <tabstop>checkBox_show_banshee</tabstop>
   <tabstop>checkBox_show_itunes</tabstop>
   <tabstop>checkBox_show_traktor</tabstop>
   <tabstop>checkBox_show_rekordbox</tabstop>
   <tabstop>checkBox_show_serato</tabstop>
+  <tabstop>radioButton_cover_art_fetcher_highest</tabstop>
+  <tabstop>radioButton_cover_art_fetcher_high</tabstop>
+  <tabstop>radioButton_cover_art_fetcher_medium</tabstop>
+  <tabstop>radioButton_cover_art_fetcher_lowest</tabstop>
   <tabstop>PushButtonOpenSettingsDir</tabstop>
  </tabstops>
  <resources/>

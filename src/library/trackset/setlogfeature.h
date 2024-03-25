@@ -1,13 +1,12 @@
 #pragma once
 
-#include <QAction>
 #include <QPointer>
-#include <QSqlTableModel>
 
 #include "library/trackset/baseplaylistfeature.h"
 #include "preferences/usersettings.h"
 
 class Library;
+class QAction;
 
 class SetlogFeature : public BasePlaylistFeature {
     Q_OBJECT
@@ -27,8 +26,13 @@ class SetlogFeature : public BasePlaylistFeature {
     void onRightClick(const QPoint& globalPos) override;
     void onRightClickChild(const QPoint& globalPos, const QModelIndex& index) override;
     void slotJoinWithPrevious();
+    void slotMarkAllTracksPlayed();
+    void slotLockAllChildPlaylists();
+    void slotUnlockAllChildPlaylists();
+    void slotDeletePlaylist() override;
     void slotGetNewPlaylist();
     void activate() override;
+    void activateChild(const QModelIndex& index) override;
 
   protected:
     QModelIndex constructChildModel(int selectedId);
@@ -38,19 +42,25 @@ class SetlogFeature : public BasePlaylistFeature {
   private slots:
     void slotPlayingTrackChanged(TrackPointer currentPlayingTrack);
     void slotPlaylistTableChanged(int playlistId) override;
-    void slotPlaylistContentChanged(QSet<int> playlistIds) override;
+    void slotPlaylistContentOrLockChanged(const QSet<int>& playlistIds) override;
     void slotPlaylistTableRenamed(int playlistId, const QString& newName) override;
+    void slotDeleteAllUnlockedChildPlaylists();
 
   private:
     void deleteAllUnlockedPlaylistsWithFewerTracks();
-    void reloadChildModel(int playlistId);
+    void lockOrUnlockAllChildPlaylists(bool lock);
     QString getRootViewHtml() const override;
 
     std::list<TrackId> m_recentTracks;
     QAction* m_pJoinWithPreviousAction;
+    QAction* m_pMarkTracksPlayedAction;
     QAction* m_pStartNewPlaylist;
-    int m_playlistId;
-    QPointer<WLibrary> m_libraryWidget;
+    QAction* m_pLockAllChildPlaylists;
+    QAction* m_pUnlockAllChildPlaylists;
+    QAction* m_pDeleteAllChildPlaylists;
+
+    int m_currentPlaylistId;
+    int m_yearNodeId;
     Library* m_pLibrary;
     UserSettingsPointer m_pConfig;
 };

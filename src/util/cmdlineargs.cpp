@@ -11,6 +11,7 @@
 #include <QCoreApplication>
 #include <QProcessEnvironment>
 #include <QStandardPaths>
+#include <QtGlobal>
 
 #include "config.h"
 #include "defs_urls.h"
@@ -20,9 +21,11 @@
 CmdlineArgs::CmdlineArgs()
         : m_startInFullscreen(false), // Initialize vars
           m_controllerDebug(false),
+          m_controllerAbortOnWarning(false),
           m_developer(false),
           m_safeMode(false),
-          m_useVuMeterGL(true),
+          m_useLegacyVuMeter(false),
+          m_useLegacySpinny(false),
           m_debugAssertBreak(false),
           m_settingsPathSet(false),
           m_scaleFactor(1.0),
@@ -30,20 +33,36 @@ CmdlineArgs::CmdlineArgs()
           m_parseForUserFeedbackRequired(false),
           m_logLevel(mixxx::kLogLevelDefault),
           m_logFlushLevel(mixxx::kLogFlushLevelDefault),
-// We are not ready to switch to XDG folders under Linux, so keeping $HOME/.mixxx as preferences folder. see lp:1463273
+// We are not ready to switch to XDG folders under Linux, so keeping $HOME/.mixxx as preferences folder. see #8090
 #ifdef MIXXX_SETTINGS_PATH
-          m_settingsPath(QDir::homePath().append("/").append(MIXXX_SETTINGS_PATH)) {
-#else
-#ifdef __LINUX__
+          m_settingsPath(QDir::homePath().append("/").append(MIXXX_SETTINGS_PATH))
+#elif defined(__LINUX__)
 #error "We are not ready to switch to XDG folders under Linux"
-#endif
+#elif defined(Q_OS_IOS)
+          // On iOS we intentionally use a user-accessible subdirectory of the sandbox
+          // documents directory rather than the default app data directory. Specifically
+          // we use
+          //
+          //     <sandbox home>/Documents/Library/Application Support/Mixxx
+          //
+          // instead of the default (and hidden)
+          //
+          //     <sandbox home>/Library/Application Support/Mixxx
+          //
+          // This lets the user back up their mixxxdb, add custom controller mappings,
+          // potentially diagnose issues by accessing logs etc. via the native iOS files app.
+          m_settingsPath(
+                  QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+                          .append("/Library/Application Support/Mixxx"))
+#else
 
           // TODO(XXX) Trailing slash not needed anymore as we switches from String::append
           // to QDir::filePath elsewhere in the code. This is candidate for removal.
           m_settingsPath(
                   QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)
-                          .append("/")) {
+                          .append("/"))
 #endif
+{
 }
 
 namespace {
@@ -171,15 +190,17 @@ bool CmdlineArgs::parse(const QStringList& arguments, CmdlineArgs::ParseMode mod
     parser.addOption(timelinePath);
     parser.addOption(timelinePathDeprecated);
 
-    const QCommandLineOption disableVuMeterGL(QStringLiteral("disable-vumetergl"),
+    const QCommandLineOption enableLegacyVuMeter(QStringLiteral("enable-legacy-vumeter"),
             forUserFeedback ? QCoreApplication::translate("CmdlineArgs",
-                                      "Do not use OpenGL vu meter")
+                                      "Use legacy vu meter")
                             : QString());
-    QCommandLineOption disableVuMeterGLDeprecated(
-            QStringLiteral("disableVuMeterGL"), disableVuMeterGL.description());
-    disableVuMeterGLDeprecated.setFlags(QCommandLineOption::HiddenFromHelp);
-    parser.addOption(disableVuMeterGL);
-    parser.addOption(disableVuMeterGLDeprecated);
+    parser.addOption(enableLegacyVuMeter);
+
+    const QCommandLineOption enableLegacySpinny(QStringLiteral("enable-legacy-spinny"),
+            forUserFeedback ? QCoreApplication::translate("CmdlineArgs",
+                                      "Use legacy spinny")
+                            : QString());
+    parser.addOption(enableLegacySpinny);
 
     const QCommandLineOption controllerDebug(QStringLiteral("controller-debug"),
             forUserFeedback ? QCoreApplication::translate("CmdlineArgs",
@@ -193,6 +214,17 @@ bool CmdlineArgs::parse(const QStringList& arguments, CmdlineArgs::ParseMode mod
     parser.addOption(controllerDebug);
     parser.addOption(controllerDebugDeprecated);
 
+    const QCommandLineOption controllerAbortOnWarning(
+            QStringLiteral("controller-abort-on-warning"),
+            forUserFeedback ? QCoreApplication::translate("CmdlineArgs",
+                                      "The controller mapping will issue more "
+                                      "aggressive warnings and errors when "
+                                      "detecting misuse of controller APIs. "
+                                      "New Controller Mappings should be "
+                                      "developed with this option enabled!")
+                            : QString());
+    parser.addOption(controllerAbortOnWarning);
+
     const QCommandLineOption developer(QStringLiteral("developer"),
             forUserFeedback ? QCoreApplication::translate("CmdlineArgs",
                                       "Enables developer-mode. Includes extra log info, stats on "
@@ -200,6 +232,13 @@ bool CmdlineArgs::parse(const QStringList& arguments, CmdlineArgs::ParseMode mod
                             : QString());
     parser.addOption(developer);
 
+#ifdef MIXXX_USE_QML
+    const QCommandLineOption qml(QStringLiteral("qml"),
+            forUserFeedback ? QCoreApplication::translate("CmdlineArgs",
+                                      "Loads experimental QML GUI instead of legacy QWidget skin")
+                            : QString());
+    parser.addOption(qml);
+#endif
     const QCommandLineOption safeMode(QStringLiteral("safe-mode"),
             forUserFeedback ? QCoreApplication::translate("CmdlineArgs",
                                       "Enables safe-mode. Disables OpenGL waveforms, and "
@@ -330,9 +369,14 @@ bool CmdlineArgs::parse(const QStringList& arguments, CmdlineArgs::ParseMode mod
         m_timelinePath = parser.value(timelinePathDeprecated);
     }
 
-    m_useVuMeterGL = !(parser.isSet(disableVuMeterGL) || parser.isSet(disableVuMeterGLDeprecated));
+    m_useLegacyVuMeter = parser.isSet(enableLegacyVuMeter);
+    m_useLegacySpinny = parser.isSet(enableLegacySpinny);
     m_controllerDebug = parser.isSet(controllerDebug) || parser.isSet(controllerDebugDeprecated);
+    m_controllerAbortOnWarning = parser.isSet(controllerAbortOnWarning);
     m_developer = parser.isSet(developer);
+#ifdef MIXXX_USE_QML
+    m_qml = parser.isSet(qml);
+#endif
     m_safeMode = parser.isSet(safeMode) || parser.isSet(safeModeDeprecated);
     m_debugAssertBreak = parser.isSet(debugAssertBreak) || parser.isSet(debugAssertBreakDeprecated);
 

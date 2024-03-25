@@ -48,6 +48,26 @@ const ConfigKey mixxx::library::prefs::kSearchDebouncingTimeoutMillisConfigKey =
                 mixxx::library::prefs::kConfigGroup,
                 QStringLiteral("SearchDebouncingTimeoutMillis")};
 
+const ConfigKey mixxx::library::prefs::kEnableSearchCompletionsConfigKey =
+        ConfigKey{
+                mixxx::library::prefs::kConfigGroup,
+                QStringLiteral("EnableSearchCompletions")};
+
+const ConfigKey mixxx::library::prefs::kEnableSearchHistoryShortcutsConfigKey =
+        ConfigKey{
+                mixxx::library::prefs::kConfigGroup,
+                QStringLiteral("EnableSearchHistoryShortcuts")};
+
+const ConfigKey mixxx::library::prefs::kBpmColumnPrecisionConfigKey =
+        ConfigKey{
+                mixxx::library::prefs::kConfigGroup,
+                QStringLiteral("BpmColumnPrecision")};
+
+const ConfigKey mixxx::library::prefs::kApplyPlayedTrackColorConfigKey =
+        ConfigKey{
+                mixxx::library::prefs::kConfigGroup,
+                QStringLiteral("ApplyPlayedTrackColor")};
+
 // The "Export" suffix in the key is kept for backward compatibility
 const ConfigKey mixxx::library::prefs::kSyncTrackMetadataConfigKey =
         ConfigKey{
@@ -69,3 +89,18 @@ const ConfigKey mixxx::library::prefs::kUseRelativePathOnExportConfigKey =
         ConfigKey{
                 mixxx::library::prefs::kConfigGroup,
                 QStringLiteral("UseRelativePathOnExport")};
+
+const ConfigKey mixxx::library::prefs::kCoverArtFetcherQualityConfigKey =
+        ConfigKey{
+                mixxx::library::prefs::kConfigGroup,
+                QStringLiteral("CoverArtFetcherQuality")};
+
+const ConfigKey mixxx::library::prefs::kTagFetcherApplyTagsConfigKey =
+        ConfigKey{
+                mixxx::library::prefs::kConfigGroup,
+                QStringLiteral("TagFetcherApplyTags")};
+
+const ConfigKey mixxx::library::prefs::kTagFetcherApplyCoverConfigKey =
+        ConfigKey{
+                mixxx::library::prefs::kConfigGroup,
+                QStringLiteral("TagFetcherApplyCover")};

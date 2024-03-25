@@ -1,10 +1,8 @@
 #pragma once
 
-#include <QDomNode>
 #include <QTimer>
 
-#include "effects/effectparameterslotbase.h"
-#include "skin/legacy/skincontext.h"
+#include "effects/defs.h"
 #include "widget/wlabel.h"
 
 class EffectsManager;
@@ -19,6 +17,7 @@ class WEffectParameterNameBase : public WLabel {
     void mousePressEvent(QMouseEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
+    QSize sizeHint() const override;
 
   protected slots:
     void parameterUpdated();
@@ -33,6 +32,9 @@ class WEffectParameterNameBase : public WLabel {
 
   private:
     const QString mimeTextIdentifier() const;
+    QString m_unitString;
     QString m_text;
     QTimer m_displayNameResetTimer;
+    bool m_parameterUpdated;
+    int m_widthHint;
 };
