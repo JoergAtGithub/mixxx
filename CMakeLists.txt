@@ -1635,7 +1635,7 @@ if(MSVC)
     # Warning Level 3 (production quality)
     target_compile_options(mixxx-lib PUBLIC /W3)
     # _HAS_DEPRECATED_RESULT_OF is needed to compile AbletonLink with MSVC in C++20 mode (upstream fix is expected in AbletonLink 3.0.6: https://github.com/Ableton/link/issues/119)
-    target_compile_definitions(mixxx-lib PUBLIC _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING _HAS_DEPRECATED_RESULT_OF _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(mixxx-lib PUBLIC WIN32_LEAN_AND_MEAN _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING _HAS_DEPRECATED_RESULT_OF _CRT_SECURE_NO_WARNINGS)
   endif()
 else()
   # TODO: Add -Wtrampolines, not yet supported by clazy

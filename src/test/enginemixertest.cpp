@@ -54,7 +54,7 @@ class EngineMixerTest : public BaseSignalPathTest {
     void assertHeadphoneBufferMatchesGolden(const QString& testName) {
         assertBufferMatchesReference(m_pEngineMixer->getHeadphoneBuffer(),
                 kMaxEngineSamples,
-              QString("%1-headphone").arg(testName));
+                QString("%1-headphone").arg(testName));
     };
 };
 

@@ -3,9 +3,9 @@
 #include <portaudio.h>
 
 #include <QString>
-#include <memory>
 #include <ableton/Link.hpp>
 #include <ableton/link/HostTimeFilter.hpp>
+#include <memory>
 
 #include "control/pollingcontrolproxy.h"
 #include "soundio/sounddevice.h"

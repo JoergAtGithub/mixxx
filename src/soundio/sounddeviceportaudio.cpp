@@ -229,9 +229,9 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
     } else {
         qDebug() << "framesPerBuffer:" << framesPerBuffer;
     }
-    double bufferMSec = framesPerBuffer / m_sampleRate.toDouble() * 1000;
+    double bufferSizeMillis = framesPerBuffer / m_sampleRate.toDouble() * 1000;
     qDebug() << "Requested sample rate: " << m_sampleRate << "Hz and buffer size:"
-             << bufferMSec << "ms";
+             << bufferSizeMillis << "ms";
 
     qDebug() << "Output channels:" << m_outputParams.channelCount
              << "| Input channels:"
@@ -240,17 +240,17 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
     //Fill out the rest of the info.
     m_outputParams.device = m_deviceId.portAudioIndex;
     m_outputParams.sampleFormat = paFloat32;
-    m_outputParams.suggestedLatency = bufferMSec / 1000.0;
+    m_outputParams.suggestedLatency = bufferSizeMillis / 1000.0;
     m_outputParams.hostApiSpecificStreamInfo = nullptr;
 
     m_inputParams.device  = m_deviceId.portAudioIndex;
     m_inputParams.sampleFormat  = paFloat32;
-    m_inputParams.suggestedLatency = bufferMSec / 1000.0;
+    m_inputParams.suggestedLatency = bufferSizeMillis / 1000.0;
     m_inputParams.hostApiSpecificStreamInfo = nullptr;
 
     qDebug() << "Opening stream with id" << m_deviceId.portAudioIndex;
 
-    m_lastCallbackEntrytoDacSecs = bufferMSec / 1000.0;
+    m_lastCallbackEntrytoDacSecs = bufferSizeMillis / 1000.0;
 
     m_syncBuffers = syncBuffers;
 
@@ -339,13 +339,13 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
     PaStream *pStream;
     // Try open device using iChannelMax
     err = Pa_OpenStream(&pStream,
-                        pInputParams,
-                        pOutputParams,
+            pInputParams,
+            pOutputParams,
             m_sampleRate.toDouble(),
             framesPerBuffer,
-                        paClipOff, // Stream flags
+            paClipOff, // Stream flags
             pCallback,
-                        (void*) this); // pointer passed to the callback function
+            (void*)this); // pointer passed to the callback function
 
     if (err != paNoError) {
         qWarning() << "Error opening stream:" << Pa_GetErrorText(err);
@@ -391,8 +391,6 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
                 ConfigKey(kAppGroup, QStringLiteral("output_latency_ms")),
                 m_outputLatencyMillis);
         ControlObject::set(ConfigKey(kAppGroup, QStringLiteral("samplerate")), m_sampleRate);
-        ControlObject::set(ConfigKey("[Master]", "samplerate"), m_dSampleRate);
-        ControlObject::set(ConfigKey("[Master]", "audio_buffer_size"), bufferMSec);
         m_invalidTimeInfoCount = 0;
         m_clkRefTimer.start();
 
@@ -450,11 +448,11 @@ SoundDeviceStatus SoundDevicePortAudio::close() {
         }
         }
 
-    m_outputFifo.reset();
-    m_inputFifo.reset();
-    m_bSetThreadPriority = false;
+        m_outputFifo.reset();
+        m_inputFifo.reset();
+        m_bSetThreadPriority = false;
 
-    return SoundDeviceStatus::Ok;
+        return SoundDeviceStatus::Ok;
 }
 
 QString SoundDevicePortAudio::getError() const {
@@ -826,7 +824,7 @@ int SoundDevicePortAudio::callbackProcessDrift(
             m_pSoundManager->underflowHappened(11);
             //qDebug() << "callbackProcess read:" << (float)readAvailable / outChunkSize << "Buffer empty";
         }
-     }
+    }
     return paContinue;
 }
 
@@ -878,7 +876,7 @@ int SoundDevicePortAudio::callbackProcess(const SINT framesPerBuffer,
             m_pSoundManager->underflowHappened(5);
             //qDebug() << "callbackProcess read:" << "Buffer empty";
         }
-     }
+    }
     return paContinue;
 }
 

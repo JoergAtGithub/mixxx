@@ -979,26 +979,26 @@ void EngineMixer::onOutputConnected(const AudioOutput& output) {
     case AudioPathType::Main:
         // overwrite config option if a main output is configured
         m_pMainEnabled->forceSet(1.0);
-            break;
+        break;
     case AudioPathType::Headphones:
         m_pMainEnabled->forceSet(1.0);
-            m_pHeadphoneEnabled->forceSet(1.0);
-            break;
+        m_pHeadphoneEnabled->forceSet(1.0);
+        break;
     case AudioPathType::Booth:
         m_pMainEnabled->forceSet(1.0);
-            m_pBoothEnabled->forceSet(1.0);
-            break;
+        m_pBoothEnabled->forceSet(1.0);
+        break;
     case AudioPathType::Bus:
-            m_bBusOutputConnected[output.getIndex()] = true;
-            break;
+        m_bBusOutputConnected[output.getIndex()] = true;
+        break;
     case AudioPathType::Deck:
-            // We don't track enabled decks.
-            break;
+        // We don't track enabled decks.
+        break;
     case AudioPathType::RecordBroadcast:
-            // We don't track enabled sidechain.
-            break;
-        default:
-            break;
+        // We don't track enabled sidechain.
+        break;
+    default:
+        break;
     }
 }
 
@@ -1006,25 +1006,25 @@ void EngineMixer::onOutputDisconnected(const AudioOutput& output) {
     switch (output.getType()) {
     case AudioPathType::Main:
         // not used, because we need the main buffer for headphone mix
-            // and recording/broadcasting as well
-            break;
+        // and recording/broadcasting as well
+        break;
     case AudioPathType::Booth:
-            m_pBoothEnabled->forceSet(0.0);
-            break;
+        m_pBoothEnabled->forceSet(0.0);
+        break;
     case AudioPathType::Headphones:
-            m_pHeadphoneEnabled->forceSet(0.0);
-            break;
+        m_pHeadphoneEnabled->forceSet(0.0);
+        break;
     case AudioPathType::Bus:
-            m_bBusOutputConnected[output.getIndex()] = false;
-            break;
+        m_bBusOutputConnected[output.getIndex()] = false;
+        break;
     case AudioPathType::Deck:
-            // We don't track enabled decks.
-            break;
+        // We don't track enabled decks.
+        break;
     case AudioPathType::RecordBroadcast:
-            // We don't track enabled sidechain.
-            break;
-        default:
-            break;
+        // We don't track enabled sidechain.
+        break;
+    default:
+        break;
     }
 }
 
@@ -1032,18 +1032,18 @@ void EngineMixer::onInputConnected(const AudioInput& input) {
     switch (input.getType()) {
     case AudioPathType::Microphone:
         m_numMicsConfigured++;
-          break;
+        break;
     case AudioPathType::Auxiliary:
-          // We don't track enabled auxiliary inputs.
-          break;
+        // We don't track enabled auxiliary inputs.
+        break;
     case AudioPathType::VinylControl:
-          // We don't track enabled vinyl control inputs.
-          break;
+        // We don't track enabled vinyl control inputs.
+        break;
     case AudioPathType::RecordBroadcast:
-          m_bExternalRecordBroadcastInputConnected = true;
-          break;
-      default:
-          break;
+        m_bExternalRecordBroadcastInputConnected = true;
+        break;
+    default:
+        break;
     }
 }
 
@@ -1051,18 +1051,18 @@ void EngineMixer::onInputDisconnected(const AudioInput& input) {
     switch (input.getType()) {
     case AudioPathType::Microphone:
         m_numMicsConfigured--;
-          break;
+        break;
     case AudioPathType::Auxiliary:
-          // We don't track enabled auxiliary inputs.
-          break;
+        // We don't track enabled auxiliary inputs.
+        break;
     case AudioPathType::VinylControl:
-          // We don't track enabled vinyl control inputs.
-          break;
+        // We don't track enabled vinyl control inputs.
+        break;
     case AudioPathType::RecordBroadcast:
-          m_bExternalRecordBroadcastInputConnected = false;
-          break;
-      default:
-          break;
+        m_bExternalRecordBroadcastInputConnected = false;
+        break;
+    default:
+        break;
     }
 }
 
@@ -1070,7 +1070,7 @@ void EngineMixer::registerNonEngineChannelSoundIO(SoundManager* pSoundManager) {
     pSoundManager->registerInput(AudioInput(AudioPathType::RecordBroadcast,
                                          0,
                                          mixxx::audio::ChannelCount::stereo()),
-                                 m_pEngineSideChain);
+            m_pEngineSideChain);
 
     pSoundManager->registerOutput(AudioOutput(AudioPathType::Main,
                                           0,

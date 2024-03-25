@@ -180,7 +180,7 @@ void SoundDeviceNetwork::readProcess(SINT framesPerBuffer) {
                 // duplicate one frame
                 //kLogger.debug() << "readProcess() duplicate one frame"
                 //                << (float)writeAvailable / inChunkSize << (float)readAvailable / inChunkSize;
-                (void) m_inputFifo->aquireWriteRegions(
+                (void)m_inputFifo->aquireWriteRegions(
                         m_numInputChannels, &dataPtr1, &size1, &dataPtr2, &size2);
                 if (size1) {
                     SampleUtil::copy(dataPtr1, lastFrame, size1);
@@ -323,7 +323,7 @@ void SoundDeviceNetwork::workerWriteProcess(NetworkOutputStreamWorkerPtr pWorker
             // try to keep PAs buffer filled up to 0.5 chunks
             if (pWorker->outputDrift()) {
                 // duplicate one frame
-                //kLogger.debug() << "workerWriteProcess() duplicate one frame"
+                // kLogger.debug() << "workerWriteProcess() duplicate one frame"
                 //                 << (float)writeExpected / outChunkSize
                 //                 << (float)readAvailable / outChunkSize;
                 workerWrite(pWorker, dataPtr1, 1);
