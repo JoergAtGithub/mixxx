@@ -217,7 +217,7 @@ TEST_F(PlayerManagerTest, UnReplaceTest) {
     TrackId testId1 = pTrack1->getId();
     ASSERT_TRUE(testId1.isValid());
     deck1->slotLoadTrack(pTrack1, false);
-    m_pEngine->process(1024);
+    m_pEngine->process(1024, std::chrono::microseconds(0));
     waitForTrackToBeLoaded(deck1);
     ASSERT_NE(nullptr, deck1->getLoadedTrack());
 
@@ -225,7 +225,7 @@ TEST_F(PlayerManagerTest, UnReplaceTest) {
     TrackPointer pTrack2 = getOrAddTrackByLocation(getTestDir().filePath(kTrackLocationTest2));
     ASSERT_NE(nullptr, pTrack2);
     deck1->slotLoadTrack(pTrack2, false);
-    m_pEngine->process(1024);
+    m_pEngine->process(1024, std::chrono::microseconds(0));
     waitForTrackToBeLoaded(deck1);
     ASSERT_NE(nullptr, deck1->getLoadedTrack());
 

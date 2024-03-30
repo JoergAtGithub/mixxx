@@ -315,7 +315,7 @@ void SoundDeviceNetwork::workerWriteProcess(NetworkOutputStreamWorkerPtr pWorker
     if (copyCount > 0) {
         if (writeExpected - copyCount > outChunkSize) {
             // Underflow
-            //kLogger.debug() << "workerWriteProcess: buffer empty";
+            // kLogger.debug() << "workerWriteProcess: buffer empty";
             // catch up by filling buffer until we are synced
             workerWriteSilence(pWorker, writeExpected - copyCount);
             m_pSoundManager->underflowHappened(24);
@@ -494,7 +494,7 @@ void SoundDeviceNetwork::callbackProcessClkRef() {
         ScopedTimer t(u"SoundDevicePortAudio::callbackProcess prepare %1",
                 m_deviceId.name);
         m_pSoundManager->onDeviceOutputCallback(
-                framesPerBuffer, m_absTimeWhenPrevOutputBufferReachsDac);
+                framesPerBuffer, m_absTimeWhenPrevOutputBufferReachesDac);
     }
 
     m_pSoundManager->writeProcess(framesPerBuffer);
@@ -514,8 +514,8 @@ void SoundDeviceNetwork::updateCallbackEntryToDacTime(SINT framesPerBuffer) {
 
     // Use Ableton's HostTimeFilter class to create a smooth linear regression
     // between absolute network time and absolute host time
-    m_absTimeWhenPrevOutputBufferReachsDac = m_hostTimeFilter.sampleTimeToHostTime(
-                                                     static_cast<double>(currentTime)) +
+    m_absTimeWhenPrevOutputBufferReachesDac = m_hostTimeFilter.sampleTimeToHostTime(
+                                                      static_cast<double>(currentTime)) +
             std::chrono::microseconds(static_cast<long long>(callbackEntrytoDacSecs * 1000000));
 
     VisualPlayPosition::setCallbackEntryToDacSecs(callbackEntrytoDacSecs, m_clkRefTimer);

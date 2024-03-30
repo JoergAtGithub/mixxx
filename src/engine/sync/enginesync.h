@@ -74,7 +74,7 @@ class EngineSync : public SyncableListener {
     EngineChannel* getLeaderChannel() const;
     void onCallbackStart(mixxx::audio::SampleRate sampleRate,
             int bufferSize,
-            std::chrono::microseconds absTimeWhenPrevOutputBufferReachsDac);
+            std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac);
     void onCallbackEnd(mixxx::audio::SampleRate sampleRate, int bufferSize);
 
   private:

@@ -90,7 +90,7 @@ class AbletonLink : public QObject, public Syncable {
 
     void onCallbackStart(int sampleRate,
             int bufferSize,
-            std::chrono::microseconds absTimeWhenPrevOutputBufferReachsDac);
+            std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac);
     void onCallbackEnd(int sampleRate, int bufferSize);
 
   private slots:
@@ -109,7 +109,7 @@ class AbletonLink : public QObject, public Syncable {
     mixxx::Bpm m_oldTempo;
 
     std::chrono::microseconds m_audioBufferTimeMicros;
-    std::chrono::microseconds m_hostTimeAtStartCallback;
+    std::chrono::microseconds m_absTimeWhenPrevOutputBufferReachesDac;
     std::chrono::microseconds m_sampleTimeAtStartCallback;
     std::chrono::microseconds m_timeAtStartCallback;
 

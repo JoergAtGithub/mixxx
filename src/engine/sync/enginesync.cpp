@@ -634,9 +634,9 @@ void EngineSync::addSyncableDeck(Syncable* pSyncable) {
 
 void EngineSync::onCallbackStart(mixxx::audio::SampleRate sampleRate,
         int bufferSize,
-        std::chrono::microseconds absTimeWhenPrevOutputBufferReachsDac) {
+        std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac) {
     m_pInternalClock->onCallbackStart(sampleRate, bufferSize);
-    m_pAbletonLink->onCallbackStart(sampleRate, bufferSize, absTimeWhenPrevOutputBufferReachsDac);
+    m_pAbletonLink->onCallbackStart(sampleRate, bufferSize, absTimeWhenPrevOutputBufferReachesDac);
 }
 
 void EngineSync::onCallbackEnd(mixxx::audio::SampleRate sampleRate, int bufferSize) {
@@ -670,6 +670,9 @@ mixxx::Bpm EngineSync::leaderBpm() const {
     if (m_pLeaderSyncable) {
         return m_pLeaderSyncable->getBpm();
     }
+    if (m_pAbletonLink->isPlaying()) {
+        return m_pAbletonLink->getBpm();
+    }
     return m_pInternalClock->getBpm();
 }
 
@@ -677,12 +680,18 @@ double EngineSync::leaderBeatDistance() const {
     if (m_pLeaderSyncable) {
         return m_pLeaderSyncable->getBeatDistance();
     }
+    if (m_pAbletonLink->isPlaying()) {
+        return m_pAbletonLink->getBeatDistance();
+    }
     return m_pInternalClock->getBeatDistance();
 }
 
 mixxx::Bpm EngineSync::leaderBaseBpm() const {
     if (m_pLeaderSyncable) {
         return m_pLeaderSyncable->getBaseBpm();
+    }
+    if (m_pAbletonLink->isPlaying()) {
+        return m_pAbletonLink->getBaseBpm();
     }
     return m_pInternalClock->getBaseBpm();
 }

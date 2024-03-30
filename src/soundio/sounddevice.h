@@ -55,7 +55,7 @@ class SoundDevice {
     bool operator==(const SoundDevice &other) const;
     bool operator==(const QString &other) const;
 
-    std::chrono::microseconds m_absTimeWhenPrevOutputBufferReachsDac;
+    std::chrono::microseconds m_absTimeWhenPrevOutputBufferReachesDac;
 
   protected:
     void composeOutputBuffer(CSAMPLE* outputBuffer,

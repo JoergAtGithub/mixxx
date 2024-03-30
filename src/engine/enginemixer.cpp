@@ -403,6 +403,7 @@ void EngineMixer::processChannels(int iBufferSize,
 
 void EngineMixer::process(const int iBufferSize,
         std::chrono::microseconds absTimeWhenPrevOutputBufferReachsDac) {
+    DEBUG_ASSERT(iBufferSize <= static_cast<int>(kMaxEngineSamples));
     static bool haveSetName = false;
     if (!haveSetName) {
         QThread::currentThread()->setObjectName("Engine");
