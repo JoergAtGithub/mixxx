@@ -14,7 +14,8 @@ PaintablePointer WPixmapStore::getPaintable(const PixmapSource& source,
     if (source.isEmpty()) {
         return PaintablePointer();
     }
-    QString key = source.getId() + QString::number(mode) + QString::number(scaleFactor);
+    QString key = source.getId() + QString::number(static_cast<int>(mode)) +
+            QString::number(scaleFactor);
 
     // See if we have a cached value for the pixmap.
     PaintablePointer pPaintable = m_paintableCache.value(
