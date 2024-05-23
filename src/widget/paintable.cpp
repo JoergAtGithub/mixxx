@@ -104,18 +104,18 @@ bool Paintable::isNull() const {
 }
 
 QSize Paintable::size() const {
-    if (!m_pPixmap.isNull()) {
+    if (m_pPixmap) {
         return m_pPixmap->size();
-    } else if (!m_pSvg.isNull()) {
+    } else if (m_pSvg) {
         return m_pSvg->defaultSize();
     }
     return QSize();
 }
 
 int Paintable::width() const {
-    if (!m_pPixmap.isNull()) {
+    if (m_pPixmap) {
         return m_pPixmap->width();
-    } else if (!m_pSvg.isNull()) {
+    } else if (m_pSvg) {
         QSize size = m_pSvg->defaultSize();
         return size.width();
     }
@@ -123,9 +123,9 @@ int Paintable::width() const {
 }
 
 int Paintable::height() const {
-    if (!m_pPixmap.isNull()) {
+    if (m_pPixmap) {
         return m_pPixmap->height();
-    } else if (!m_pSvg.isNull()) {
+    } else if (m_pSvg) {
         QSize size = m_pSvg->defaultSize();
         return size.height();
     }
@@ -133,20 +133,20 @@ int Paintable::height() const {
 }
 
 QRectF Paintable::rect() const {
-    if (!m_pPixmap.isNull()) {
+    if (m_pPixmap) {
         return m_pPixmap->rect();
-    } else if (!m_pSvg.isNull()) {
+    } else if (m_pSvg) {
         return QRectF(QPointF(0, 0), m_pSvg->defaultSize());
     }
     return QRectF();
 }
 
 QImage Paintable::toImage() const {
-    // Note: m_pPixmap is a QScopedPointer<QPixmap> and not a QPixmap.
+    // Note: m_pPixmap is a std::unique_ptr<QPixmap> and not a QPixmap.
     // This confusion let to the wrong assumption that we could simple
     //   return m_pPixmap->toImage();
     // relying on QPixmap returning QImage() when it was null.
-    return m_pPixmap.isNull() ? QImage() : m_pPixmap->toImage();
+    return m_pPixmap ? m_pPixmap->toImage() : QImage();
 }
 
 void Paintable::draw(const QRectF& targetRect, QPainter* pPainter) {
@@ -247,33 +247,19 @@ void Paintable::drawCentered(const QRectF& targetRect, QPainter* pPainter,
     }
 }
 
-void Paintable::drawInternal(const QRectF& targetRect, QPainter* pPainter,
-                             const QRectF& sourceRect) {
-    // qDebug() << "Paintable::drawInternal" << DrawModeToString(m_draw_mode)
-    //          << targetRect << sourceRect;
+void Paintable::drawInternal(const QRectF& targetRect,
+        QPainter* pPainter,
+        const QRectF& sourceRect) {
     if (m_pPixmap) {
         if (m_drawMode == TILE) {
-            // TODO(rryan): Using a source rectangle doesn't make much sense
-            // with tiling. Ignore the source rect and tile our natural size
-            // across the target rect. What's the right general behavior here?
-            // NOTE(rryan): We round our target/source rectangles to the nearest
-            // pixel for raster images.
-            pPainter->drawTiledPixmap(targetRect.toRect(), *m_pPixmap, QPoint(0,0));
+            pPainter->drawTiledPixmap(targetRect.toRect(), *m_pPixmap, QPoint(0, 0));
         } else {
-            // NOTE(rryan): We round our target/source rectangles to the nearest
-            // pixel for raster images.
-            pPainter->drawPixmap(targetRect.toRect(), *m_pPixmap,
-                                 sourceRect.toRect());
+            pPainter->drawPixmap(targetRect.toRect(), *m_pPixmap, sourceRect.toRect());
         }
     } else if (m_pSvg) {
         if (m_drawMode == TILE) {
             qWarning() << "Tiled SVG should have been rendered to pixmap!";
         } else {
-            // NOTE(rryan): QSvgRenderer render does not clip for us -- it
-            // applies a world transformation using viewBox and renders the
-            // entire SVG to the painter. We save/restore the QPainter in case
-            // there is an existing clip region (I don't know of any Mixxx code
-            // that uses one but we may in the future).
             PainterScope PainterScope(pPainter);
             pPainter->setClipping(true);
             pPainter->setClipRect(targetRect);
