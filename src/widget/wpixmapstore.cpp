@@ -31,14 +31,12 @@ PaintablePointer WPixmapStore::getPaintable(const PixmapSource& source,
 }
 
 // static
-QPixmap* WPixmapStore::getPixmapNoCache(
+std::unique_ptr<QPixmap> WPixmapStore::getPixmapNoCache(
         const QString& fileName,
         double scaleFactor) {
-    QPixmap* pPixmap = nullptr;
-    QImage* img = m_loader->getImage(fileName, scaleFactor);
-    pPixmap = new QPixmap();
-    pPixmap->convertFromImage(*img);
-    delete img;
+    auto pImg = std::unique_ptr<QImage>(m_loader->getImage(fileName, scaleFactor));
+    auto pPixmap = std::make_unique<QPixmap>();
+    pPixmap->convertFromImage(*pImg);
     return pPixmap;
 }
 
