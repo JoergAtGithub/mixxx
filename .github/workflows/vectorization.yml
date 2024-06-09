@@ -56,7 +56,7 @@ jobs:
             echo "result=$OUTPUT" >> $GITHUB_ENV
           fi
 
-      - name: Print vectorization result
+      - name: Print vectorization results
         id: check
         shell: bash
         run: |
