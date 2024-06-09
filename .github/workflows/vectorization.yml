@@ -1,0 +1,53 @@
+name: Check Vectorization by Compiler
+
+on: [push, pull_request]
+
+env:
+  FILE: src/util/sample.cpp
+
+jobs:
+  build:
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        config:
+          - {
+              os: ubuntu-latest,
+              compiler: gcc,
+              flags: "-O3 -ftree-vectorize -fopt-info-vec-optimized",
+            }
+          - {
+              os: macOS-latest,
+              compiler: clang,
+              flags: "-O3 -Rpass=loop-vectorize",
+            }
+          - { os: windows-latest, compiler: cl, flags: "/O2 /Qvec-report:2" }
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up compiler
+        run: |
+          if [ "${{ matrix.config.compiler }}" = "gcc" ]; then
+            sudo apt-get install -y ${{ matrix.config.compiler }}
+          fi
+      - name: Compile and check vectorization
+        id: check
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            $OUTPUT = ./tools/check_vectorization.ps1 "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ env.FILE }}"
+            echo "result=$OUTPUT" >> $env:GITHUB_ENV
+          else
+            OUTPUT=$(./tools/check_vectorization.sh "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ env.FILE }}")
+            echo "result=$OUTPUT" >> $GITHUB_ENV
+          fi
+      - name: Print result
+        run: echo "${{ env.result }}"
+
+  report:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create report
+        run: |
+          echo "OS, Compiler, Function, Vectorized"
+          echo "${{ needs.build.outputs.result }}"
