@@ -46,6 +46,7 @@ jobs:
       - name: Compile and check vectorization
         id: check
         shell: bash
+        working-directory: ${{ github.workspace }}
         run: |
           FILESET=${{ toJson(matrix.fileset) }}
             if [[ "${{ runner.os }}" == "Windows" ]]; then
