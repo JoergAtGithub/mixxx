@@ -43,22 +43,25 @@ jobs:
             sudo apt-get install -y ${{ matrix.config.compiler }}
           fi
 
-      - name: Compile and check vectorization
-        id: check
+      - name: Compile and check vectorization on Windows
+        if: runner.os == 'Windows'
+        id: check_windows
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+        run: |
+          if ("${{ matrix.config.compiler }}" -eq "gcc") {
+           $OUTPUT = & "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ matrix.fileset }}"
+           echo "result=$OUTPUT" >> $env:GITHUB_ENV
+          }
+
+      - name: Compile and check vectorization on Linux/Mac
+        if: runner.os != 'Windows'
+        id: check_unix
         shell: bash
         working-directory: ${{ github.workspace }}
         run: |
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            shell: pwsh
-            run: |
-              if ("${{ matrix.config.compiler }}" -eq "gcc") {
-                $OUTPUT = & "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ matrix.fileset }}"
-                echo "result=$OUTPUT" >> $env:GITHUB_ENV
-              }
-          else
-            OUTPUT=$("${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ matrix.fileset }}")
-            echo "result=$OUTPUT" >> $GITHUB_ENV
-          fi
+          OUTPUT=$("${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ matrix.fileset }}")
+          echo "result=$OUTPUT" >> $GITHUB_ENV
 
       - name: Print vectorization results
         id: evaluate
