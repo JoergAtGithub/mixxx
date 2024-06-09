@@ -57,7 +57,7 @@ jobs:
           fi
 
       - name: Print vectorization results
-        id: check
+        id: evaluate
         shell: bash
         run: |
           if [[ "${{ runner.os }}" == "Windows" ]]; then
