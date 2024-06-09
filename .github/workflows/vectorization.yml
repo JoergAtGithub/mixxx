@@ -6,7 +6,7 @@ permissions:
   contents: read #  to fetch code (actions/checkout)
 
 env:
-  FILE: src/util/sample.cpp
+  FILE: src/util/sample.cpp src/util/sample.h
 
 jobs:
   build:
