@@ -23,7 +23,18 @@ jobs:
             }
           - { os: windows-latest, compiler: cl, flags: "/O2 /Qvec-report:2" }
     steps:
-      - uses: actions/checkout@v2
+      - name: "Check out repository"
+        uses: actions/checkout@v4.1.6
+        with:
+          # This is necessary for making `git describe` work.
+          fetch-depth: 0
+
+      - name: "Ensure that all tags are fetched"
+        # Works around an issue where not the latest tag is not fetched when the
+        # workflow is triggered by a tag push event.
+        # Possibly related: actions/checkout#290
+        run: git fetch origin --force --tags
+
       - name: Set up compiler
         run: |
           if [ "${{ matrix.config.compiler }}" = "gcc" ]; then
