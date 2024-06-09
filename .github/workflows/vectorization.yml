@@ -23,7 +23,7 @@ jobs:
             }
           - { os: windows-latest, compiler: cl, flags: "/O2 /Qvec-report:2" }
         fileset:
-          - ["src/util/sample.cpp", "src/util/sample.h"]
+          - "src/util/sample.cpp src/util/sample.h"
     steps:
       - name: "Check out repository"
         uses: actions/checkout@v4.1.6
@@ -48,18 +48,17 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
         run: |
-          FILESET=${{ toJson(matrix.fileset) }}
-            if [[ "${{ runner.os }}" == "Windows" ]]; then
-              shell: pwsh
-              run: |
-                if ("${{ matrix.config.compiler }}" -eq "gcc") {
-                  $OUTPUT = & "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "$FILESET"
-                  echo "result=$OUTPUT" >> $env:GITHUB_ENV
-                }
-            else
-              OUTPUT=$("${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "$FILESET")
-              echo "result=$OUTPUT" >> $GITHUB_ENV
-            fi
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            shell: pwsh
+            run: |
+              if ("${{ matrix.config.compiler }}" -eq "gcc") {
+                $OUTPUT = & "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ matrix.fileset }}"
+                echo "result=$OUTPUT" >> $env:GITHUB_ENV
+              }
+          else
+            OUTPUT=$("${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ matrix.fileset }}")
+            echo "result=$OUTPUT" >> $GITHUB_ENV
+          fi
 
       - name: Print vectorization results
         id: evaluate
