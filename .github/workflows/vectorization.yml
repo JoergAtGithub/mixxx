@@ -50,7 +50,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           if ("${{ matrix.config.compiler }}" -eq "gcc") {
-           $OUTPUT = & "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ matrix.fileset }}"
+           $OUTPUT = & "${{ matrix.config.compiler }}" ${{ matrix.config.flags }} ${{ matrix.fileset }}
            echo "result=$OUTPUT" >> $env:GITHUB_ENV
           }
 
@@ -60,7 +60,7 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
         run: |
-          OUTPUT=$("${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ matrix.fileset }}")
+          OUTPUT=$("${{ matrix.config.compiler }}" ${{ matrix.config.flags }} ${{ matrix.fileset }})
           echo "result=$OUTPUT" >> $GITHUB_ENV
 
       - name: Print vectorization results
