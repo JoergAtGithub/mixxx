@@ -47,15 +47,19 @@ jobs:
         id: check
         shell: bash
         run: |
-          FILESET=${{ toJson(matrix.files) }}
+          FILESET_MATRIX=${{ toJson(matrix.fileset_matrix) }}
           for FILESET in $(echo "$FILESET_MATRIX" | jq -r '.[]'); do
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            OUTPUT=$(pwsh -c "& '${{ matrix.config.compiler }}' '${{ matrix.config.flags }}' '$FILESET'")
-            echo "result=$OUTPUT" >> $GITHUB_ENV
-          else
-            OUTPUT=$("${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "$FILESET")
-            echo "result=$OUTPUT" >> $GITHUB_ENV
-          fi
+            if [[ "${{ runner.os }}" == "Windows" ]]; then
+              shell: pwsh
+              run: |
+                if ("${{ matrix.config.compiler }}" -eq "gcc") {
+                  $OUTPUT = & "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "$FILESET"
+                  echo "result=$OUTPUT" >> $env:GITHUB_ENV
+                }
+            else
+              OUTPUT=$("${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "$FILESET")
+              echo "result=$OUTPUT" >> $GITHUB_ENV
+            fi
           done
 
       - name: Print vectorization results
