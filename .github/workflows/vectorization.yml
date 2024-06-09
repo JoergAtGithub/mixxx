@@ -22,7 +22,7 @@ jobs:
               flags: "-O3 -Rpass=loop-vectorize",
             }
           - { os: windows-latest, compiler: cl, flags: "/O2 /Qvec-report:2" }
-        fileset_matrix:
+        fileset:
           - ["src/util/sample.cpp", "src/util/sample.h"]
     steps:
       - name: "Check out repository"
@@ -47,17 +47,17 @@ jobs:
         id: check
         shell: bash
         run: |
-          FILESET_MATRIX=${{ toJson(matrix.fileset_matrix) }}
-          for FILESET in $(echo "$FILESET_MATRIX" | jq -r '.[]'); do
+          FILES=${{ toJson(matrix.fileset) }}
+          for FILES in $(echo "$FILESET" | jq -r '.[]'); do
             if [[ "${{ runner.os }}" == "Windows" ]]; then
               shell: pwsh
               run: |
                 if ("${{ matrix.config.compiler }}" -eq "gcc") {
-                  $OUTPUT = & "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "$FILESET"
+                  $OUTPUT = & "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "$FILES"
                   echo "result=$OUTPUT" >> $env:GITHUB_ENV
                 }
             else
-              OUTPUT=$("${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "$FILESET")
+              OUTPUT=$("${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "$FILES")
               echo "result=$OUTPUT" >> $GITHUB_ENV
             fi
           done
