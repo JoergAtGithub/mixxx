@@ -2,6 +2,9 @@ name: Check Vectorization by Compiler
 
 on: [push, pull_request]
 
+permissions:
+  contents: read #  to fetch code (actions/checkout)
+
 env:
   FILE: src/util/sample.cpp
 
