@@ -47,7 +47,7 @@ jobs:
         id: check
         shell: bash
         run: |
-          FILES=${{ toJson(matrix.fileset) }}
+          FILESET=${{ toJson(matrix.fileset) }}
           for FILES in $(echo "$FILESET" | jq -r '.[]'); do
             if [[ "${{ runner.os }}" == "Windows" ]]; then
               shell: pwsh
