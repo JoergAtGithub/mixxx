@@ -22,7 +22,7 @@ jobs:
               flags: "-O3 -Rpass=loop-vectorize",
             }
           - { os: windows-latest, compiler: cl, flags: "/O2 /Qvec-report:2" }
-        files:
+        fileset_matrix:
           - ["src/util/sample.cpp", "src/util/sample.h"]
     steps:
       - name: "Check out repository"
@@ -47,14 +47,15 @@ jobs:
         id: check
         shell: bash
         run: |
-          for FILE in "${{ matrix.files }}"; do
-            if [[ "${{ runner.os }}" == "Windows" ]]; then
-              OUTPUT=$(pwsh -c "& '${{ matrix.config.compiler }}' '${{ matrix.config.flags }}' '$FILE'")
-              echo "result=$OUTPUT" >> $GITHUB_ENV
-            else
-              OUTPUT=$("${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "$FILE")
-              echo "result=$OUTPUT" >> $GITHUB_ENV
-            fi
+          FILESET=${{ toJson(matrix.files) }}
+          for FILESET in $(echo "$FILESET_MATRIX" | jq -r '.[]'); do
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            OUTPUT=$(pwsh -c "& '${{ matrix.config.compiler }}' '${{ matrix.config.flags }}' '$FILESET'")
+            echo "result=$OUTPUT" >> $GITHUB_ENV
+          else
+            OUTPUT=$("${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "$FILESET")
+            echo "result=$OUTPUT" >> $GITHUB_ENV
+          fi
           done
 
       - name: Print vectorization results
