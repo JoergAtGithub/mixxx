@@ -40,17 +40,19 @@ jobs:
           if [ "${{ matrix.config.compiler }}" = "gcc" ]; then
             sudo apt-get install -y ${{ matrix.config.compiler }}
           fi
+
       - name: Compile and check vectorization
         id: check
         shell: bash
         run: |
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
+          if ("${{ runner.os }}" -eq "Windows") {
             $OUTPUT = ./tools/check_vectorization.ps1 "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ env.FILE }}"
             echo "result=$OUTPUT" >> $env:GITHUB_ENV
-          else
-            OUTPUT=$(./tools/check_vectorization.sh "${{ matrix.config.compiler }}" "${{ matrix.config.flags }}" "${{ env.FILE }}")
+          } else {
+            OUTPUT=$(./tools/check_vectorization.sh "${{ matrix.config.compiler }}" ${matrix.config.flags} "${{ env.FILE }}")
             echo "result=$OUTPUT" >> $GITHUB_ENV
-          fi
+          }
+
       - name: Print result
         run: echo "${{ env.result }}"
 
