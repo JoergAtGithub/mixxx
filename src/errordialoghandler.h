@@ -90,9 +90,6 @@ class ErrorDialogProperties {
     QString m_text;
     QString m_infoText;
     QString m_details;
-    bool m_detailsUseMonospaceFont;
-    bool m_modal;
-    bool m_shouldQuit;
     DialogType m_type;
     QMessageBox::Icon m_icon;
     /** List of standard buttons to add to the box, in order
@@ -103,6 +100,9 @@ class ErrorDialogProperties {
     QMessageBox::StandardButton m_defaultButton;
     /** The button that's clicked if the Escape key is pressed. */
     QMessageBox::StandardButton m_escapeButton;
+    bool m_detailsUseMonospaceFont;
+    bool m_modal;
+    bool m_shouldQuit;
 
     // Befriending ErrorDialogHandler allows it to have cleaner code since
     // the two are closely related anyway
@@ -152,9 +152,9 @@ class ErrorDialogHandler : public QObject {
     static ErrorDialogHandler *s_pInstance;
     static bool s_bEnabled;
 
-    bool m_errorCondition;
     QList<QString> m_dialogKeys;
     QMutex m_mutex;
+    bool m_errorCondition;
 
     DISALLOW_COPY_AND_ASSIGN(ErrorDialogHandler);
 };
