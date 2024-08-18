@@ -106,7 +106,7 @@ class AbletonLink : public QObject, public Syncable {
     ableton::link::HostTimeFilter<MixxxClockRef> m_hostTimeFilter;
     const QString m_group;
     EngineSync* m_pEngineSync; // unowned, must outlive this.
-    SyncMode m_mode;
+    SyncMode m_syncMode;
 
     mixxx::Bpm m_oldTempo;
 

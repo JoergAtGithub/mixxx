@@ -8,6 +8,7 @@
 #include "moc_abletonlink.cpp"
 #include "preferences/usersettings.h"
 #include "util/logger.h"
+
 namespace {
 const mixxx::Logger kLogger("AbletonLink");
 constexpr mixxx::Bpm kDefaultBpm(9999.9);
@@ -16,14 +17,14 @@ constexpr mixxx::Bpm kDefaultBpm(9999.9);
 AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
         : m_group(group),
           m_pEngineSync(pEngineSync),
-          m_mode(SyncMode::None),
+          m_syncMode(SyncMode::None),
           m_oldTempo(kDefaultBpm),
           m_audioBufferTimeMicros(0),
           m_absTimeWhenPrevOutputBufferReachesDac(0),
           m_sampleTimeAtStartCallback(0),
           m_pLink(std::make_unique<ableton::BasicLink<MixxxClockRef>>(120.0)),
           m_pLinkButton(std::make_unique<ControlPushButton>(ConfigKey(group, "sync_enabled"))),
-          m_pNumLinkPeers(std::make_unique<ControlObject>(ConfigKey(m_group, "num_peers"))) {
+          m_pNumLinkPeers(std::make_unique<ControlObject>(ConfigKey(group, "num_peers"))) {
     m_timeAtStartCallback = m_pLink->clock().micros();
 
     m_pLinkButton->setButtonMode(ControlPushButton::TOGGLE);
@@ -52,17 +53,12 @@ AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
     audioThreadDebugOutput();
 }
 
-void AbletonLink::slotControlSyncEnabled(double value) {
-    qDebug() << "AbletonLink::slotControlSyncEnabled" << value;
-    if (value > 0) {
-        m_pLink->enable(true);
-    } else {
-        m_pLink->enable(false);
-    }
+void AbletonLink::slotControlSyncEnabled(double controButtonlValue) {
+    m_pLink->enable(controButtonlValue > 0);
 }
 
-void AbletonLink::setSyncMode(SyncMode mode) {
-    m_mode = mode;
+void AbletonLink::setSyncMode(SyncMode syncMode) {
+    m_syncMode = syncMode;
 }
 
 void AbletonLink::notifyUniquePlaying() {
@@ -73,7 +69,7 @@ void AbletonLink::requestSync() {
 }
 
 SyncMode AbletonLink::getSyncMode() const {
-    return m_mode;
+    return m_syncMode;
 }
 
 bool AbletonLink::isPlaying() const {
@@ -138,7 +134,9 @@ void AbletonLink::updateLeaderBpm(mixxx::Bpm bpm) {
 }
 
 void AbletonLink::notifyLeaderParamSource() {
-    // TODO: Not implemented yet
+    // In Ableton Link all pears are equal. Therefore nothing differs,
+    // if AbletonLink becomes SyncLeader.
+    // TODO: Check the special case of half/double BPM sync.
 }
 
 void AbletonLink::reinitLeaderParams(double beatDistance, mixxx::Bpm baseBpm, mixxx::Bpm bpm) {
@@ -151,6 +149,10 @@ void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
     Q_UNUSED(bpm)
 }
 
+/// This method is called at the start of the audio callback.
+/// It captures the current time and updates the audio buffer time.
+/// If Ableton Link is enabled, it captures the session state and notifies
+/// the engine sync about any changes in tempo and beat distance.
 void AbletonLink::onCallbackStart(int sampleRate,
         int bufferSize,
         std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac) {
@@ -163,22 +165,26 @@ void AbletonLink::onCallbackStart(int sampleRate,
              << m_absTimeWhenPrevOutputBufferReachesDac.count() -
                     absTimeWhenPrevOutputBufferReachesDac.count();
                     */
-    m_audioBufferTimeMicros = std::chrono::microseconds((bufferSize / 2 * 1000000) / sampleRate);
+    m_audioBufferTimeMicros = std::chrono::microseconds(
+            bufferSize / mixxx::audio::ChannelCount::stereo() /
+            sampleRate * 1000000);
 
     m_absTimeWhenPrevOutputBufferReachesDac = absTimeWhenPrevOutputBufferReachesDac;
 
-    if (m_pLink->isEnabled()) {
-        const auto sessionState = m_pLink->captureAudioSessionState();
-        const mixxx::Bpm tempo(sessionState.tempo());
-        if (m_oldTempo != tempo) {
-            m_oldTempo = tempo;
-            m_pEngineSync->notifyRateChanged(this, tempo);
-        }
-
-        auto beats = sessionState.beatAtTime(absTimeWhenPrevOutputBufferReachesDac, getQuantum());
-        auto beatDistance = std::fmod(beats, 1.);
-        m_pEngineSync->notifyBeatDistanceChanged(this, beatDistance);
+    if (!m_pLink->isEnabled()) {
+        return;
     }
+
+    const auto sessionState = m_pLink->captureAudioSessionState();
+    const mixxx::Bpm tempo(sessionState.tempo());
+    if (m_oldTempo != tempo) {
+        m_oldTempo = tempo;
+        m_pEngineSync->notifyRateChanged(this, tempo);
+    }
+
+    const auto beats = sessionState.beatAtTime(absTimeWhenPrevOutputBufferReachesDac, getQuantum());
+    const auto beatDistance = std::fmod(beats, 1.0);
+    m_pEngineSync->notifyBeatDistanceChanged(this, beatDistance);
 }
 
 void AbletonLink::onCallbackEnd(int sampleRate, int bufferSize) {
