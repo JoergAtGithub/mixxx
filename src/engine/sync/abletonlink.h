@@ -2,7 +2,9 @@
 
 #include <ableton/Link.hpp>
 #include <ableton/link/HostTimeFilter.hpp>
+#include <ableton/platforms/stl/Clock.hpp>
 
+#include "control/controlpushbutton.h"
 #include "engine/channels/enginechannel.h"
 #include "engine/enginebuffer.h"
 #include "engine/sync/syncable.h"
@@ -21,11 +23,18 @@
 /// for maximum timing accuracy. Call the appropriate, realtime-safe functions
 /// from the audio callback to do this.
 
+// std::chrono::steady_clock
+// -> selected by keyword 'stl' in ableton-link
+// Note that the resolution of std::chrono::steady_clock is not guaranteed
+// to be high resolution, but it is guaranteed to be monotonic.
+// However, on all major platforms, it is high resolution enough.
+using MixxxClockRef = ableton::platforms::stl::Clock;
+
 class AbletonLink : public QObject, public Syncable {
     Q_OBJECT
   public:
     AbletonLink(const QString& group, EngineSync* pEngineSync);
-    ~AbletonLink() override;
+    ~AbletonLink() override = default;
 
     const QString& getGroup() const override {
         return m_group;
@@ -93,17 +102,10 @@ class AbletonLink : public QObject, public Syncable {
             std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac);
     void onCallbackEnd(int sampleRate, int bufferSize);
 
-  private slots:
-    void testPrint() {
-        nonAudioThreadDebugOutput();
-        audioThreadDebugOutput();
-    }
-
   private:
-    std::unique_ptr<ableton::Link> m_pLink;
-    ableton::link::HostTimeFilter<ableton::link::platform::Clock> m_hostTimeFilter;
+    ableton::link::HostTimeFilter<MixxxClockRef> m_hostTimeFilter;
     const QString m_group;
-    EngineSync* m_pEngineSync;
+    EngineSync* m_pEngineSync; // unowned, must outlive this.
     SyncMode m_mode;
 
     mixxx::Bpm m_oldTempo;
@@ -113,6 +115,7 @@ class AbletonLink : public QObject, public Syncable {
     std::chrono::microseconds m_sampleTimeAtStartCallback;
     std::chrono::microseconds m_timeAtStartCallback;
 
+    std::unique_ptr<ableton::BasicLink<MixxxClockRef>> m_pLink;
     std::unique_ptr<ControlPushButton> m_pLinkButton;
     std::unique_ptr<ControlObject> m_pNumLinkPeers;
 
@@ -123,20 +126,12 @@ class AbletonLink : public QObject, public Syncable {
 
     double getQuantum() const {
         // Mixxx doesn't know about bars/time-signatures yet - phase
-        // syncronisation can't be implemented therefore yet
+        // synchronisation can't be implemented therefore yet
         return 1.0;
     }
 
     // Test/Debug code
 
-    QTimer* m_pTestTimer;
-    const double beat = 0.0;
-
     /// Link getters to call from audio thread.
     void audioThreadDebugOutput();
-
-    /// Link getters to call from non-audio thread.
-    void nonAudioThreadDebugOutput();
-
-    void initTestTimer(int ms, bool isRepeating);
 };

@@ -3,8 +3,8 @@
 #include <portaudio.h>
 
 #include <QString>
-#include <ableton/Link.hpp>
 #include <ableton/link/HostTimeFilter.hpp>
+#include <ableton/platforms/stl/Clock.hpp>
 #include <memory>
 
 #include "control/pollingcontrolproxy.h"
@@ -16,6 +16,13 @@
 #include "util/performancetimer.h"
 
 class SoundManager;
+
+// std::chrono::steady_clock
+// -> selected by keyword 'stl' in ableton-link
+// Note that the resolution of std::chrono::steady_clock is not guaranteed
+// to be high resolution, but it is guaranteed to be monotonic.
+// However, on all major platforms, it is high resolution enough.
+using MixxxClockRef = ableton::platforms::stl::Clock;
 
 class SoundDevicePortAudio : public SoundDevice {
   public:
@@ -88,7 +95,7 @@ class SoundDevicePortAudio : public SoundDevice {
     PerformanceTimer m_clkRefTimer;
     PaTime m_lastCallbackEntrytoDacSecs;
 
-    ableton::link::HostTimeFilter<ableton::link::platform::Clock> m_hostTimeFilter;
+    ableton::link::HostTimeFilter<MixxxClockRef> m_hostTimeFilter;
     double m_cummulatedBufferTime;
     MovingInterquartileMean m_meanOutputLatency;
 };
