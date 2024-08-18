@@ -102,6 +102,9 @@ bool allowLoadToPlayer(
 
 // Helper function for DragAndDropHelper::mousePressed and DragAndDropHelper::mouseMoveInitiatesDrag
 bool mouseMoveInitiatesDragHelper(QMouseEvent* pEvent, bool isPress) {
+    if (pEvent->buttons() != Qt::LeftButton) {
+        return false;
+    }
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     const qreal x = pEvent->position().x();
     const qreal y = pEvent->position().y();
@@ -209,9 +212,7 @@ bool DragAndDropHelper::allowDeckCloneAttempt(
 
 // static
 void DragAndDropHelper::mousePressed(QMouseEvent* pEvent) {
-    if (pEvent->button() == Qt::LeftButton) {
-        mouseMoveInitiatesDragHelper(pEvent, true);
-    }
+    mouseMoveInitiatesDragHelper(pEvent, true);
 }
 
 // static
@@ -255,38 +256,38 @@ QDrag* DragAndDropHelper::dragTrackLocations(
 
 //static
 void DragAndDropHelper::handleTrackDragEnterEvent(
-        QDragEnterEvent* event,
+        QDragEnterEvent* pEvent,
         const QString& group,
         UserSettingsPointer pConfig) {
     if (allowLoadToPlayer(group, pConfig) &&
-            dragEnterAccept(*event->mimeData(), group, true, false)) {
-        event->acceptProposedAction();
+            dragEnterAccept(*pEvent->mimeData(), group, true, false)) {
+        pEvent->acceptProposedAction();
     } else {
         qDebug() << "Ignoring drag enter event, loading not allowed";
-        event->ignore();
+        pEvent->ignore();
     }
 }
 
 //static
 void DragAndDropHelper::handleTrackDropEvent(
-        QDropEvent* event,
+        QDropEvent* pEvent,
         TrackDropTarget& target,
         const QString& group,
         UserSettingsPointer pConfig) {
     if (allowLoadToPlayer(group, pConfig)) {
-        if (allowDeckCloneAttempt(*event, group)) {
-            event->accept();
-            target.emitCloneDeck(event->mimeData()->text(), group);
+        if (allowDeckCloneAttempt(*pEvent, group)) {
+            pEvent->accept();
+            target.emitCloneDeck(pEvent->mimeData()->text(), group);
             return;
         } else {
             const QList<mixxx::FileInfo> files = dropEventFiles(
-                    *event->mimeData(), group, true, false);
+                    *pEvent->mimeData(), group, true, false);
             if (!files.isEmpty()) {
-                event->accept();
+                pEvent->accept();
                 target.emitTrackDropped(files.at(0).location(), group);
                 return;
             }
         }
     }
-    event->ignore();
+    pEvent->ignore();
 }

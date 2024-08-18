@@ -50,7 +50,6 @@ DlgAbout::DlgAbout()
             << "RJ Skerry-Ryan"
             << "Owen Williams"
             << "Daniel Sch&uuml;rmann"
-            << "Be"
             << "S&eacute;bastien Blaisot"
             << "ronso0"
             << "Jan Holthuis"
@@ -65,6 +64,7 @@ DlgAbout::DlgAbout()
     // New Contributors are added at the end.
     QStringList recentContributors;
     recentContributors
+            << "Be"
             << "Uwe Klotz"
             << "Nino MP"
             << "D&aacute;vid Szak&aacute;llas"
@@ -117,7 +117,21 @@ DlgAbout::DlgAbout()
             << "Milkii Brewster"
             << "djantti"
             << "Eugene Erokhin"
-            << "Ben Duval";
+            << "Ben Duval"
+            << "Nicolau Leal Werneck"
+            << "David Guglielmi"
+            << "Chris H. Meyer"
+            << "Mariano Ntrougkas"
+            << "Daniel Fernandes"
+            << "Gr&eacute;goire Locqueville"
+            << "grizeldi"
+            << "codingspiderfox"
+            << "Ashnidh Khandelwal"
+            << "Sergey"
+            << "Raphael Quast"
+            << "Christophe Henry"
+            << "Lukas Waslowski"
+            << "Marcin Cie&#x15B;lak"; // &#x15B; = &sacute; in HTML 5.0
 
     QStringList specialThanks;
     specialThanks
@@ -299,7 +313,6 @@ DlgAbout::DlgAbout()
             << "Russ Mannex"
             << "Brendan Austin"
             << "Lorenz Drescher"
-            << "David Guglielmi"
             << "James Atwill"
             << "Alex Barker"
             << "Jean Claveau"

@@ -41,6 +41,7 @@
 #include "widget/weffectchainpresetbutton.h"
 #include "widget/weffectchainpresetselector.h"
 #include "widget/weffectknobparametername.h"
+#include "widget/weffectmetaknob.h"
 #include "widget/weffectname.h"
 #include "widget/weffectparameterknob.h"
 #include "widget/weffectparameterknobcomposed.h"
@@ -57,9 +58,7 @@
 #include "widget/wnumberdb.h"
 #include "widget/wnumberpos.h"
 #include "widget/wnumberrate.h"
-#include "widget/woverviewhsv.h"
-#include "widget/woverviewlmh.h"
-#include "widget/woverviewrgb.h"
+#include "widget/woverview.h"
 #include "widget/wpixmapstore.h"
 #include "widget/wpushbutton.h"
 #include "widget/wraterange.h"
@@ -318,7 +317,7 @@ Qt::MouseButton LegacySkinParser::parseButtonState(const QDomNode& node,
 }
 
 QWidget* LegacySkinParser::parseSkin(const QString& skinPath, QWidget* pParent) {
-    ScopedTimer timer(u"SkinLoader::parseSkin");
+    ScopedTimer timer(QStringLiteral("SkinLoader::parseSkin"));
     qDebug() << "LegacySkinParser loading skin:" << skinPath;
 
     m_pContext = std::make_unique<SkinContext>(m_pConfig, skinPath + "/skin.xml");
@@ -586,6 +585,8 @@ QList<QWidget*> LegacySkinParser::parseNode(const QDomElement& node) {
         result = wrapWidget(parseEffectChainPresetSelector(node));
     } else if (nodeName == "EffectName") {
         result = wrapWidget(parseEffectName(node));
+    } else if (nodeName == "EffectMetaKnob") {
+        result = wrapWidget(parseEffectMetaKnob(node));
     } else if (nodeName == "EffectSelector") {
         result = wrapWidget(parseEffectSelector(node));
     } else if (nodeName == "EffectParameterKnob") {
@@ -898,11 +899,13 @@ QWidget* LegacySkinParser::parseBackground(const QDomElement& node,
     QLabel* bg = new QLabel(pInnerWidget);
 
     QString filename = m_pContext->selectString(node, "Path");
-    QPixmap* background = WPixmapStore::getPixmapNoCache(
-        m_pContext->makeSkinPath(filename), m_pContext->getScaleFactor());
+    auto background = WPixmapStore::getPixmapNoCache(
+            m_pContext->makeSkinPath(filename), m_pContext->getScaleFactor());
 
     bg->move(0, 0);
     if (background != nullptr && !background->isNull()) {
+        // setPixmap makes a copy of the background
+        // which can be disposed of afterwards.
         bg->setPixmap(*background);
     }
 
@@ -927,10 +930,6 @@ QWidget* LegacySkinParser::parseBackground(const QDomElement& node,
     pOuterWidget->setBackgroundRole(QPalette::Window);
     pOuterWidget->setPalette(palette);
     pOuterWidget->setAutoFillBackground(true);
-
-    // WPixmapStore::getPixmapNoCache() allocated background and gave us
-    // ownership. QLabel::setPixmap makes a copy, so we have to delete this.
-    delete background;
 
     return bg;
 }
@@ -981,17 +980,8 @@ QWidget* LegacySkinParser::parseOverview(const QDomElement& node) {
         return nullptr;
     }
 
-    WOverview* overviewWidget = nullptr;
-
-    // "RGB" = "2", "HSV" = "1" or "Filtered" = "0" (LMH) waveform overview type
-    int type = m_pConfig->getValue(ConfigKey("[Waveform]","WaveformOverviewType"), 2);
-    if (type == 0) {
-        overviewWidget = new WOverviewLMH(group, m_pPlayerManager, m_pConfig, m_pParent);
-    } else if (type == 1) {
-        overviewWidget = new WOverviewHSV(group, m_pPlayerManager, m_pConfig, m_pParent);
-    } else {
-        overviewWidget = new WOverviewRGB(group, m_pPlayerManager, m_pConfig, m_pParent);
-    }
+    WOverview* overviewWidget =
+            new WOverview(group, m_pPlayerManager, m_pConfig, m_pParent);
 
     connect(overviewWidget,
             &WOverview::trackDropped,
@@ -1109,6 +1099,20 @@ QWidget* LegacySkinParser::parseTrackProperty(const QDomElement& node) {
         }
     }
 
+    // Relay for the label's WTrackMenu (which is created only on demand):
+    // Emitted before/after deleting a track file via that menu
+    // IF that track is in the current view.
+    connect(pTrackProperty,
+            &WTrackProperty::saveCurrentViewState,
+            m_pLibrary,
+            &Library::slotSaveCurrentViewState,
+            Qt::DirectConnection);
+    connect(pTrackProperty,
+            &WTrackProperty::restoreCurrentViewState,
+            m_pLibrary,
+            &Library::slotRestoreCurrentViewState,
+            Qt::DirectConnection);
+
     connect(pPlayer,
             &BaseTrackPlayer::newTrackLoaded,
             pTrackProperty,
@@ -1185,11 +1189,6 @@ QWidget* LegacySkinParser::parseStarRating(const QDomElement& node) {
         return nullptr;
     }
 
-    // Ensure stars_up/down controls are created and slots available.
-    // If they have already been created, existing connections were
-    // removed when the previous star widget was destroyed.
-    pPlayer->ensureStarControlsArePrepared();
-
     WStarRating* pStarRating = new WStarRating(m_pParent);
     commonWidgetSetup(node, pStarRating, false);
     pStarRating->setup(node, *m_pContext);
@@ -1198,14 +1197,10 @@ QWidget* LegacySkinParser::parseStarRating(const QDomElement& node) {
             &BaseTrackPlayer::trackRatingChanged,
             pStarRating,
             &WStarRating::slotSetRating);
-    connect(pPlayer,
-            &BaseTrackPlayer::trackRatingChangeRequest,
-            pStarRating,
-            &WStarRating::slotRatingUpDownRequest);
     connect(pStarRating,
-            &WStarRating::ratingChanged,
+            &WStarRating::ratingChangeRequest,
             pPlayer,
-            &BaseTrackPlayer::slotSetTrackRating);
+            &BaseTrackPlayer::slotTrackRatingChangeRequest);
 
     TrackPointer pTrack = pPlayer->getLoadedTrack();
     if (pTrack) {
@@ -1569,6 +1564,16 @@ QWidget* LegacySkinParser::parseLibrary(const QDomElement& node) {
                     BaseTrackTableModel::kBpmColumnPrecisionDefault);
     BaseTrackTableModel::setBpmColumnPrecision(bpmColumnPrecision);
 
+    const auto keyColorsEnabled =
+            m_pConfig->getValue(
+                    ConfigKey("[Config]", "KeyColorsEnabled"),
+                    BaseTrackTableModel::kKeyColorsEnabledDefault);
+    BaseTrackTableModel::setKeyColorsEnabled(keyColorsEnabled);
+
+    ColorPaletteSettings colorPaletteSettings(m_pConfig);
+    ColorPalette colorPalette = colorPaletteSettings.getTrackColorPalette();
+    BaseTrackTableModel::setKeyColorPalette(colorPaletteSettings.getConfigKeyColorPalette());
+
     const auto applyPlayedTrackColor =
             m_pConfig->getValue(
                     mixxx::library::prefs::kApplyPlayedTrackColorConfigKey,
@@ -1731,6 +1736,7 @@ QDomElement LegacySkinParser::loadTemplate(const QString& path) {
 
     if (!templateFile.open(QIODevice::ReadOnly)) {
         qWarning() << "Could not open template file:" << absolutePath;
+        return QDomElement();
     }
 
     QDomDocument tmpl("template");
@@ -1895,6 +1901,18 @@ QWidget* LegacySkinParser::parseEffectSelector(const QDomElement& node) {
         m_pControllerManager->getControllerLearningEventFilter());
     pSelector->Init();
     return pSelector;
+}
+
+QWidget* LegacySkinParser::parseEffectMetaKnob(const QDomElement& node) {
+    WEffectMetaKnob* pMetaKnob =
+            new WEffectMetaKnob(m_pParent, m_pEffectsManager);
+    commonWidgetSetup(node, pMetaKnob);
+    pMetaKnob->setup(node, *m_pContext);
+    pMetaKnob->installEventFilter(m_pKeyboard);
+    pMetaKnob->installEventFilter(
+            m_pControllerManager->getControllerLearningEventFilter());
+    pMetaKnob->Init();
+    return pMetaKnob;
 }
 
 QWidget* LegacySkinParser::parseEffectParameterKnob(const QDomElement& node) {
@@ -2417,12 +2435,13 @@ void LegacySkinParser::setupConnections(const QDomNode& node, WBaseWidget* pWidg
                     subkey.item += "_toggle";
                     shortcut = m_pKeyboard->getKeyboardConfig()->getValueString(subkey);
                     addShortcutToToolTip(pWidget, shortcut, tr("toggle"));
-                } else if ((pSlider = qobject_cast<const WSliderComposed*>(pWidget->toQWidget()))) {
+                } else if ((pSlider = qobject_cast<const WSliderComposed*>(pWidget->toQWidget())) ||
+                        qobject_cast<const WKnobComposed*>(pWidget->toQWidget())) {
                     // check for "_up", "_down", "_up_small", "_down_small"
                     ConfigKey subkey;
                     QString shortcut;
 
-                    if (pSlider->isHorizontal()) {
+                    if (pSlider && pSlider->tryParseHorizontal(node)) {
                         subkey = configKey;
                         subkey.item += "_up";
                         shortcut = m_pKeyboard->getKeyboardConfig()->getValueString(subkey);
@@ -2442,7 +2461,7 @@ void LegacySkinParser::setupConnections(const QDomNode& node, WBaseWidget* pWidg
                         subkey.item += "_down_small";
                         shortcut = m_pKeyboard->getKeyboardConfig()->getValueString(subkey);
                         addShortcutToToolTip(pWidget, shortcut, tr("left small"));
-                    } else {
+                    } else { // vertical slider of knob
                         subkey = configKey;
                         subkey.item += "_up";
                         shortcut = m_pKeyboard->getKeyboardConfig()->getValueString(subkey);

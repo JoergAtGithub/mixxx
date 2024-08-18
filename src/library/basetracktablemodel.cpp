@@ -7,11 +7,12 @@
 #include "library/dao/trackschema.h"
 #include "library/starrating.h"
 #include "library/tabledelegates/bpmdelegate.h"
+#include "library/tabledelegates/checkboxdelegate.h"
 #include "library/tabledelegates/colordelegate.h"
 #include "library/tabledelegates/coverartdelegate.h"
+#include "library/tabledelegates/keydelegate.h"
 #include "library/tabledelegates/locationdelegate.h"
 #include "library/tabledelegates/multilineeditdelegate.h"
-#include "library/tabledelegates/playcountdelegate.h"
 #include "library/tabledelegates/previewbuttondelegate.h"
 #include "library/tabledelegates/stardelegate.h"
 #include "library/trackcollection.h"
@@ -19,9 +20,12 @@
 #include "mixer/playerinfo.h"
 #include "mixer/playermanager.h"
 #include "moc_basetracktablemodel.cpp"
+#include "track/keyutils.h"
 #include "track/track.h"
 #include "util/assert.h"
 #include "util/clipboard.h"
+#include "util/color/colorpalette.h"
+#include "util/color/predefinedcolorpalettes.h"
 #include "util/datetime.h"
 #include "util/db/sqlite.h"
 #include "util/logger.h"
@@ -99,9 +103,13 @@ QSqlDatabase cloneDatabase(
 constexpr int BaseTrackTableModel::kBpmColumnPrecisionDefault;
 constexpr int BaseTrackTableModel::kBpmColumnPrecisionMinimum;
 constexpr int BaseTrackTableModel::kBpmColumnPrecisionMaximum;
+constexpr bool BaseTrackTableModel::kKeyColorsEnabledDefault;
 
 int BaseTrackTableModel::s_bpmColumnPrecision =
         kBpmColumnPrecisionDefault;
+bool BaseTrackTableModel::s_keyColorsEnabled = kKeyColorsEnabledDefault;
+ColorPalette BaseTrackTableModel::s_keyColorPalette =
+        mixxx::PredefinedColorPalettes::kDefaultKeyColorPalette;
 
 // static
 void BaseTrackTableModel::setBpmColumnPrecision(int precision) {
@@ -114,6 +122,16 @@ void BaseTrackTableModel::setBpmColumnPrecision(int precision) {
     s_bpmColumnPrecision = precision;
 }
 
+// static
+void BaseTrackTableModel::setKeyColorsEnabled(bool keyColorsEnabled) {
+    s_keyColorsEnabled = keyColorsEnabled;
+}
+
+// static
+void BaseTrackTableModel::setKeyColorPalette(const ColorPalette& palette) {
+    s_keyColorPalette = palette;
+}
+
 bool BaseTrackTableModel::s_bApplyPlayedTrackColor =
         kApplyPlayedTrackColorDefault;
 
@@ -121,7 +139,7 @@ void BaseTrackTableModel::setApplyPlayedTrackColor(bool apply) {
     s_bApplyPlayedTrackColor = apply;
 }
 
-//static
+// static
 QStringList BaseTrackTableModel::defaultTableColumns() {
     return kDefaultTableColumns;
 }
@@ -135,7 +153,8 @@ BaseTrackTableModel::BaseTrackTableModel(
           m_pTrackCollectionManager(pTrackCollectionManager),
           m_previewDeckGroup(PlayerManager::groupForPreviewDeck(0)),
           m_backgroundColorOpacity(WLibrary::kDefaultTrackTableBackgroundColorOpacity),
-          m_playedInactiveColor(QColor::fromRgb(WTrackTableView::kDefaultPlayedInactiveColorHex)) {
+          m_trackPlayedColor(QColor(WTrackTableView::kDefaultTrackPlayedColor)),
+          m_trackMissingColor(QColor(WTrackTableView::kDefaultTrackMissingColor)) {
     connect(&pTrackCollectionManager->internalCollection()->getTrackDAO(),
             &TrackDAO::forceModelUpdate,
             this,
@@ -461,19 +480,27 @@ QAbstractItemDelegate* BaseTrackTableModel::delegateForColumn(
     m_backgroundColorOpacity = pTableView->getBackgroundColorOpacity();
     // This is the color used for the text of played tracks.
     // data() uses this to compose the ForegroundRole QBrush if 'played' is checked.
-    m_playedInactiveColor = pTableView->getPlayedInactiveColor();
+    m_trackPlayedColor = pTableView->getTrackPlayedColor();
     connect(pTableView,
-            &WTrackTableView::playedInactiveColorChanged,
+            &WTrackTableView::trackPlayedColorChanged,
             this,
             [this](QColor col) {
-                m_playedInactiveColor = col;
+                m_trackPlayedColor = col;
+            });
+    // Same for the 'missing' color
+    m_trackMissingColor = pTableView->getTrackMissingColor();
+    connect(pTableView,
+            &WTrackTableView::trackMissingColorChanged,
+            this,
+            [this](QColor col) {
+                m_trackMissingColor = col;
             });
     if (index == fieldIndex(ColumnCache::COLUMN_LIBRARYTABLE_RATING)) {
         return new StarDelegate(pTableView);
     } else if (index == fieldIndex(ColumnCache::COLUMN_LIBRARYTABLE_BPM)) {
         return new BPMDelegate(pTableView);
     } else if (index == fieldIndex(ColumnCache::COLUMN_LIBRARYTABLE_TIMESPLAYED)) {
-        return new PlayCountDelegate(pTableView);
+        return new CheckboxDelegate(pTableView, QStringLiteral("LibraryPlayedCheckbox"));
     } else if (PlayerManager::numPreviewDecks() > 0 &&
             index == fieldIndex(ColumnCache::COLUMN_LIBRARYTABLE_PREVIEW)) {
         return new PreviewButtonDelegate(pTableView, index);
@@ -497,6 +524,8 @@ QAbstractItemDelegate* BaseTrackTableModel::delegateForColumn(
                 this,
                 &BaseTrackTableModel::slotRefreshCoverRows);
         return pCoverArtDelegate;
+    } else if (index == fieldIndex(ColumnCache::COLUMN_LIBRARYTABLE_KEY)) {
+        return new KeyDelegate(pTableView);
     }
     return nullptr;
 }
@@ -522,15 +551,42 @@ QVariant BaseTrackTableModel::data(
         DEBUG_ASSERT(m_backgroundColorOpacity <= 1.0);
         bgColor.setAlphaF(static_cast<float>(m_backgroundColorOpacity));
         return QBrush(bgColor);
-    } else if (role == Qt::ForegroundRole && s_bApplyPlayedTrackColor) {
-        // Custom text color for played tracks
-        auto playedRaw = rawSiblingValue(
+    } else if (role == Qt::ForegroundRole) {
+        // Custom text color for missing tracks
+        // Visible in playlists, crates and Missing feature.
+        // Check this first so played, missing tracks (unlikely case, but possible)
+        // get the 'missing' color.
+        // Note: this is not helpful in Tracks -> Missing, so override it with
+        // the regular track color (WTrackTableView { color: #xxx; }) like this:
+        // #DlgMissing WTrackTableView { qproperty-trackMissingColor: #xxx; }
+        auto missingRaw = rawSiblingValue(
                 index,
-                ColumnCache::COLUMN_LIBRARYTABLE_PLAYED);
-        if (!playedRaw.isNull() &&
-                playedRaw.canConvert<bool>() &&
-                playedRaw.toBool()) {
-            return QVariant::fromValue(m_playedInactiveColor);
+                ColumnCache::COLUMN_TRACKLOCATIONSTABLE_FSDELETED);
+        if (!missingRaw.isNull() &&
+                missingRaw.canConvert<bool>() &&
+                missingRaw.toBool()) {
+            return QVariant::fromValue(m_trackMissingColor);
+        }
+        if (s_bApplyPlayedTrackColor) {
+            // Custom text color for played tracks
+            auto playedRaw = rawSiblingValue(
+                    index,
+                    ColumnCache::COLUMN_LIBRARYTABLE_PLAYED);
+            if (!playedRaw.isNull() &&
+                    playedRaw.canConvert<bool>() &&
+                    playedRaw.toBool()) {
+                return QVariant::fromValue(m_trackPlayedColor);
+            }
+        }
+    }
+
+    // Return the preferred (default) width of the Color column.
+    // This works around inconsistencies when the width is determined by
+    // color values. See https://github.com/mixxxdj/mixxx/issues/12850
+    if (role == Qt::SizeHintRole) {
+        const auto field = mapColumn(index.column());
+        if (field == ColumnCache::COLUMN_LIBRARYTABLE_COLOR) {
+            return QSize(defaultColumnWidth() / 2, 0);
         }
     }
 
@@ -540,7 +596,8 @@ QVariant BaseTrackTableModel::data(
             role != Qt::CheckStateRole &&
             role != Qt::ToolTipRole &&
             role != kDataExportRole &&
-            role != Qt::TextAlignmentRole) {
+            role != Qt::TextAlignmentRole &&
+            role != Qt::DecorationRole) {
         return QVariant();
     }
 
@@ -671,7 +728,7 @@ QVariant BaseTrackTableModel::roleValue(
         int role) const {
     const auto field = mapColumn(index.column());
     if (field == ColumnCache::COLUMN_LIBRARYTABLE_INVALID) {
-        return std::move(rawValue);
+        return rawValue;
     }
     switch (role) {
     case Qt::ToolTipRole:
@@ -685,12 +742,12 @@ QVariant BaseTrackTableModel::roleValue(
             return QVariant();
         case ColumnCache::COLUMN_LIBRARYTABLE_RATING:
         case ColumnCache::COLUMN_LIBRARYTABLE_TIMESPLAYED:
-            return std::move(rawValue);
+            return rawValue;
         default:
             // Same value as for Qt::DisplayRole (see below)
             break;
         }
-        M_FALLTHROUGH_INTENDED;
+        [[fallthrough]];
     // NOTE: for export we need to fall through to Qt::DisplayRole,
     // so do not add any other role cases here, or the export
     // will be empty
@@ -754,13 +811,16 @@ QVariant BaseTrackTableModel::roleValue(
             VERIFY_OR_DEBUG_ASSERT(rawValue.canConvert<QDateTime>()) {
                 return QVariant();
             }
+            // TODO: This is a hot code path, executed very often while library scrolling,
+            // and localDateTimeFromUtc is time consuming, probably because,
+            // we pass around QDateTime with a wrong time zone set
             QDateTime dt = mixxx::localDateTimeFromUtc(rawValue.toDateTime());
             if (role == Qt::ToolTipRole || role == kDataExportRole) {
                 // localized text date: "Wednesday, May 20, 1998 03:40:13 AM CEST"
                 return dt;
             }
             if (field == ColumnCache::COLUMN_PLAYLISTTRACKSTABLE_DATETIMEADDED) {
-                // Timstamp column in history feature:
+                // Timestamp column in history feature:
                 // Use localized date/time format without text: "5/20/98 03:40 AM"
                 return mixxx::displayLocalDateTime(dt);
             }
@@ -784,6 +844,9 @@ QVariant BaseTrackTableModel::roleValue(
                 return QVariant();
             }
             DEBUG_ASSERT(lastPlayedAt.timeSpec() == Qt::UTC);
+            // TODO: This is a hot code path, executed very often while library scrolling,
+            // and localDateTimeFromUtc is time consuming, probably because,
+            // we pass around QDateTime with a wrong time zone set
             QDateTime dt = mixxx::localDateTimeFromUtc(lastPlayedAt);
             if (role == Qt::ToolTipRole || role == kDataExportRole) {
                 return dt;
@@ -811,8 +874,9 @@ QVariant BaseTrackTableModel::roleValue(
                 if (role == Qt::ToolTipRole || role == kDataExportRole) {
                     return QString::number(bpm.value(), 'f', 4);
                 } else {
-                    // custom precision, set in DlgPrefLibrary
-                    return QString::number(bpm.value(), 'f', s_bpmColumnPrecision);
+                    // Use the locale here to make the display and editor consistent.
+                    // Custom precision, set in DlgPrefLibrary.
+                    return QLocale().toString(bpm.value(), 'f', s_bpmColumnPrecision);
                 }
             } else {
                 return QChar('-');
@@ -824,7 +888,7 @@ QVariant BaseTrackTableModel::roleValue(
             }
             if (rawValue.canConvert<mixxx::audio::Bitrate>()) {
                 // return value as is
-                return std::move(rawValue);
+                return rawValue;
             } else {
                 VERIFY_OR_DEBUG_ASSERT(rawValue.canConvert<int>()) {
                     return QVariant();
@@ -836,7 +900,7 @@ QVariant BaseTrackTableModel::roleValue(
                 }
                 if (mixxx::audio::Bitrate(bitrateValue).isValid()) {
                     // return value as is
-                    return std::move(rawValue);
+                    return rawValue;
                 } else {
                     // clear invalid values
                     return QVariant();
@@ -853,11 +917,7 @@ QVariant BaseTrackTableModel::roleValue(
                     ColumnCache::COLUMN_LIBRARYTABLE_KEY_ID);
             if (keyCodeValue.isNull()) {
                 // Otherwise, just use the column value as is
-                return std::move(rawValue);
-            }
-            // Convert or clear invalid values
-            VERIFY_OR_DEBUG_ASSERT(keyCodeValue.canConvert<int>()) {
-                return QVariant();
+                return rawValue;
             }
             bool ok;
             const auto keyCode = keyCodeValue.toInt(&ok);
@@ -868,8 +928,7 @@ QVariant BaseTrackTableModel::roleValue(
             if (key == mixxx::track::io::key::INVALID) {
                 return QVariant();
             }
-            // Render the key with the user-provided notation
-            return KeyUtils::keyToString(key);
+            return QVariant::fromValue(KeyUtils::keyToString(key));
         }
         case ColumnCache::COLUMN_LIBRARYTABLE_REPLAYGAIN: {
             if (rawValue.isNull()) {
@@ -977,11 +1036,40 @@ QVariant BaseTrackTableModel::roleValue(
             return QVariant(); // default AlignLeft for all other columns
         }
     }
+    case Qt::DecorationRole: {
+        switch (field) {
+        case ColumnCache::COLUMN_LIBRARYTABLE_KEY: {
+            // return color of key
+            if (!s_keyColorsEnabled) {
+                return QVariant();
+            }
+            const QVariant keyCodeValue = rawSiblingValue(
+                    index,
+                    ColumnCache::COLUMN_LIBRARYTABLE_KEY_ID);
+            if (keyCodeValue.isNull()) {
+                return QVariant();
+            }
+            bool ok;
+            const auto keyCode = keyCodeValue.toInt(&ok);
+            VERIFY_OR_DEBUG_ASSERT(ok) {
+                return QVariant();
+            }
+            const auto key = KeyUtils::keyFromNumericValue(keyCode);
+            if (key == mixxx::track::io::key::INVALID) {
+                return QVariant();
+            }
+            return QVariant::fromValue(KeyUtils::keyToColor(key, s_keyColorPalette));
+        }
+        default:
+            return QVariant();
+        }
+        break;
+    }
     default:
         DEBUG_ASSERT(!"unexpected role");
         break;
     }
-    return std::move(rawValue);
+    return rawValue;
 }
 
 bool BaseTrackTableModel::isBpmLocked(

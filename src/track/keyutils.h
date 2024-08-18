@@ -8,6 +8,7 @@
 #include "control/controlproxy.h"
 #include "proto/keys.pb.h"
 #include "track/keys.h"
+#include "util/color/colorpalette.h"
 #include "util/math.h"
 #include "util/types.h"
 
@@ -67,6 +68,8 @@ class KeyUtils {
     static KeyNotation keyNotationFromNumericValue(double value);
 
     static double keyToNumericValue(mixxx::track::io::key::ChromaticKey key);
+
+    static QColor keyToColor(mixxx::track::io::key::ChromaticKey key, const ColorPalette& palette);
 
     static QPair<mixxx::track::io::key::ChromaticKey, double> scaleKeyOctaves(
         mixxx::track::io::key::ChromaticKey key, double scale);

@@ -7,6 +7,7 @@
 #include "library/columncache.h"
 #include "library/trackmodel.h"
 #include "track/track_decl.h"
+#include "util/color/colorpalette.h"
 
 class TrackCollectionManager;
 
@@ -104,6 +105,11 @@ class BaseTrackTableModel : public QAbstractTableModel, public TrackModel {
     static constexpr int kBpmColumnPrecisionMinimum = 0;
     static constexpr int kBpmColumnPrecisionMaximum = 10;
     static void setBpmColumnPrecision(int precision);
+
+    static constexpr bool kKeyColorsEnabledDefault = true;
+    static void setKeyColorsEnabled(bool keyColorsEnabled);
+
+    static void setKeyColorPalette(const ColorPalette& palette);
 
     static constexpr bool kApplyPlayedTrackColorDefault = true;
     static void setApplyPlayedTrackColor(bool apply);
@@ -275,7 +281,8 @@ class BaseTrackTableModel : public QAbstractTableModel, public TrackModel {
     const QString m_previewDeckGroup;
 
     double m_backgroundColorOpacity;
-    QColor m_playedInactiveColor;
+    QColor m_trackPlayedColor;
+    QColor m_trackMissingColor;
 
     ColumnCache m_columnCache;
 
@@ -292,6 +299,8 @@ class BaseTrackTableModel : public QAbstractTableModel, public TrackModel {
     mutable QModelIndex m_toolTipIndex;
 
     static int s_bpmColumnPrecision;
+    static bool s_keyColorsEnabled;
+    static ColorPalette s_keyColorPalette;
 
     static bool s_bApplyPlayedTrackColor;
 };

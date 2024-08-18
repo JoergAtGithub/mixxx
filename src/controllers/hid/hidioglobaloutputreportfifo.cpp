@@ -3,6 +3,7 @@
 #include <hidapi.h>
 
 #include "controllers/hid/hiddevice.h"
+#include "util/cmdlineargs.h"
 #include "util/compatibility/qmutex.h"
 #include "util/runtimeloggingcategory.h"
 #include "util/string.h"
@@ -53,7 +54,7 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
     if (pFront == nullptr) {
         // No data in FIFO to be send
         // Return with false, to signal the caller, that no time consuming IO
-        // operation was ncessary
+        // operation was necessary
         return false;
     }
 
@@ -77,7 +78,7 @@ bool HidIoGlobalOutputReportFifo::sendNextReportDataset(QMutex* pHidDeviceAndPol
 
     hidDeviceLock.unlock();
 
-    if (result != -1) {
+    if (result != -1 && CmdlineArgs::Instance().getControllerDebug()) {
         qCDebug(logOutput) << "t:" << startOfHidWrite.formatMillisWithUnit()
                            << " " << result << "bytes (including ReportID of"
                            << static_cast<quint8>(reportToSend[0])

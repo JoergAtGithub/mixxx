@@ -401,6 +401,7 @@ AutoDJProcessor::AutoDJError AutoDJProcessor::toggleAutoDJ(bool enable) {
         for (int i = 2; i < m_decks.length(); ++i) {
             if (m_decks[i] && m_decks[i]->isPlaying()) {
                 // Keep the current state.
+                emitAutoDJStateChanged(m_eState);
                 emit autoDJError(ADJ_DECKS_3_4_PLAYING);
                 return ADJ_DECKS_3_4_PLAYING;
             }
@@ -576,6 +577,10 @@ AutoDJProcessor::AutoDJError AutoDJProcessor::toggleAutoDJ(bool enable) {
                 &AutoDJProcessor::crossfaderChanged);
         for (const auto& pDeck : std::as_const(m_decks)) {
             pDeck->disconnect(this);
+        }
+        if (m_pConfig->getValue<bool>(ConfigKey(kConfigKey,
+                    QStringLiteral("center_xfader_when_disabling")))) {
+            m_pCOCrossfader->set(0);
         }
         emitAutoDJStateChanged(m_eState);
     }

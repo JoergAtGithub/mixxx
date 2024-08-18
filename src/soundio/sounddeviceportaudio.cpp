@@ -914,10 +914,17 @@ int SoundDevicePortAudio::callbackProcessClkRef(
 #endif
         m_bSetThreadPriority = true;
 
-#ifdef __SSE__
         // This disables the denormals calculations, to avoid a
         // performance penalty of ~20
         // https://github.com/mixxxdj/mixxx/issues/7747
+
+        // On Emscripten (WebAssembly) denormals-as-zero/flush-as-zero are
+        // neither supported nor configurable. This may lead to degraded
+        // performance compared to other platforms and may be addressed in the
+        // future if/when WebAssembly adds support for DAZ/FTZ. For further
+        // discussion and links see https://github.com/mixxxdj/mixxx/pull/12917
+
+#if defined(__SSE__) && !defined(__EMSCRIPTEN__)
         if (!_MM_GET_DENORMALS_ZERO_MODE()) {
             qDebug() << "SSE: Enabling denormals to zero mode";
             _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
@@ -985,7 +992,7 @@ int SoundDevicePortAudio::callbackProcessClkRef(
 
     // Send audio from the soundcard's input off to the SoundManager...
     if (in) {
-        ScopedTimer t(u"SoundDevicePortAudio::callbackProcess input %1",
+        ScopedTimer t(QStringLiteral("SoundDevicePortAudio::callbackProcess input %1"),
                 m_deviceId.debugName());
         composeInputBuffer(in, framesPerBuffer, 0, m_inputParams.channelCount);
         m_pSoundManager->pushInputBuffers(m_audioInputs, framesPerBuffer);
@@ -994,14 +1001,14 @@ int SoundDevicePortAudio::callbackProcessClkRef(
     m_pSoundManager->readProcess(framesPerBuffer);
 
     {
-        ScopedTimer t(u"SoundDevicePortAudio::callbackProcess prepare %1",
+        ScopedTimer t(QStringLiteral("SoundDevicePortAudio::callbackProcess prepare %1"),
                 m_deviceId.debugName());
         m_pSoundManager->onDeviceOutputCallback(
                 framesPerBuffer, m_absTimeWhenPrevOutputBufferReachesDac);
     }
 
     if (out) {
-        ScopedTimer t(u"SoundDevicePortAudio::callbackProcess output %1",
+        ScopedTimer t(QStringLiteral("SoundDevicePortAudio::callbackProcess output %1"),
                 m_deviceId.debugName());
 
         if (m_outputParams.channelCount <= 0) {

@@ -211,13 +211,11 @@ void EffectSlot::addEffectParameterSlot(EffectParameterType parameterType) {
     EffectParameterSlotBasePointer pParameterSlot =
             EffectParameterSlotBasePointer();
     if (parameterType == EffectParameterType::Knob) {
-        pParameterSlot = static_cast<EffectParameterSlotBasePointer>(
-                new EffectKnobParameterSlot(
-                        m_group, m_iNumParameterSlots[parameterType]));
+        pParameterSlot = QSharedPointer<EffectKnobParameterSlot>::create(
+                m_group, m_iNumParameterSlots[parameterType]);
     } else if (parameterType == EffectParameterType::Button) {
-        pParameterSlot = static_cast<EffectParameterSlotBasePointer>(
-                new EffectButtonParameterSlot(
-                        m_group, m_iNumParameterSlots[parameterType]));
+        pParameterSlot = QSharedPointer<EffectButtonParameterSlot>::create(
+                m_group, m_iNumParameterSlots[parameterType]);
     }
     ++m_iNumParameterSlots[parameterType];
     const auto pCONumParameterSlots = m_pControlNumParameterSlots[parameterType];
@@ -247,12 +245,14 @@ EffectParameterSlotBasePointer EffectSlot::getEffectParameterSlot(
 }
 
 void EffectSlot::loadEffectFromPreset(const EffectPresetPointer pPreset) {
-    if (!pPreset || pPreset->isEmpty()) {
+    EffectManifestPointer pManifest;
+    if (pPreset && !pPreset->isEmpty()) {
+        pManifest = m_pBackendManager->getManifest(pPreset);
+    }
+    if (!pManifest) {
         loadEffectInner(nullptr, nullptr, true);
         return;
     }
-    EffectManifestPointer pManifest = m_pBackendManager->getManifest(
-            pPreset->id(), pPreset->backendType());
     loadEffectInner(pManifest, pPreset, true);
 }
 
@@ -559,7 +559,7 @@ double EffectSlot::getMetaParameter() const {
 // This function is for the superknob to update individual effects' meta knobs
 // slotEffectMetaParameter does not need to update m_pControlMetaParameter's value
 void EffectSlot::setMetaParameter(double v, bool force) {
-    if (!m_metaknobSoftTakeover.ignore(m_pControlMetaParameter.get(), v) ||
+    if (!m_metaknobSoftTakeover.ignore(*m_pControlMetaParameter, v) ||
             !m_pControlEnabled->toBool() || force) {
         m_pControlMetaParameter->set(v);
         slotEffectMetaParameter(v, force);

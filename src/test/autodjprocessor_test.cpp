@@ -23,7 +23,7 @@ using ::testing::Return;
 
 namespace {
 const int kDefaultTransitionTime = 10;
-const mixxx::audio::ChannelCount kChannelCount = mixxx::kEngineChannelCount;
+const mixxx::audio::ChannelCount kChannelCount = mixxx::kEngineChannelOutputCount;
 const QString kTrackLocationTest = QStringLiteral("id3-test-data/cover-test-png.mp3");
 const QString kAppGroup = QStringLiteral("[App]");
 } // namespace
@@ -108,8 +108,6 @@ class FakeDeck : public BaseTrackPlayer {
 
     MOCK_METHOD1(slotCloneFromGroup, void(const QString& group));
     MOCK_METHOD0(slotCloneDeck, void());
-
-    void slotSetTrackRating(int /*unused*/) override{};
 
     TrackPointer loadedTrack;
     ControlObject trackSamples;
