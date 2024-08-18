@@ -27,7 +27,7 @@ AbletonLink::AbletonLink(const QString& group, EngineSync* pEngineSync)
           m_pNumLinkPeers(std::make_unique<ControlObject>(ConfigKey(group, "num_peers"))) {
     m_timeAtStartCallback = m_pLink->clock().micros();
 
-    m_pLinkButton->setButtonMode(ControlPushButton::TOGGLE);
+    m_pLinkButton->setButtonMode(mixxx::control::ButtonMode::Toggle);
     m_pLinkButton->setStates(2);
 
     connect(m_pLinkButton.get(),
