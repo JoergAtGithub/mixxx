@@ -449,22 +449,25 @@ void EngineSync::notifyScratching(Syncable* pSyncable, bool scratching) {
             // playing, then it will need to sync phase to the beat distance
             // from Ableton Link.
 
-            auto playPos = pSyncable->getChannel()->getEngineBuffer()->getVisualPlayPos();
-            auto trackEnd = pSyncable->getChannel()
-                                    ->getEngineBuffer()
-                                    ->getTrackEndPosition()
-                                    .value();
-            auto trackSampleRate = pSyncable->getChannel()->getEngineBuffer()->getTrackSampleRate();
-            auto chBeatDistance = (pSyncable->getBeatDistance() /
-                    pSyncable->getBpm().value() * 60 * trackSampleRate /
-                    trackEnd);
-            auto abletonBeatDistance = (m_pAbletonLink->getBeatDistance() /
-                    m_pAbletonLink->getBpm().value() * 60 * trackSampleRate /
-                    trackEnd);
+            auto* engineBuffer = pSyncable->getChannel()->getEngineBuffer();
+            DEBUG_ASSERT(engineBuffer);
 
-            pSyncable->getChannel()->getEngineBuffer()->slotControlSeek(
-                    playPos - chBeatDistance + abletonBeatDistance);
-            pSyncable->getChannel()->getEngineBuffer()->requestSyncPhase();
+            const auto playPos = engineBuffer->getVisualPlayPos();
+            const auto trackEnd = engineBuffer->getTrackEndPosition().value();
+            const auto trackSampleRate = engineBuffer->getTrackSampleRate();
+            const auto bpmValue = pSyncable->getBpm().value();
+            const auto abletonBpmValue = m_pAbletonLink->getBpm().value();
+
+            const auto chBeatDistance =
+                    (pSyncable->getBeatDistance() * 60 * trackSampleRate) /
+                    (bpmValue * trackEnd);
+            const auto abletonBeatDistance =
+                    (m_pAbletonLink->getBeatDistance() * 60 * trackSampleRate) /
+                    (abletonBpmValue * trackEnd);
+
+            const auto seekPos = playPos - chBeatDistance + abletonBeatDistance;
+            engineBuffer->slotControlSeek(seekPos);
+            engineBuffer->requestSyncPhase();
         } else {
             // If the Leader isn't the only player, then it will need to sync
             // phase like followers do.
