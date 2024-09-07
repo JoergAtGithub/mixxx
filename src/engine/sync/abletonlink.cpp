@@ -139,14 +139,11 @@ void AbletonLink::notifyLeaderParamSource() {
     // TODO: Check the special case of half/double BPM sync.
 }
 
-void AbletonLink::reinitLeaderParams(double beatDistance, mixxx::Bpm baseBpm, mixxx::Bpm bpm) {
-    Q_UNUSED(baseBpm)
+void AbletonLink::reinitLeaderParams(double beatDistance, mixxx::Bpm, mixxx::Bpm bpm) {
     updateLeaderBeatDistance(beatDistance);
     updateLeaderBpm(bpm);
 }
-
-void AbletonLink::updateInstantaneousBpm(mixxx::Bpm bpm) {
-    Q_UNUSED(bpm)
+void AbletonLink::updateInstantaneousBpm(mixxx::Bpm) {
 }
 
 /// This method is called at the start of the audio callback.
