@@ -191,24 +191,25 @@ void AbletonLink::onCallbackEnd(int sampleRate, int bufferSize) {
 
 // Debug output function, to be called in audio thread
 void AbletonLink::audioThreadDebugOutput() {
-    qDebug() << "isEnabled()" << m_pLink->isEnabled();
-    qDebug() << "numPeers()" << m_pLink->numPeers();
+    kLogger.debug() << "isEnabled()" << m_pLink->isEnabled();
+    kLogger.debug() << "numPeers()" << m_pLink->numPeers();
 
     const auto sessionState = m_pLink->captureAudioSessionState();
 
-    qDebug() << "sessionState.tempo()" << sessionState.tempo();
-    qDebug() << "sessionState.beatAtTime()"
-             << sessionState.beatAtTime(m_pLink->clock().micros(), getQuantum());
-    qDebug() << "sessionState.phaseAtTime()"
-             << sessionState.phaseAtTime(m_pLink->clock().micros(), getQuantum());
-    qDebug() << "sessionState.timeAtBeat(0)" << sessionState.timeAtBeat(0.0, getQuantum()).count();
-    qDebug() << "sessionState.isPlaying()" << sessionState.isPlaying();
-    qDebug() << "sessionState.timeForIsPlaying()" << sessionState.timeForIsPlaying().count();
+    kLogger.debug() << "sessionState.tempo()" << sessionState.tempo();
+    kLogger.debug() << "sessionState.beatAtTime()"
+                    << sessionState.beatAtTime(m_pLink->clock().micros(), getQuantum());
+    kLogger.debug() << "sessionState.phaseAtTime()"
+                    << sessionState.phaseAtTime(m_pLink->clock().micros(), getQuantum());
+    kLogger.debug() << "sessionState.timeAtBeat(0)"
+                    << sessionState.timeAtBeat(0.0, getQuantum()).count();
+    kLogger.debug() << "sessionState.isPlaying()" << sessionState.isPlaying();
+    kLogger.debug() << "sessionState.timeForIsPlaying()" << sessionState.timeForIsPlaying().count();
 
     // Est. Delay (micro-seconds) between onCallbackStart() and buffer's first
     // audio sample reaching speakers
-    qDebug() << "Est. Delay (us)"
-             << (m_absTimeWhenPrevOutputBufferReachesDac -
-                        m_pLink->clock().micros())
-                        .count();
+    kLogger.debug() << "Est. Delay (us)"
+                    << (m_absTimeWhenPrevOutputBufferReachesDac -
+                               m_pLink->clock().micros())
+                               .count();
 }
