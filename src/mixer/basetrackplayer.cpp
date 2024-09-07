@@ -2,6 +2,7 @@
 
 #include <QMessageBox>
 #include <QMetaMethod>
+#include <memory>
 
 #include "control/controlencoder.h"
 #include "control/controlobject.h"
@@ -24,7 +25,9 @@ namespace {
 constexpr double kNoTrackColor = -1;
 constexpr double kShiftCuesOffsetMillis = 10;
 constexpr double kShiftCuesOffsetSmallMillis = 1;
+#ifdef __STEM__
 constexpr int kMaxSupportedStems = 4;
+#endif
 const QString kEffectGroupFormat = QStringLiteral("[EqualizerRack1_%1_Effect1]");
 
 inline double trackColorToDouble(mixxx::RgbColor::optional_t color) {
@@ -53,12 +56,13 @@ BaseTrackPlayerImpl::BaseTrackPlayerImpl(
           m_pPrevFailedTrackId(),
           m_replaygainPending(false),
           m_pChannelToCloneFrom(nullptr) {
-    m_pChannel = new EngineDeck(handleGroup,
+    auto channel = std::make_unique<EngineDeck>(handleGroup,
             pConfig,
             pMixingEngine,
             pEffectsManager,
             defaultOrientation,
             primaryDeck);
+    m_pChannel = channel.get();
 
     m_pInputConfigured = make_parented<ControlProxy>(getGroup(), "input_configured", this);
 #ifdef __VINYLCONTROL__
@@ -68,7 +72,7 @@ BaseTrackPlayerImpl::BaseTrackPlayerImpl(
 #endif
 
     EngineBuffer* pEngineBuffer = m_pChannel->getEngineBuffer();
-    pMixingEngine->addChannel(m_pChannel);
+    pMixingEngine->addChannel(std::move(channel));
 
     // Set the routing option defaults for the main and headphone mixes.
     m_pChannel->setMainMix(defaultMainMix);

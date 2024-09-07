@@ -1444,7 +1444,6 @@ set(MIXXX_LIB_PRECOMPILED_HEADER
   src/util/rampingvalue.h
   src/util/rangelist.h
   src/util/readaheadsamplebuffer.h
-  src/util/reference.h
   src/util/regex.h
   src/util/rescaler.h
   src/util/ringdelaybuffer.h
@@ -2156,6 +2155,7 @@ add_executable(mixxx-test
   src/test/trackdao_test.cpp
   src/test/trackexport_test.cpp
   src/test/trackmetadata_test.cpp
+  src/test/trackmetadataexport_test.cpp
   src/test/tracknumberstest.cpp
   src/test/trackreftest.cpp
   src/test/trackupdate_test.cpp
@@ -2819,6 +2819,7 @@ if(QML)
     src/qml/qmlplayermanagerproxy.cpp
     src/qml/qmlplayerproxy.cpp
     src/qml/qmlvisibleeffectsmodel.cpp
+    src/qml/qmlchainpresetmodel.cpp
     src/qml/qmlwaveformoverview.cpp
     # The following sources need to be in this target to get QML_ELEMENT properly interpreted
     src/control/controlmodel.cpp
