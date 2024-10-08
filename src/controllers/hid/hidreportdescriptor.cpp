@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #include "util/assert.h"
-#pragma optimize("", off)
 
 namespace hid::reportDescriptor {
 
@@ -71,8 +70,8 @@ HIDReportDescriptor::HIDReportDescriptor(const uint8_t* data, size_t length)
         : m_data(data),
           m_length(length),
           m_pos(0),
-          m_collectionLevel(0),
-          m_deviceHasReportIds(kNotSet) {
+          m_deviceHasReportIds(kNotSet),
+          m_collectionLevel(0) {
 }
 
 std::pair<HidItemTag, HidItemSize> HIDReportDescriptor::readTag() {
@@ -274,7 +273,7 @@ Collection HIDReportDescriptor::parse() {
         case HidItemTag::Feature: {
             if (currentReport == nullptr) {
                 // First control of this device
-                if (globalItems.reportId == kNotSet) {
+                if (globalItems.reportId == kNoReportId) {
                     m_deviceHasReportIds = false;
                 } else {
                     m_deviceHasReportIds = true;
