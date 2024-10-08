@@ -7,6 +7,8 @@
 namespace hid::reportDescriptor {
 
 constexpr int kNotSet = -1;
+// Value used instead of the ReportID, if device don't have ReportIDs
+constexpr int kNoReportId = 0x00;
 
 enum class HidReportType {
     Input,
