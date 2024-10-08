@@ -44,12 +44,10 @@ TEST(HidReportDescriptorParserTest, ParseReportDescriptor) {
     auto reportsList = parser.getListOfReports();
     ASSERT_EQ(reportsList.size(), 1);
 
-    // Use getReport to get the report
-    auto reportInfo = reportsList[0];
-    auto pos = std::get<0>(reportInfo);
-    auto reportType = std::get<1>(reportInfo);
-    auto reportId = std::get<2>(reportInfo);
+    auto [collectionIdx, reportType, reportId] = reportsList[0];
+    ASSERT_EQ(collectionIdx, 0);
 
+    // Use getReport to get the report
     Report* report = parser.getReport(reportType, reportId);
     ASSERT_NE(report, nullptr);
 
