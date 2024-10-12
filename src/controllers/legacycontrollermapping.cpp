@@ -35,7 +35,7 @@ void LegacyControllerMapping::loadSettings(UserSettingsPointer pConfig,
     }
 
     bool ok;
-    for (const auto& key : definedSettings) {
+    for (const auto& key : std::as_const(definedSettings)) {
         if (!availableSettingKeys.contains(key.item)) {
             qDebug() << "The setting" << key.item
                      << "does not seem to exist in the mapping" << mappingFile.absoluteFilePath()

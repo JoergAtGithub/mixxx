@@ -175,7 +175,7 @@ QList<StemInfo> StemInfoImporter::importStemInfos(
     QList<StemInfo> stemsList;
     stemsList.reserve(stemArray.size());
     int stemIdx = 0;
-    for (const auto& stemRef : stemArray) {
+    for (const auto& stemRef : std::as_const(stemArray)) {
         if (!stemRef.isObject()) {
             kLogger.debug() << "Unexpected or missing stems value in STEM manifest";
             return {};

@@ -316,7 +316,7 @@ std::unique_ptr<OrNode> SearchQueryParser::parseOrNode(const QString& query) con
 #else
             QString::SkipEmptyParts);
 #endif
-    for (const QString& rawAndNode : rawAndNodes) {
+    for (const QString& rawAndNode : std::as_const(rawAndNodes)) {
         if (!rawAndNode.isEmpty()) {
             pQuery->addNode(parseAndNode(rawAndNode));
         }

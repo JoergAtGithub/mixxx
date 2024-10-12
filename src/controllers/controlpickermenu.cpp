@@ -690,7 +690,7 @@ ControlPickerMenu::ControlPickerMenu(QWidget* pParent)
                 beatLoopDescription.arg(humanBeats),
                 pLoopActivateMenu);
     }
-    for (double beats : beatSizes) {
+    for (double beats : std::as_const(beatSizes)) {
         QString humanBeats = humanBeatSizes.value(beats, QString::number(beats));
         addDeckControl(QString("beatloop_r%1_toggle").arg(beats),
                 reverseBeatLoopTitle.arg(humanBeats),
@@ -711,7 +711,7 @@ ControlPickerMenu::ControlPickerMenu(QWidget* pParent)
                 beatLoopRollDescription.arg(humanBeats),
                 pLooprollActivateMenu);
     }
-    for (double beats : beatSizes) {
+    for (double beats : std::as_const(beatSizes)) {
         QString humanBeats = humanBeatSizes.value(beats, QString::number(beats));
         addDeckControl(QString("beatlooproll_r%1_activate").arg(beats),
                 reverseBeatLoopRollTitle.arg(humanBeats),
