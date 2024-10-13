@@ -21,7 +21,7 @@ class HidController final : public Controller {
     void setMapping(std::shared_ptr<LegacyControllerMapping> pMapping) override;
 
     PhysicalTransportProtocol getPhysicalTransportProtocol() const override {
-        return PhysicalTransportProtocol::USB;
+        return m_deviceInfo.getPhysicalTransportProtocol();
     }
     DataRepresentationProtocol getDataRepresentationProtocol() const override {
         return DataRepresentationProtocol::HID;

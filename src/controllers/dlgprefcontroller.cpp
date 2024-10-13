@@ -100,6 +100,42 @@ DlgPrefController::DlgPrefController(
         m_ui.labelDeviceCategory->hide();
     }
 
+    switch (m_pController->getPhysicalTransportProtocol()) {
+    case PhysicalTransportProtocol::USB:
+        m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("USB"));
+        break;
+    case PhysicalTransportProtocol::BlueTooth:
+        m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("Bluetooh"));
+        break;
+    case PhysicalTransportProtocol::I2C:
+        m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("I2C"));
+        break;
+    case PhysicalTransportProtocol::SPI:
+        m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("SPI"));
+        break;
+    case PhysicalTransportProtocol::FireWire:
+        m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("Firewire - IEEE 1394"));
+        break;
+    default:
+        m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("Unknown"));
+    }
+
+    const QString dataHandlingProtocol =
+            [protocol = m_pController->getDataRepresentationProtocol()] {
+                switch (protocol) {
+                case DataRepresentationProtocol::USB_BULK_TRANSFER:
+                    return QStringLiteral("USB Bulk");
+                case DataRepresentationProtocol::HID:
+                    return QStringLiteral("HID");
+                case DataRepresentationProtocol::MIDI:
+                    return QStringLiteral("MIDI");
+                default:
+                    DEBUG_ASSERT(false);
+                    return QString();
+                }
+            }();
+    m_ui.labelDataHandlingProtocolValue->setText(dataHandlingProtocol);
+
     m_ui.groupBoxWarning->hide();
     m_ui.labelWarning->setText(tr(
             "<font color='#BB0000'><b>If you use this mapping your controller "
