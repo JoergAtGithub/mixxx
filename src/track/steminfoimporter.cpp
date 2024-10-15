@@ -171,11 +171,11 @@ QList<StemInfo> StemInfoImporter::importStemInfos(
         kLogger.debug() << "Unexpected or missing stems value in STEM manifest";
         return {};
     }
-    auto stemArray = stems.toArray();
+    const auto stemArray = stems.toArray();
     QList<StemInfo> stemsList;
     stemsList.reserve(stemArray.size());
     int stemIdx = 0;
-    for (const auto& stemRef : std::as_const(stemArray)) {
+    for (const auto& stemRef : stemArray) {
         if (!stemRef.isObject()) {
             kLogger.debug() << "Unexpected or missing stems value in STEM manifest";
             return {};
