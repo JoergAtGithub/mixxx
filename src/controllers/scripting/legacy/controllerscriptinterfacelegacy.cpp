@@ -9,6 +9,7 @@
 #include "controllers/scripting/legacy/scriptconnectionjsproxy.h"
 #include "mixer/playermanager.h"
 #include "moc_controllerscriptinterfacelegacy.cpp"
+#include "util/cmdlineargs.h"
 #include "util/fpclassify.h"
 #include "util/make_const_iterator.h"
 #include "util/time.h"
@@ -301,7 +302,7 @@ QJSValue ControllerScriptInterfaceLegacy::makeConnectionInternal(
 
     if (coScript->addScriptConnection(connection)) {
         return pJsEngine->newQObject(
-                new ScriptConnectionJSProxy(connection));
+                new ScriptConnectionJSProxy(std::move(connection)));
     }
 
     return QJSValue();
@@ -420,19 +421,17 @@ QJSValue ControllerScriptInterfaceLegacy::connectControl(const QString& group,
             // not break.
             ScriptConnection connection = coScript->firstConnection();
 
-            qCWarning(m_logger) << "Tried to make duplicate connection between (" +
-                            group + ", " + name + ") and " +
-                            passedCallback.toString() +
-                            " but this is not allowed when passing a callback "
-                            "as a string. " +
-                            "If you actually want to create duplicate "
-                            "connections, " +
-                            "use engine.makeConnection. Returning reference to "
-                            "connection " +
-                            connection.id.toString();
+            qCWarning(m_logger).nospace()
+                    << "Tried to make duplicate connection between (" << group
+                    << ", " << name << ") and " << passedCallback.toString()
+                    << " but this is not allowed when passing a callback "
+                       "as a string. If you actually want to create duplicate "
+                       "connections, use engine.makeConnection. "
+                       "Returning reference to connection "
+                    << connection.id.toString();
 
             return pJsEngine->newQObject(
-                    new ScriptConnectionJSProxy(connection));
+                    new ScriptConnectionJSProxy(std::move(connection)));
         }
     } else if (passedCallback.isQObject()) {
         // Assume a ScriptConnection and assume that the script author
@@ -525,7 +524,9 @@ int ControllerScriptInterfaceLegacy::beginTimer(
     m_timers[timerId] = info;
     if (timerId == 0) {
         m_pScriptEngineLegacy->logOrThrowError(QStringLiteral("Script timer could not be created"));
-    } else if (oneShot) {
+    } else if (oneShot &&
+            // FIXME workaround log spam (Github issue to be created)
+            CmdlineArgs::Instance().getControllerDebug()) {
         qCDebug(m_logger) << "Starting one-shot timer:" << timerId;
     } else {
         qCDebug(m_logger) << "Starting timer:" << timerId;
@@ -540,7 +541,9 @@ void ControllerScriptInterfaceLegacy::stopTimer(int timerId) {
                                                        .arg(timerId));
         return;
     }
-    qCDebug(m_logger) << "Killing timer:" << timerId;
+    if (CmdlineArgs::Instance().getControllerDebug()) {
+        qCDebug(m_logger) << "Killing timer:" << timerId;
+    }
     killTimer(timerId);
     m_timers.remove(timerId);
 }
