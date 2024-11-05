@@ -24,12 +24,14 @@ jobs:
             os: ubuntu-22.04
           - name: coverage
             os: ubuntu-22.04
-    runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Install Clazy and Ninja
+        if: matrix.name == 'clazy'
         run: brew install clazy ninja
       - name: Print Clazy version
+        if: matrix.name == 'clazy'
         run: clazy --version
       - name: Check out repository
         uses: actions/checkout@v4.1.6
