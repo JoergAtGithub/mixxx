@@ -105,7 +105,7 @@ DlgPrefController::DlgPrefController(
         m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("USB"));
         break;
     case PhysicalTransportProtocol::BlueTooth:
-        m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("Bluetooh"));
+        m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("Bluetooth"));
         break;
     case PhysicalTransportProtocol::I2C:
         m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("I2C"));

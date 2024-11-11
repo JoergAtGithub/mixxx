@@ -53,7 +53,7 @@ class BulkController : public Controller {
     }
 
     bool isMappable() const override {
-        // On raw USB transfer level, there isn't any information about mapable controls
+        // On raw USB transfer level, there isn't any information about mappable controls
         return false;
     }
 
