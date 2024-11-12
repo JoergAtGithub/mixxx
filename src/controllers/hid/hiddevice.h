@@ -71,7 +71,10 @@ class DeviceInfo final {
         return m_serialNumber;
     }
 
-    const int& getUsbInterfaceNumber() const {
+    std::optional<uint8_t> getUsbInterfaceNumber() const {
+        if (m_usbInterfaceNumber == -1) {
+            return std::nullopt;
+        }
         return m_usbInterfaceNumber;
     }
 

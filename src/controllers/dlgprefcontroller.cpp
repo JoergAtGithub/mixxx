@@ -117,7 +117,7 @@ DlgPrefController::DlgPrefController(
         m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("Firewire - IEEE 1394"));
         break;
     default:
-        m_ui.labelPhysicalInterfaceValue->setText(QStringLiteral("Unknown"));
+        m_ui.labelPhysicalInterfaceValue->setText(tr("Unknown"));
     }
 
     const QString dataHandlingProtocol =
@@ -135,6 +135,21 @@ DlgPrefController::DlgPrefController(
                 }
             }();
     m_ui.labelDataHandlingProtocolValue->setText(dataHandlingProtocol);
+
+    m_ui.labelVendorValue->setText(m_pController->getManufacturerString());
+    m_ui.labelProductValue->setText(m_pController->getProductString());
+    m_ui.labelSerialNumberValue->setText(m_pController->getSerialNumber());
+    if (m_pController->getPhysicalTransportProtocol() == PhysicalTransportProtocol::USB ||
+            m_pController->getPhysicalTransportProtocol() == PhysicalTransportProtocol::UNKNOWN) {
+        if (auto interfaceNumber = m_pController->getUsbInterfaceNumber()) {
+            m_ui.labelUsbInterfaceNumberlValue->setText(QString::number(*interfaceNumber));
+        } else {
+            m_ui.labelUsbInterfaceNumberlValue->setText(tr("Unknown"));
+        }
+    } else {
+        // Not a USB device -> USB interface number is not applicable
+        m_ui.labelUsbInterfaceNumberlValue->setText(tr("N/A"));
+    }
 
     m_ui.groupBoxWarning->hide();
     m_ui.labelWarning->setText(tr(

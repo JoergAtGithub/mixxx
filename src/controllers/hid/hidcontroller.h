@@ -27,6 +27,20 @@ class HidController final : public Controller {
         return DataRepresentationProtocol::HID;
     }
 
+    QString getManufacturerString() const override {
+        return m_deviceInfo.getManufacturerString();
+    }
+    QString getProductString() const override {
+        return m_deviceInfo.getProductString();
+    }
+    QString getSerialNumber() const override {
+        return m_deviceInfo.getSerialNumber();
+    }
+
+    std::optional<uint8_t> getUsbInterfaceNumber() const override {
+        return m_deviceInfo.getUsbInterfaceNumber();
+    }
+
     bool isMappable() const override {
         if (!m_pMapping) {
             return false;
