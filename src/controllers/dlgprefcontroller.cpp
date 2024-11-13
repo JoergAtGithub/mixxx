@@ -136,7 +136,16 @@ DlgPrefController::DlgPrefController(
             }();
     m_ui.labelDataHandlingProtocolValue->setText(dataHandlingProtocol);
 
-    m_ui.labelVendorValue->setText(m_pController->getVendorString());
+    auto vendorString = m_pController->getVendorString();
+    if (!vendorString.isEmpty()) {
+        m_ui.labelVendorValue->setText(vendorString);
+        m_ui.labelVendor->setVisible(true);
+        m_ui.labelVendorValue->setVisible(true);
+    } else {
+        m_ui.labelVendor->setVisible(false);
+        m_ui.labelVendorValue->setVisible(false);
+    }
+
     if (auto vid = m_pController->getVendorId()) {
         m_ui.labelVidValue->setText(QString::number(*vid, 16).toUpper().rightJustified(4, '0'));
         m_ui.labelVid->setVisible(true);
@@ -146,9 +155,19 @@ DlgPrefController::DlgPrefController(
         m_ui.labelVidValue->setVisible(false);
     }
 
-    m_ui.labelSerialNumberValue->setText(m_pController->getSerialNumber());
+    auto serialNo = m_pController->getSerialNumber();
+    if (!serialNo.isEmpty()) {
+        m_ui.labelSerialNumberValue->setText(serialNo);
+        m_ui.labelSerialNumber->setVisible(true);
+        m_ui.labelSerialNumberValue->setVisible(true);
+    } else {
+        m_ui.labelSerialNumber->setVisible(false);
+        m_ui.labelSerialNumberValue->setVisible(false);
+    }
 
+    // Product-String is always available
     m_ui.labelProductValue->setText(m_pController->getProductString());
+
     if (auto pid = m_pController->getProductId()) {
         m_ui.labelPidValue->setText(QString::number(*pid, 16).toUpper().rightJustified(4, '0'));
         m_ui.labelPid->setVisible(true);
