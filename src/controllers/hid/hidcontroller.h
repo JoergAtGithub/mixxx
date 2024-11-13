@@ -27,11 +27,17 @@ class HidController final : public Controller {
         return DataRepresentationProtocol::HID;
     }
 
-    QString getManufacturerString() const override {
+    QString getVendorString() const override {
         return m_deviceInfo.getManufacturerString();
+    }
+    std::optional<uint16_t> getVendorId() const override {
+        return m_deviceInfo.getVendorId();
     }
     QString getProductString() const override {
         return m_deviceInfo.getProductString();
+    }
+    std::optional<uint16_t> getProductId() const override {
+        return m_deviceInfo.getProductId();
     }
     QString getSerialNumber() const override {
         return m_deviceInfo.getSerialNumber();

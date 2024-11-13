@@ -52,11 +52,17 @@ class BulkController : public Controller {
         return DataRepresentationProtocol::USB_BULK_TRANSFER;
     }
 
-    QString getManufacturerString() const override {
+    QString getVendorString() const override {
         return m_manufacturer;
+    }
+    std::optional<uint16_t> getVendorId() const override {
+        return m_vendorId;
     }
     QString getProductString() const override {
         return m_product;
+    }
+    std::optional<uint16_t> getProductId() const override {
+        return m_productId;
     }
     QString getSerialNumber() const override {
         return m_sUID;

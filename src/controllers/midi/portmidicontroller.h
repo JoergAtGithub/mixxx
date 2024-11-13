@@ -59,8 +59,11 @@ class PortMidiController : public MidiController {
         return PhysicalTransportProtocol::UNKNOWN;
     }
 
-    QString getManufacturerString() const override {
+    QString getVendorString() const override {
         return QString();
+    }
+    std::optional<uint16_t> getVendorId() const override {
+        return std::nullopt;
     }
     QString getProductString() const override {
         if (m_pInputDevice) {
@@ -70,6 +73,9 @@ class PortMidiController : public MidiController {
             return QString::fromLocal8Bit(m_pOutputDevice->info()->name);
         }
         return QString();
+    }
+    std::optional<uint16_t> getProductId() const override {
+        return std::nullopt;
     }
     QString getSerialNumber() const override {
         return QString();

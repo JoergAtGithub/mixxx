@@ -125,14 +125,20 @@ class FakeController : public Controller {
         Q_UNUSED(mapping);
         return false;
     }
-    QString getManufacturerString() const override {
+    QString getVendorString() const override {
         static const QString manufacturer = "Test Manufacturer";
         return manufacturer;
+    }
+    std::optional<uint16_t> getVendorId() const override {
+        return std::nullopt;
     }
 
     QString getProductString() const override {
         static const QString product = "Test Product";
         return product;
+    }
+    std::optional<uint16_t> getProductId() const override {
+        return std::nullopt;
     }
 
     QString getSerialNumber() const override {

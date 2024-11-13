@@ -136,19 +136,38 @@ DlgPrefController::DlgPrefController(
             }();
     m_ui.labelDataHandlingProtocolValue->setText(dataHandlingProtocol);
 
-    m_ui.labelVendorValue->setText(m_pController->getManufacturerString());
-    m_ui.labelProductValue->setText(m_pController->getProductString());
+    m_ui.labelVendorValue->setText(m_pController->getVendorString());
+    if (auto vid = m_pController->getVendorId()) {
+        m_ui.labelVidValue->setText(QString::number(*vid, 16).toUpper().rightJustified(4, '0'));
+        m_ui.labelVid->setVisible(true);
+        m_ui.labelVidValue->setVisible(true);
+    } else {
+        m_ui.labelVid->setVisible(false);
+        m_ui.labelVidValue->setVisible(false);
+    }
+
     m_ui.labelSerialNumberValue->setText(m_pController->getSerialNumber());
-    if (m_pController->getPhysicalTransportProtocol() == PhysicalTransportProtocol::USB ||
-            m_pController->getPhysicalTransportProtocol() == PhysicalTransportProtocol::UNKNOWN) {
-        if (auto interfaceNumber = m_pController->getUsbInterfaceNumber()) {
-            m_ui.labelUsbInterfaceNumberlValue->setText(QString::number(*interfaceNumber));
-        } else {
-            m_ui.labelUsbInterfaceNumberlValue->setText(tr("Unknown"));
-        }
+
+    m_ui.labelProductValue->setText(m_pController->getProductString());
+    if (auto pid = m_pController->getProductId()) {
+        m_ui.labelPidValue->setText(QString::number(*pid, 16).toUpper().rightJustified(4, '0'));
+        m_ui.labelPid->setVisible(true);
+        m_ui.labelPidValue->setVisible(true);
+    } else {
+        m_ui.labelPid->setVisible(false);
+        m_ui.labelPidValue->setVisible(false);
+    }
+
+    auto interfaceNumber = m_pController->getUsbInterfaceNumber();
+    if (m_pController->getPhysicalTransportProtocol() == PhysicalTransportProtocol::USB &&
+            interfaceNumber) {
+        m_ui.labelUsbInterfaceNumberValue->setText(QString::number(*interfaceNumber));
+        m_ui.labelUsbInterfaceNumber->setVisible(true);
+        m_ui.labelUsbInterfaceNumberValue->setVisible(true);
     } else {
         // Not a USB device -> USB interface number is not applicable
-        m_ui.labelUsbInterfaceNumberlValue->setText(tr("N/A"));
+        m_ui.labelUsbInterfaceNumber->setVisible(false);
+        m_ui.labelUsbInterfaceNumberValue->setVisible(false);
     }
 
     m_ui.groupBoxWarning->hide();
