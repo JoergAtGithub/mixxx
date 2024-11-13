@@ -62,9 +62,6 @@ class PortMidiController : public MidiController {
     QString getVendorString() const override {
         return QString();
     }
-    std::optional<uint16_t> getVendorId() const override {
-        return std::nullopt;
-    }
     QString getProductString() const override {
         if (m_pInputDevice) {
             return QString::fromLocal8Bit(m_pInputDevice->info()->name);
@@ -73,6 +70,9 @@ class PortMidiController : public MidiController {
             return QString::fromLocal8Bit(m_pOutputDevice->info()->name);
         }
         return QString();
+    }
+    std::optional<uint16_t> getVendorId() const override {
+        return std::nullopt;
     }
     std::optional<uint16_t> getProductId() const override {
         return std::nullopt;

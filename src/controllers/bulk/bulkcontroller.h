@@ -55,11 +55,11 @@ class BulkController : public Controller {
     QString getVendorString() const override {
         return m_manufacturer;
     }
-    std::optional<uint16_t> getVendorId() const override {
-        return m_vendorId;
-    }
     QString getProductString() const override {
         return m_product;
+    }
+    std::optional<uint16_t> getVendorId() const override {
+        return m_vendorId;
     }
     std::optional<uint16_t> getProductId() const override {
         return m_productId;
