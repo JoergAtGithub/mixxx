@@ -3,10 +3,14 @@
 #include <hidapi.h>
 
 #include <QDebugStateSaver>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
 
 #include "controllers/controllermappinginfo.h"
 #include "moc_hiddevice.cpp"
-#include "util/path.h" // for PATH_MAX on Windows
 #include "util/string.h"
 
 namespace {
@@ -20,6 +24,53 @@ constexpr unsigned short kGenericDesktopMultiaxisControllerUsage = 0x08;
 constexpr unsigned short kAppleInfraredControlProductId = 0x8242;
 
 constexpr std::size_t kDeviceInfoStringMaxLength = 512;
+
+QJsonObject loadHidUsageTables(const QString& filePath) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Failed to open HID usage tables file:" << filePath;
+        return QJsonObject();
+    }
+    QByteArray fileData = file.readAll();
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(fileData);
+    return jsonDoc.object();
+}
+
+const QJsonObject hidUsageTables =
+        loadHidUsageTables("D:\\mixxx\\res\\deviceinfo\\HidUsageTables.json");
+
+QString getUsageDescription(unsigned short usagePage, unsigned short usage) {
+    if (usagePage >= 0xFF00 && usagePage <= 0xFFFF) {
+        return QStringLiteral("Vendor-defined %1:%2")
+                .arg(QString::number(usagePage, 16).toUpper().rightJustified(4, '0'))
+                .arg(QString::number(usage, 16).toUpper().rightJustified(4, '0'));
+    }
+
+    const QJsonArray usagePages = hidUsageTables.value("UsagePages").toArray();
+    for (const QJsonValue& pageValue : usagePages) {
+        QJsonObject pageObject = pageValue.toObject();
+        if (pageObject.value("Id").toInt() == usagePage) {
+            const QString usagePageStr = pageObject.value("Name").toString();
+            const QJsonArray usageIds = pageObject.value("UsageIds").toArray();
+            for (const QJsonValue& usageValue : usageIds) {
+                QJsonObject usageObject = usageValue.toObject();
+                if (usageObject.value("Id").toInt() == usage) {
+                    return QStringLiteral("%1 %2 %3:%4")
+                            .arg(usagePageStr)
+                            .arg(usageObject.value("Name").toString())
+                            .arg(QString::number(usagePage, 16).toUpper().rightJustified(4, '0'))
+                            .arg(QString::number(usage, 16).toUpper().rightJustified(4, '0'));
+                }
+            }
+            return QStringLiteral("Reserved %1:%2")
+                    .arg(QString::number(usagePage, 16).toUpper().rightJustified(4, '0'))
+                    .arg(QString::number(usage, 16).toUpper().rightJustified(4, '0'));
+        }
+    }
+    return QStringLiteral("Reserved %1:%2")
+            .arg(QString::number(usagePage, 16).toUpper().rightJustified(4, '0'))
+            .arg(QString::number(usage, 16).toUpper().rightJustified(4, '0'));
+}
 
 } // namespace
 
@@ -146,43 +197,12 @@ QDebug operator<<(QDebug dbg, const DeviceInfo& deviceInfo) {
 
 QString DeviceCategory::guessFromDeviceInfoImpl(
         const DeviceInfo& deviceInfo) const {
-    // This should be done somehow else, I know. But at least we get started with
-    // the idea of mapping this information
     const QString interfaceId = deviceInfo.formatInterface();
     if (!interfaceId.isEmpty()) {
-        // TODO: Guess linux device types somehow as well
-        // or maybe just fill in the interface number?
-        return tr("HID Interface %1: ").arg(interfaceId) + deviceInfo.formatUsage();
+        return tr("HID Interface %1: ").arg(interfaceId) +
+                getUsageDescription(deviceInfo.usage_page, deviceInfo.usage);
     }
-    if (deviceInfo.usage_page == kGenericDesktopUsagePage) {
-        switch (deviceInfo.usage) {
-        case kGenericDesktopPointerUsage:
-            return tr("Generic HID Pointer");
-        case kGenericDesktopMouseUsage:
-            return tr("Generic HID Mouse");
-        case kGenericDesktopJoystickUsage:
-            return tr("Generic HID Joystick");
-        case kGenericDesktopGamePadUsage:
-            return tr("Generic HID Game Pad");
-        case kGenericDesktopKeyboardUsage:
-            return tr("Generic HID Keyboard");
-        case kGenericDesktopKeypadUsage:
-            return tr("Generic HID Keypad");
-        case kGenericDesktopMultiaxisControllerUsage:
-            return tr("Generic HID Multi-axis Controller");
-        default:
-            return tr("Unknown HID Desktop Device: ") + deviceInfo.formatUsage();
-        }
-    } else if (deviceInfo.vendor_id == kAppleVendorId) {
-        // Apple laptop special HID devices
-        if (deviceInfo.product_id == kAppleInfraredControlProductId) {
-            return tr("Apple HID Infrared Control");
-        } else {
-            return tr("Unknown Apple HID Device: ") + deviceInfo.formatUsage();
-        }
-    } else {
-        return tr("Unknown HID Device: ") + deviceInfo.formatUsage();
-    }
+    return getUsageDescription(deviceInfo.usage_page, deviceInfo.usage);
 }
 
 bool DeviceInfo::matchProductInfo(
