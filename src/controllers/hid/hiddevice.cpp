@@ -9,7 +9,6 @@
 #include <QJsonValue>
 
 #include "controllers/controllermappinginfo.h"
-#include "moc_hiddevice.cpp"
 #include "util/string.h"
 
 namespace {
@@ -191,16 +190,6 @@ QDebug operator<<(QDebug dbg, const DeviceInfo& deviceInfo) {
             << QStringLiteral("{ ")
             << parts.join(QStringLiteral(" | "))
             << QStringLiteral(" }");
-}
-
-QString DeviceCategory::guessFromDeviceInfoImpl(const DeviceInfo& deviceInfo) const {
-    const QString interfaceId = deviceInfo.formatInterface();
-    if (!interfaceId.isEmpty()) {
-        return tr("HID Interface %1: ").arg(interfaceId) +
-                deviceInfo.m_hidUsageTables.getUsageDescription(
-                        deviceInfo.usage_page, deviceInfo.usage);
-    }
-    return deviceInfo.m_hidUsageTables.getUsageDescription(deviceInfo.usage_page, deviceInfo.usage);
 }
 
 bool DeviceInfo::matchProductInfo(

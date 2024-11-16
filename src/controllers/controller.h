@@ -60,9 +60,6 @@ class Controller : public QObject {
     inline const QString& getName() const {
         return m_sDeviceName;
     }
-    inline const QString& getCategory() const {
-        return m_sDeviceCategory;
-    }
     virtual PhysicalTransportProtocol getPhysicalTransportProtocol() const = 0;
     virtual DataRepresentationProtocol getDataRepresentationProtocol() const = 0;
 
@@ -145,9 +142,6 @@ class Controller : public QObject {
     // To be called when receiving events
     void triggerActivity();
 
-    inline void setDeviceCategory(const QString& deviceCategory) {
-        m_sDeviceCategory = deviceCategory;
-    }
     inline void setOutputDevice(bool outputDevice) {
         m_bIsOutputDevice = outputDevice;
     }
