@@ -83,8 +83,8 @@ QDebug operator<<(QDebug dbg, const DeviceInfo& deviceInfo) {
     };
 
     parts.append(QStringLiteral("VID:%1 PID:%2")
-                    .arg(formatHex(deviceInfo.getVendorId()))
-                    .arg(formatHex(deviceInfo.getProductId())));
+                    .arg(formatHex(deviceInfo.getVendorId()),
+                            formatHex(deviceInfo.getProductId())));
 
     static const QMap<PhysicalTransportProtocol, QString> protocolMap = {
             {PhysicalTransportProtocol::USB, QStringLiteral("USB")},
@@ -100,11 +100,10 @@ QDebug operator<<(QDebug dbg, const DeviceInfo& deviceInfo) {
                             QStringLiteral("Unknown"))));
 
     parts.append(QStringLiteral("Usage-Page: %1 %2")
-                    .arg(formatHex(deviceInfo.getUsagePage()))
-                    .arg(deviceInfo.getUsagePageDescription()));
+                    .arg(formatHex(deviceInfo.getUsagePage()),
+                            deviceInfo.getUsagePageDescription()));
     parts.append(QStringLiteral("Usage: %1 %2")
-                    .arg(formatHex(deviceInfo.getUsage()))
-                    .arg(deviceInfo.getUsageDescription()));
+                    .arg(formatHex(deviceInfo.getUsage()), deviceInfo.getUsageDescription()));
 
     if (deviceInfo.getUsbInterfaceNumber()) {
         parts.append(QStringLiteral("Interface: #%1")

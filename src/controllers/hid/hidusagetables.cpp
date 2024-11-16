@@ -52,7 +52,6 @@ QString HidUsageTables::getUsageDescription(unsigned short usagePage, unsigned s
     for (const QJsonValue& pageValue : usagePages) {
         QJsonObject pageObject = pageValue.toObject();
         if (pageObject.value("Id").toInt() == usagePage) {
-            const QString usagePageStr = pageObject.value("Name").toString();
             const QJsonArray usageIds = pageObject.value("UsageIds").toArray();
             for (const QJsonValue& usageValue : usageIds) {
                 QJsonObject usageObject = usageValue.toObject();
