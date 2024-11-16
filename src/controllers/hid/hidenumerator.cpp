@@ -4,6 +4,7 @@
 
 #include "controllers/hid/hidcontroller.h"
 #include "controllers/hid/hiddenylist.h"
+#include "controllers/hid/hidusagetables.h"
 #include "moc_hidenumerator.cpp"
 #include "util/cmdlineargs.h"
 

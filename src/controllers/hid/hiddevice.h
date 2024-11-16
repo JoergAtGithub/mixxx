@@ -1,11 +1,11 @@
 #pragma once
 
-#include <QJsonObject>
 #include <QObject>
 #include <QString>
 #include <string>
 
 #include "controllers/controller.h"
+#include "controllers/hid/hidusagetables.h"
 
 struct ProductInfo;
 struct hid_device_info;
@@ -22,16 +22,6 @@ constexpr unsigned short kGenericDesktopKeyboardUsage = 0x06;
 // Apple has two two different vendor IDs which are used for different devices.
 constexpr unsigned short kAppleVendorId = 0x5ac;
 constexpr unsigned short kAppleIncVendorId = 0x004c;
-
-class HidUsageTables {
-  public:
-    explicit HidUsageTables(const QString& filePath);
-    QString getUsagePageDescription(unsigned short usagePage) const;
-    QString getUsageDescription(unsigned short usagePage, unsigned short usage) const;
-
-  private:
-    QJsonObject m_hidUsageTables;
-};
 
 /// Detached copy of `struct hid_device_info`.
 ///
