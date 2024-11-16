@@ -189,13 +189,14 @@ DlgPrefController::DlgPrefController(
         m_ui.labelHidUsagePageValue->setText(QStringLiteral("%1 (%2)")
                         .arg(QString::number(hidController->getUsagePage(), 16)
                                         .toUpper()
-                                        .rightJustified(4, '0'))
-                        .arg(hidController->getUsagePageDescription()));
+                                        .rightJustified(4, '0'),
+                                hidController->getUsagePageDescription()));
+
         m_ui.labelHidUsageValue->setText(QStringLiteral("%1 (%2)")
                         .arg(QString::number(hidController->getUsage(), 16)
                                         .toUpper()
-                                        .rightJustified(4, '0'))
-                        .arg(hidController->getUsageDescription()));
+                                        .rightJustified(4, '0'),
+                                hidController->getUsageDescription()));
         m_ui.labelHidUsagePage->setVisible(true);
         m_ui.labelHidUsagePageValue->setVisible(true);
         m_ui.labelHidUsage->setVisible(true);
