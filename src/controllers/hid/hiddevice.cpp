@@ -23,6 +23,10 @@ constexpr unsigned short kAppleInfraredControlProductId = 0x8242;
 
 constexpr std::size_t kDeviceInfoStringMaxLength = 512;
 
+// The HID Usage Tables 1.5 PDF specifies that the vendor-defined Usage-Page
+// range is 0xFF00 to 0xFFFF.
+constexpr uint16_t kStartOfVendorDefinedUsagePageRange = 0xFF00;
+
 } // namespace
 
 namespace mixxx {
@@ -42,8 +46,7 @@ HidUsageTables::HidUsageTables(const QString& filePath) {
 }
 
 QString HidUsageTables::getUsagePageDescription(unsigned short usagePage) const {
-    if (usagePage >= 0xFF00 && usagePage <= 0xFFFF) {
-        // The Vendor-defined range as specified in HID Usage Tables 1.5 PDF.
+    if (usagePage >= kStartOfVendorDefinedUsagePageRange) {
         return QStringLiteral("Vendor-defined");
     }
 
@@ -58,8 +61,7 @@ QString HidUsageTables::getUsagePageDescription(unsigned short usagePage) const 
 }
 
 QString HidUsageTables::getUsageDescription(unsigned short usagePage, unsigned short usage) const {
-    if (usagePage >= 0xFF00 && usagePage <= 0xFFFF) {
-        // The Vendor-defined range as specified in HID Usage Tables 1.5 PDF.
+    if (usagePage >= kStartOfVendorDefinedUsagePageRange) {
         return QStringLiteral("Vendor-defined");
     }
 
