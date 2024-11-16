@@ -44,8 +44,7 @@ HidUsageTables::HidUsageTables(const QString& filePath) {
 QString HidUsageTables::getUsagePageDescription(unsigned short usagePage) const {
     if (usagePage >= 0xFF00 && usagePage <= 0xFFFF) {
         // The Vendor-defined range as specified in HID Usage Tables 1.5 PDF.
-        return QStringLiteral("Vendor-defined %1")
-                .arg(QString::number(usagePage, 16).toUpper().rightJustified(4, '0'));
+        return QStringLiteral("Vendor-defined");
     }
 
     const QJsonArray usagePages = m_hidUsageTables.value("UsagePages").toArray();

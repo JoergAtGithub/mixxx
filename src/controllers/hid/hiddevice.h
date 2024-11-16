@@ -93,6 +93,22 @@ class DeviceInfo final {
         return m_physicalTransportProtocol;
     }
 
+    uint16_t getUsagePage() const {
+        return usage_page;
+    }
+
+    uint16_t getUsage() const {
+        return usage;
+    }
+
+    QString getUsagePageDescription() const {
+        return m_hidUsageTables.getUsagePageDescription(usage_page);
+    }
+
+    QString getUsageDescription() const {
+        return m_hidUsageTables.getUsageDescription(usage_page, usage);
+    }
+
     bool isValid() const {
         return !getProductString().isNull() && !getSerialNumber().isNull();
     }
