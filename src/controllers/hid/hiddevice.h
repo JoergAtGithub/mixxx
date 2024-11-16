@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QJsonObject>
 #include <QObject>
 #include <QString>
 #include <string>
@@ -22,6 +23,15 @@ constexpr unsigned short kGenericDesktopKeyboardUsage = 0x06;
 constexpr unsigned short kAppleVendorId = 0x5ac;
 constexpr unsigned short kAppleIncVendorId = 0x004c;
 
+class HidUsageTables {
+  public:
+    explicit HidUsageTables(const QString& filePath);
+    QString getUsageDescription(unsigned short usagePage, unsigned short usage) const;
+
+  private:
+    QJsonObject m_hidUsageTables;
+};
+
 /// Detached copy of `struct hid_device_info`.
 ///
 /// Stores a detached copy of hid_device_info and its contents.
@@ -37,7 +47,7 @@ constexpr unsigned short kAppleIncVendorId = 0x004c;
 class DeviceInfo final {
   public:
     explicit DeviceInfo(
-            const hid_device_info& device_info);
+            const hid_device_info& device_info, const HidUsageTables& hidUsageTables);
 
     // The VID.
     unsigned short getVendorId() const {
@@ -117,6 +127,8 @@ class DeviceInfo final {
     QString m_manufacturerString;
     QString m_productString;
     QString m_serialNumber;
+
+    const HidUsageTables& m_hidUsageTables;
 };
 
 class DeviceCategory final : public QObject {

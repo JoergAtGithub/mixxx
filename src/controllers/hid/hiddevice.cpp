@@ -6,7 +6,6 @@
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QJsonObject>
 #include <QJsonValue>
 
 #include "controllers/controllermappinginfo.h"
@@ -25,28 +24,32 @@ constexpr unsigned short kAppleInfraredControlProductId = 0x8242;
 
 constexpr std::size_t kDeviceInfoStringMaxLength = 512;
 
-QJsonObject loadHidUsageTables(const QString& filePath) {
+} // namespace
+
+namespace mixxx {
+
+namespace hid {
+
+HidUsageTables::HidUsageTables(const QString& filePath) {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Failed to open HID usage tables file:" << filePath;
-        return QJsonObject();
+        m_hidUsageTables = QJsonObject();
+        return;
     }
     QByteArray fileData = file.readAll();
     QJsonDocument jsonDoc = QJsonDocument::fromJson(fileData);
-    return jsonDoc.object();
+    m_hidUsageTables = jsonDoc.object();
 }
 
-const QJsonObject hidUsageTables =
-        loadHidUsageTables("D:\\mixxx\\res\\deviceinfo\\HidUsageTables.json");
-
-QString getUsageDescription(unsigned short usagePage, unsigned short usage) {
+QString HidUsageTables::getUsageDescription(unsigned short usagePage, unsigned short usage) const {
     if (usagePage >= 0xFF00 && usagePage <= 0xFFFF) {
         return QStringLiteral("Vendor-defined %1:%2")
                 .arg(QString::number(usagePage, 16).toUpper().rightJustified(4, '0'))
                 .arg(QString::number(usage, 16).toUpper().rightJustified(4, '0'));
     }
 
-    const QJsonArray usagePages = hidUsageTables.value("UsagePages").toArray();
+    const QJsonArray usagePages = m_hidUsageTables.value("UsagePages").toArray();
     for (const QJsonValue& pageValue : usagePages) {
         QJsonObject pageObject = pageValue.toObject();
         if (pageObject.value("Id").toInt() == usagePage) {
@@ -72,14 +75,8 @@ QString getUsageDescription(unsigned short usagePage, unsigned short usage) {
             .arg(QString::number(usage, 16).toUpper().rightJustified(4, '0'));
 }
 
-} // namespace
-
-namespace mixxx {
-
-namespace hid {
-
 DeviceInfo::DeviceInfo(
-        const hid_device_info& device_info)
+        const hid_device_info& device_info, const HidUsageTables& hidUsageTables)
         : vendor_id(device_info.vendor_id),
           product_id(device_info.product_id),
           release_number(device_info.release_number),
@@ -96,7 +93,8 @@ DeviceInfo::DeviceInfo(
           m_productString(mixxx::convertWCStringToQString(device_info.product_string,
                   kDeviceInfoStringMaxLength)),
           m_serialNumber(mixxx::convertWCStringToQString(
-                  m_serialNumberRaw.data(), m_serialNumberRaw.size())) {
+                  m_serialNumberRaw.data(), m_serialNumberRaw.size())),
+          m_hidUsageTables(hidUsageTables) {
     switch (device_info.bus_type) {
     case HID_API_BUS_USB:
         m_physicalTransportProtocol = PhysicalTransportProtocol::USB;
@@ -195,14 +193,14 @@ QDebug operator<<(QDebug dbg, const DeviceInfo& deviceInfo) {
             << QStringLiteral(" }");
 }
 
-QString DeviceCategory::guessFromDeviceInfoImpl(
-        const DeviceInfo& deviceInfo) const {
+QString DeviceCategory::guessFromDeviceInfoImpl(const DeviceInfo& deviceInfo) const {
     const QString interfaceId = deviceInfo.formatInterface();
     if (!interfaceId.isEmpty()) {
         return tr("HID Interface %1: ").arg(interfaceId) +
-                getUsageDescription(deviceInfo.usage_page, deviceInfo.usage);
+                deviceInfo.m_hidUsageTables.getUsageDescription(
+                        deviceInfo.usage_page, deviceInfo.usage);
     }
-    return getUsageDescription(deviceInfo.usage_page, deviceInfo.usage);
+    return deviceInfo.m_hidUsageTables.getUsageDescription(deviceInfo.usage_page, deviceInfo.usage);
 }
 
 bool DeviceInfo::matchProductInfo(

@@ -4,7 +4,6 @@
 
 #include "controllers/hid/hidcontroller.h"
 #include "controllers/hid/hiddenylist.h"
-#include "controllers/hid/hiddevice.h"
 #include "moc_hidenumerator.cpp"
 #include "util/cmdlineargs.h"
 
@@ -69,6 +68,11 @@ bool recognizeDevice(const hid_device_info& device_info) {
 
 } // namespace
 
+HidEnumerator::HidEnumerator(UserSettingsPointer pConfig)
+        : m_pConfig(pConfig),
+          m_hidUsageTable(pConfig->getResourcePath() + "deviceinfo/HidUsageTables.json") {
+}
+
 HidEnumerator::~HidEnumerator() {
     qDebug() << "Deleting HID devices...";
     while (m_devices.size() > 0) {
@@ -85,7 +89,7 @@ QList<Controller*> HidEnumerator::queryDevices() {
     for (const auto* device_info = device_info_list;
             device_info;
             device_info = device_info->next) {
-        auto deviceInfo = mixxx::hid::DeviceInfo(*device_info);
+        auto deviceInfo = mixxx::hid::DeviceInfo(*device_info, m_hidUsageTable);
         // The hidraw backend of hidapi on Linux returns many duplicate hid_device_info's from hid_enumerate,
         // so filter them out.
         // https://github.com/libusb/hidapi/issues/298
