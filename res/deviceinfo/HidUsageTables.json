@@ -2572,7 +2572,7 @@
         },
         {
           "Id": 139,
-          "Name": "Rechargable",
+          "Name": "Rechargeable",
           "Kinds": [
             "SV"
           ]
@@ -5917,7 +5917,7 @@
         },
         {
           "Id": 667,
-          "Name": "AC Disribute Horizontally",
+          "Name": "AC Distribute Horizontally",
           "Kinds": [
             "Sel"
           ]
