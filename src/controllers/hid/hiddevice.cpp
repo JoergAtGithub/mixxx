@@ -41,11 +41,27 @@ HidUsageTables::HidUsageTables(const QString& filePath) {
     m_hidUsageTables = jsonDoc.object();
 }
 
+QString HidUsageTables::getUsagePageDescription(unsigned short usagePage) const {
+    if (usagePage >= 0xFF00 && usagePage <= 0xFFFF) {
+        // The Vendor-defined range as specified in HID Usage Tables 1.5 PDF.
+        return QStringLiteral("Vendor-defined %1")
+                .arg(QString::number(usagePage, 16).toUpper().rightJustified(4, '0'));
+    }
+
+    const QJsonArray usagePages = m_hidUsageTables.value("UsagePages").toArray();
+    for (const QJsonValue& pageValue : usagePages) {
+        QJsonObject pageObject = pageValue.toObject();
+        if (pageObject.value("Id").toInt() == usagePage) {
+            return pageObject.value("Name").toString();
+        }
+    }
+    return QStringLiteral("Reserved");
+}
+
 QString HidUsageTables::getUsageDescription(unsigned short usagePage, unsigned short usage) const {
     if (usagePage >= 0xFF00 && usagePage <= 0xFFFF) {
-        return QStringLiteral("Vendor-defined %1:%2")
-                .arg(QString::number(usagePage, 16).toUpper().rightJustified(4, '0'))
-                .arg(QString::number(usage, 16).toUpper().rightJustified(4, '0'));
+        // The Vendor-defined range as specified in HID Usage Tables 1.5 PDF.
+        return QStringLiteral("Vendor-defined");
     }
 
     const QJsonArray usagePages = m_hidUsageTables.value("UsagePages").toArray();
@@ -57,21 +73,13 @@ QString HidUsageTables::getUsageDescription(unsigned short usagePage, unsigned s
             for (const QJsonValue& usageValue : usageIds) {
                 QJsonObject usageObject = usageValue.toObject();
                 if (usageObject.value("Id").toInt() == usage) {
-                    return QStringLiteral("%1 %2 %3:%4")
-                            .arg(usagePageStr)
-                            .arg(usageObject.value("Name").toString())
-                            .arg(QString::number(usagePage, 16).toUpper().rightJustified(4, '0'))
-                            .arg(QString::number(usage, 16).toUpper().rightJustified(4, '0'));
+                    return usageObject.value("Name").toString();
                 }
             }
-            return QStringLiteral("Reserved %1:%2")
-                    .arg(QString::number(usagePage, 16).toUpper().rightJustified(4, '0'))
-                    .arg(QString::number(usage, 16).toUpper().rightJustified(4, '0'));
+            break; // No need to continue if the usage page is found
         }
     }
-    return QStringLiteral("Reserved %1:%2")
-            .arg(QString::number(usagePage, 16).toUpper().rightJustified(4, '0'))
-            .arg(QString::number(usage, 16).toUpper().rightJustified(4, '0'));
+    return QStringLiteral("Reserved");
 }
 
 DeviceInfo::DeviceInfo(

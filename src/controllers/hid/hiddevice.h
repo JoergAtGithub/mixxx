@@ -26,6 +26,7 @@ constexpr unsigned short kAppleIncVendorId = 0x004c;
 class HidUsageTables {
   public:
     explicit HidUsageTables(const QString& filePath);
+    QString getUsagePageDescription(unsigned short usagePage) const;
     QString getUsageDescription(unsigned short usagePage, unsigned short usage) const;
 
   private:
