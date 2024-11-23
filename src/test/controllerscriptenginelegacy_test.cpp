@@ -677,8 +677,7 @@ TEST_F(ControllerScriptEngineLegacyTest, convertCharsetAllWellKnownCharsets) {
         var failedCharsets = [];
         var expectedLengths = {
             "UCS2": 14,"ISO_10646_UCS_2": 14, "UTF_16": 12, "UTF_16BE": 12, "UTF_16LE": 12,
-            "UTF_32": 24, "UTF_32BE": 24, "UTF_32LE": 24, "UTF16_PlatformEndian": 12, "UTF16_OppositeEndian": 12,
-            "UTF32_PlatformEndian": 24, "UTF32_OppositeEndian": 24, "UTF_16BE_Version_1": 14, "UTF_16LE_Version_1": 14,
+            "UTF_32": 24, "UTF_32BE": 24, "UTF_32LE": 24, "UTF_16BE_Version_1": 14, "UTF_16LE_Version_1": 14,
             "UTF_16_Version_1": 14, "UTF_16_Version_2": 14, "ISO_2022_KR": 10, "ISO_2022_Locale_KO_Version_1": 10,
             "HZ_GB_2312": 8
         };

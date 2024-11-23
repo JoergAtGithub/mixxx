@@ -31,10 +31,13 @@ class ControllerScriptInterfaceLegacy : public QObject {
         UTF_32,
         UTF_32BE,
         UTF_32LE,
+        /* Platform endianess is not supported Qt <6.4
+        * and is not relevant for controller scripting
+        * as the host computer platform is not the target
         UTF16_PlatformEndian,
         UTF16_OppositeEndian,
         UTF32_PlatformEndian,
-        UTF32_OppositeEndian,
+        UTF32_OppositeEndian,*/
         UTF_16BE_Version_1,
         UTF_16LE_Version_1,
         UTF_16_Version_1,

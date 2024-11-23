@@ -1080,18 +1080,6 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
         return convertCharsetInternal(QStringLiteral("UTF-32BE"), value);
     case WellKnownCharsets::UTF_32LE:
         return convertCharsetInternal(QStringLiteral("UTF-32LE"), value);
-    case WellKnownCharsets::UTF16_PlatformEndian:
-        return convertCharsetInternal(QStringLiteral("UTF-32LE"), value);
-        // return convertCharsetInternal(QStringLiteral("UTF16_PlatformEndian"), value);
-    case WellKnownCharsets::UTF16_OppositeEndian:
-        return convertCharsetInternal(QStringLiteral("UTF-32LE"), value);
-        // return convertCharsetInternal(QStringLiteral("UTF16_OppositeEndian"), value);
-    case WellKnownCharsets::UTF32_PlatformEndian:
-        return convertCharsetInternal(QStringLiteral("UTF-32LE"), value);
-        //  return convertCharsetInternal(QStringLiteral("UTF32_PlatformEndian"), value);
-    case WellKnownCharsets::UTF32_OppositeEndian:
-        return convertCharsetInternal(QStringLiteral("UTF-32LE"), value);
-        // return convertCharsetInternal(QStringLiteral("UTF32_OppositeEndian"), value);
     case WellKnownCharsets::UTF_16BE_Version_1:
         return convertCharsetInternal(QStringLiteral("UTF-16BE,version=1"), value);
     case WellKnownCharsets::UTF_16LE_Version_1:
