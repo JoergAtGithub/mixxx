@@ -31,7 +31,7 @@ class ControllerScriptInterfaceLegacy : public QObject {
         UTF_32,
         UTF_32BE,
         UTF_32LE,
-        /* Platform endianess is not supported by QTextCodec
+        /* Platform endianness is not supported by QTextCodec
         * and is not relevant for controller scripting
         * as the host computer platform is not the target
         UTF16_PlatformEndian,
@@ -79,14 +79,14 @@ class ControllerScriptInterfaceLegacy : public QObject {
         GBK,
         GB2312,
         /* GB_2312_80, => GB_2312-80 results in an infinite loop in ICU and
-        *  stalls the whole QJSEngine theads */
+         *  stalls the whole QJSEngine theads */
         // EUC_TW_2014,        // Not supported by QTextCodec
         // IBM_964_P110_1999,  // Not supported by QTextCodec
         // IBM_949_P110_1999,  // Not supported by QTextCodec
         // IBM_949_P11A_1999,  // Not supported by QTextCodec
         EUC_KR,
         /* IBM_971_P100_1995, => ibm-971_P100-1995 results in an infinite loop
-        * in ICU and stalls the whole QJSEngine theads */
+         * in ICU and stalls the whole QJSEngine theads */
         CP1363,
         // IBM_1363_P110_1997, // Not supported by QTextCodec
         KSC_5601,
@@ -238,7 +238,7 @@ class ControllerScriptInterfaceLegacy : public QObject {
         // IBM_5123_P100_1999, // Not supported by QTextCodec
         // IBM_8482_P100_1999, // Not supported by QTextCodec
         /* IBM_16684_P110_2003, => ibm-16684_P110-2003 results in an infinite
-        * loop in ICU and stalls the whole QJSEngine theads // IBM_4899_P100_1998, */
+         * loop in ICU and stalls the whole QJSEngine theads // IBM_4899_P100_1998, */
         // IBM_4971_P100_1999, // Not supported by QTextCodec
         // IBM_9067_X100_2005, // Not supported by QTextCodec
         // IBM_12712_P100_1998, // Not supported by QTextCodec
