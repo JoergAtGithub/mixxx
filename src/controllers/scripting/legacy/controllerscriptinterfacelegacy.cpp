@@ -1540,9 +1540,9 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharsetInternal(
                 QStringLiteral("Unable to get QTextCodec name for charset: %1").arg(targetCharset));
         return QByteArray();
     }
-    return std::unique_ptr(
-            pCodec->makeEncoder(QTextCodec::Flag::ConvertInvalidToNull))
-            ->fromUnicode(value);
+    std::unique_ptr<QTextEncoder> encoder(
+            pCodec->makeEncoder(QTextCodec::Flag::ConvertInvalidToNull));
+    return encoder->fromUnicode(value);
 #else
 #if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
     QAnyStringView encoderName = QAnyStringView(targetCharset);
