@@ -1284,7 +1284,7 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
 }
 
 // Add Byte Order Mark (BOM) to the beginning of the data if it is not already present
-static QByteArray addBOM(const QByteArray& data) {
+static QByteArray addBom(const QByteArray& data) {
     static const QByteArray bomBE = QByteArray::fromHex("FEFF");
     static const QByteArray bomLE = QByteArray::fromHex("FFFE");
 
@@ -1315,7 +1315,7 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharsetInternal(
             pCodec->makeEncoder(QTextCodec::Flag::ConvertInvalidToNull));
     if (encoderNameArray == "ISO-10646-UCS-2" || encoderNameArray == "UCS2") {
         // For these encodings QTextCodec does not set, the BOM which QStringEncoder does
-        return addBOM(encoder->fromUnicode(value));
+        return addBom(encoder->fromUnicode(value));
     }
     return encoder->fromUnicode(value);
 
