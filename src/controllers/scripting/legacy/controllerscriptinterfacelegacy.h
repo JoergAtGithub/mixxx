@@ -43,7 +43,7 @@ class ControllerScriptInterfaceLegacy : public QObject {
         UTF_16_Version_1,
         UTF_16_Version_2,*/
         UTF_7,
-        IMAP_Mailbox_Name,
+        // IMAP_Mailbox_Name,
         SCSU,
         BOCU_1,
         CESU_8,

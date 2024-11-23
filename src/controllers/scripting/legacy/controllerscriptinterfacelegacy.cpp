@@ -1082,8 +1082,6 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
         return convertCharsetInternal(QStringLiteral("UTF-32LE"), value);
     case WellKnownCharsets::UTF_7:
         return convertCharsetInternal(QStringLiteral("UTF-7"), value);
-    case WellKnownCharsets::IMAP_Mailbox_Name:
-        return convertCharsetInternal(QStringLiteral("IMAP-mailbox-name"), value);
     case WellKnownCharsets::SCSU:
         return convertCharsetInternal(QStringLiteral("SCSU"), value);
     case WellKnownCharsets::BOCU_1:
@@ -1516,8 +1514,9 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharsetInternal(
     QByteArray encoderNameArray = targetCharset.toUtf8();
     auto* pCodec = QTextCodec::codecForName(encoderNameArray);
     if (!pCodec) {
-        m_pScriptEngineLegacy->logOrThrowError(
-                QStringLiteral("Unable to get QTextCodec name for charset: %1").arg(targetCharset));
+        /* m_pScriptEngineLegacy->logOrThrowError(
+                 QStringLiteral("Unable to get QTextCodec name for charset:
+           %1").arg(targetCharset));*/
         return QByteArray();
     }
     std::unique_ptr<QTextEncoder> encoder(
