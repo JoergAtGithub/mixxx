@@ -1283,6 +1283,7 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
     }
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
 // Add Byte Order Mark (BOM) to the beginning of the data if it is not already present
 static QByteArray addBom(const QByteArray& data) {
     static const QByteArray bomBE = QByteArray::fromHex("FEFF");
@@ -1300,6 +1301,7 @@ static QByteArray addBom(const QByteArray& data) {
     }
     return data;
 }
+#endif
 
 QByteArray ControllerScriptInterfaceLegacy::convertCharsetInternal(
         const QString& targetCharset, const QString& value) {
