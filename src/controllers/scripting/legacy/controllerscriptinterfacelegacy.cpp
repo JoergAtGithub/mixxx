@@ -1080,14 +1080,6 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
         return convertCharsetInternal(QStringLiteral("UTF-32BE"), value);
     case WellKnownCharsets::UTF_32LE:
         return convertCharsetInternal(QStringLiteral("UTF-32LE"), value);
-    case WellKnownCharsets::UTF_16BE_Version_1:
-        return convertCharsetInternal(QStringLiteral("UTF-16BE,version=1"), value);
-    case WellKnownCharsets::UTF_16LE_Version_1:
-        return convertCharsetInternal(QStringLiteral("UTF-16LE,version=1"), value);
-    case WellKnownCharsets::UTF_16_Version_1:
-        return convertCharsetInternal(QStringLiteral("UTF-16,version=1"), value);
-    case WellKnownCharsets::UTF_16_Version_2:
-        return convertCharsetInternal(QStringLiteral("UTF-16,version=2"), value);
     case WellKnownCharsets::UTF_7:
         return convertCharsetInternal(QStringLiteral("UTF-7"), value);
     case WellKnownCharsets::IMAP_Mailbox_Name:

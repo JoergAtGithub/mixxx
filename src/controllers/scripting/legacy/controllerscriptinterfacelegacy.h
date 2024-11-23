@@ -37,11 +37,11 @@ class ControllerScriptInterfaceLegacy : public QObject {
         UTF16_PlatformEndian,
         UTF16_OppositeEndian,
         UTF32_PlatformEndian,
-        UTF32_OppositeEndian,*/
+        UTF32_OppositeEndian,
         UTF_16BE_Version_1,
         UTF_16LE_Version_1,
         UTF_16_Version_1,
-        UTF_16_Version_2,
+        UTF_16_Version_2,*/
         UTF_7,
         IMAP_Mailbox_Name,
         SCSU,
