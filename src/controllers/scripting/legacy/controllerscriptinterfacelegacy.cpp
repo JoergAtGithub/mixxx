@@ -7,6 +7,7 @@
 #endif
 #include <gsl/pointers>
 
+#include <QtEndian>
 #include "control/controlobject.h"
 #include "control/controlobjectscript.h"
 #include "control/controlpotmeter.h"
@@ -1282,6 +1283,24 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
     }
 }
 
+// Add Byte Order Mark (BOM) to the beginning of the data if it is not already present
+static QByteArray addBOM(const QByteArray& data) {
+    static const QByteArray bomBE = QByteArray::fromHex("FEFF");
+    static const QByteArray bomLE = QByteArray::fromHex("FFFE");
+
+    // Check system endianness
+    if (QSysInfo::ByteOrder == QSysInfo::BigEndian) {
+        if (!data.startsWith(bomBE)) {
+            return bomBE + data;
+        }
+    } else {
+        if (!data.startsWith(bomLE)) {
+            return bomLE + data;
+        }
+    }
+    return data;
+}
+
 QByteArray ControllerScriptInterfaceLegacy::convertCharsetInternal(
         const QString& targetCharset, const QString& value) {
 #if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
@@ -1294,7 +1313,12 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharsetInternal(
     }
     std::unique_ptr<QTextEncoder> encoder(
             pCodec->makeEncoder(QTextCodec::Flag::ConvertInvalidToNull));
+    if (encoderNameArray == "ISO-10646-UCS-2" || encoderNameArray == "UCS2") {
+        // For these encodings QTextCodec does not set, the BOM which QStringEncoder does
+        return addBOM(encoder->fromUnicode(value));
+    }
     return encoder->fromUnicode(value);
+
 #else
 #if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
     QAnyStringView encoderName = QAnyStringView(targetCharset);

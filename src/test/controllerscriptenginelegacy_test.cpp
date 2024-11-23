@@ -676,9 +676,27 @@ TEST_F(ControllerScriptEngineLegacyTest, convertCharsetAllWellKnownCharsets) {
         var workingCharsetCounter = 0;
         var failedCharsets = [];
         var expectedLengths = {
-            "UCS2": 14,"ISO_10646_UCS_2": 14, "UTF_16": 12, "UTF_16BE": 12, "UTF_16LE": 12,
-            "UTF_32": 24, "UTF_32BE": 24, "UTF_32LE": 24, "ISO_2022_KR": 10, "ISO_2022_Locale_KO_Version_1": 10,
-            "HZ_GB_2312": 8
+            "UCS2": 68, "ISO_10646_UCS_2": 68, "UTF_16": 66, "UTF_16BE": 66, "UTF_16LE": 66,
+            "UTF_32": 128, "UTF_32BE": 128, "UTF_32LE": 128, "ISO_2022_KR": 54, "ISO_2022_Locale_KO_Version_1": 54,
+            "HZ_GB_2312": 49, "Latin1": 33, "ISO_8859_1": 33, "Latin9": 32, "ISO_8859_15": 32,
+            "UTF_8": 63, "UTF_7": 70, "SCSU": 51, "BOCU_1": 53, "CESU_8": 65, "US_ASCII": 32,
+            "GB18030": 69, "ISO_8859_2": 32, "ISO_8859_3": 32, "ISO_8859_4": 32, "ISO_8859_5": 32,
+            "ISO_8859_6": 32, "ISO_8859_7": 32, "ISO_8859_8": 32, "ISO_8859_9": 32, "ISO_8859_10": 32,
+            "ISO_8859_13": 32, "ISO_8859_14": 32, "Shift_JIS": 39, "EUC_JP": 39, "Big5": 34,
+            "Big5_HKSCS": 39, "GBK": 39, "GB2312": 39, "EUC_KR": 44, "CP1363": 44, "KSC_5601": 44,
+            "Windows_874_2000": 32, "TIS_620": 32, "IBM437": 32, "IBM775": 32, "IBM850": 32,
+            "CP851": 32, "IBM852": 32, "IBM855": 32, "IBM857": 32, "IBM00858": 32, "IBM860": 32,
+            "IBM861": 32, "IBM862": 32, "IBM863": 32, "IBM864": 32, "IBM865": 32, "IBM866": 32,
+            "IBM868": 32, "IBM869": 32, "KOI8_R": 32, "KOI8_U": 32, "Windows_1250": 32, "Windows_1251": 32,
+            "Windows_1252": 32, "Windows_1253": 32, "Windows_1254": 32, "Windows_1255": 32, "Windows_1256": 32,
+            "Windows_1257": 32, "Windows_1258": 32, "Macintosh": 32, "X_Mac_Greek": 32, "X_Mac_Cyrillic": 32,
+            "X_Mac_CentralEuroRoman": 32, "X_Mac_Turkish": 32, "HP_Roman8": 32, "Adobe_Standard_Encoding": 32,
+            "ISO_2022_JP": 51, "ISO_2022_JP_1": 51, "ISO_2022_JP_2": 63, "ISO_2022_CN": 47, "ISO_2022_CN_EXT": 47,
+            "IBM037": 32, "IBM273": 32, "IBM277": 32, "IBM278": 32, "IBM280": 32, "IBM284": 32,
+            "IBM285": 32, "IBM290": 32, "IBM297": 32, "IBM420": 32, "IBM424": 32, "IBM500": 32,
+            "IBM_Thai": 32, "IBM870": 32, "IBM871": 32, "IBM918": 32, "IBM1026": 32, "IBM1047": 32,
+            "IBM01140": 32, "IBM01141": 32, "IBM01142": 32, "IBM01143": 32, "IBM01144": 32, "IBM01145": 32,
+            "IBM01146": 32, "IBM01147": 32, "IBM01148": 32, "IBM01149": 32
         };
     )";
 
@@ -686,8 +704,8 @@ TEST_F(ControllerScriptEngineLegacyTest, convertCharsetAllWellKnownCharsets) {
         QString key = QString::fromUtf8(charsetEnumEntry.key(i));
         script += QString(R"(
             var charset = engine.WellKnownCharsets.%1;
-            var result = engine.convertCharset(charset, 'Hello!');
-            var expectedLength = expectedLengths['%1'] || 6; // The test string "Hello!" has 6 bytes in the most charsets
+            var result = engine.convertCharset(charset, 'Hello, 世界! שלום! こんにちは! 안녕하세요! 😊');
+            var expectedLength = expectedLengths['%1'];
             var resultLength = result.byteLength;
             if (resultLength === expectedLength) {
                 workingCharsetCounter++;
