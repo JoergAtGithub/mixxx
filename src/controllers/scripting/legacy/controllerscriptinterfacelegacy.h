@@ -55,7 +55,7 @@ class ControllerScriptInterfaceLegacy : public QObject {
         ISO_8859_5,
         ISO_8859_6,
         ISO_8859_7,
-        IBM_813_P100_1995,
+        // IBM_813_P100_1995,
         ISO_8859_8,
         IBM_916_P100_1995,
         ISO_8859_9,
