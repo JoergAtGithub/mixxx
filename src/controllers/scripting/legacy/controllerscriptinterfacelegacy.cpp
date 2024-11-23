@@ -1110,70 +1110,34 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
         return convertCharsetInternal(QStringLiteral("ISO-8859-9"), value);
     case WellKnownCharsets::ISO_8859_10:
         return convertCharsetInternal(QStringLiteral("ISO-8859-10"), value);
-    case WellKnownCharsets::ISO_8859_11_2001:
-        return convertCharsetInternal(QStringLiteral("iso-8859_11-2001"), value);
     case WellKnownCharsets::ISO_8859_13:
         return convertCharsetInternal(QStringLiteral("ISO-8859-13"), value);
     case WellKnownCharsets::ISO_8859_14:
         return convertCharsetInternal(QStringLiteral("ISO-8859-14"), value);
-    case WellKnownCharsets::IBM_942_P12A_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-942_P12A-1999"), value);
     case WellKnownCharsets::Shift_JIS:
         return convertCharsetInternal(QStringLiteral("Shift_JIS"), value);
-    case WellKnownCharsets::IBM_943_P130_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-943_P130-1999"), value);
-    case WellKnownCharsets::IBM_33722_P12A_P12A_2009_U2:
-        return convertCharsetInternal(QStringLiteral("ibm-33722_P12A_P12A-2009_U2"), value);
-    case WellKnownCharsets::IBM_33722_P120_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-33722_P120-1999"), value);
-    case WellKnownCharsets::IBM_954_P101_2007:
-        return convertCharsetInternal(QStringLiteral("ibm-954_P101-2007"), value);
     case WellKnownCharsets::EUC_JP:
         return convertCharsetInternal(QStringLiteral("EUC-JP"), value);
-    case WellKnownCharsets::IBM_1373_P100_2002:
-        return convertCharsetInternal(QStringLiteral("ibm-1373_P100-2002"), value);
     case WellKnownCharsets::Big5:
         return convertCharsetInternal(QStringLiteral("Big5"), value);
-    case WellKnownCharsets::IBM_950_P110_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-950_P110-1999"), value);
     case WellKnownCharsets::Big5_HKSCS:
         return convertCharsetInternal(QStringLiteral("Big5-HKSCS"), value);
-    case WellKnownCharsets::IBM_5471_P100_2006:
-        return convertCharsetInternal(QStringLiteral("ibm-5471_P100-2006"), value);
-    case WellKnownCharsets::IBM_1386_P100_2001:
-        return convertCharsetInternal(QStringLiteral("ibm-1386_P100-2001"), value);
     case WellKnownCharsets::GBK:
         return convertCharsetInternal(QStringLiteral("GBK"), value);
     case WellKnownCharsets::GB2312:
         return convertCharsetInternal(QStringLiteral("GB2312"), value);
-    case WellKnownCharsets::EUC_TW_2014:
-        return convertCharsetInternal(QStringLiteral("euc-tw-2014"), value);
-    case WellKnownCharsets::IBM_964_P110_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-964_P110-1999"), value);
-    case WellKnownCharsets::IBM_949_P110_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-949_P110-1999"), value);
-    case WellKnownCharsets::IBM_949_P11A_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-949_P11A-1999"), value);
-    case WellKnownCharsets::EUC_KR:
+      case WellKnownCharsets::EUC_KR:
         return convertCharsetInternal(QStringLiteral("EUC-KR"), value);
     case WellKnownCharsets::CP1363:
         return convertCharsetInternal(QStringLiteral("cp1363"), value);
-    case WellKnownCharsets::IBM_1363_P110_1997:
-        return convertCharsetInternal(QStringLiteral("ibm-1363_P110-1997"), value);
     case WellKnownCharsets::KSC_5601:
         return convertCharsetInternal(QStringLiteral("KSC_5601"), value);
     case WellKnownCharsets::Windows_874_2000:
         return convertCharsetInternal(QStringLiteral("windows-874-2000"), value);
     case WellKnownCharsets::TIS_620:
         return convertCharsetInternal(QStringLiteral("TIS-620"), value);
-    case WellKnownCharsets::IBM_1162_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1162_P100-1999"), value);
     case WellKnownCharsets::IBM437:
         return convertCharsetInternal(QStringLiteral("IBM437"), value);
-    case WellKnownCharsets::IBM_720_P100_1997:
-        return convertCharsetInternal(QStringLiteral("ibm-720_P100-1997"), value);
-    case WellKnownCharsets::IBM_737_P100_1997:
-        return convertCharsetInternal(QStringLiteral("ibm-737_P100-1997"), value);
     case WellKnownCharsets::IBM775:
         return convertCharsetInternal(QStringLiteral("IBM775"), value);
     case WellKnownCharsets::IBM850:
@@ -1184,8 +1148,6 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
         return convertCharsetInternal(QStringLiteral("IBM852"), value);
     case WellKnownCharsets::IBM855:
         return convertCharsetInternal(QStringLiteral("IBM855"), value);
-    case WellKnownCharsets::IBM_856_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-856_P100-1995"), value);
     case WellKnownCharsets::IBM857:
         return convertCharsetInternal(QStringLiteral("IBM857"), value);
     case WellKnownCharsets::IBM00858:
@@ -1204,24 +1166,14 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
         return convertCharsetInternal(QStringLiteral("IBM865"), value);
     case WellKnownCharsets::IBM866:
         return convertCharsetInternal(QStringLiteral("IBM866"), value);
-    case WellKnownCharsets::IBM_867_P100_1998:
-        return convertCharsetInternal(QStringLiteral("ibm-867_P100-1998"), value);
     case WellKnownCharsets::IBM868:
         return convertCharsetInternal(QStringLiteral("IBM868"), value);
     case WellKnownCharsets::IBM869:
         return convertCharsetInternal(QStringLiteral("IBM869"), value);
     case WellKnownCharsets::KOI8_R:
         return convertCharsetInternal(QStringLiteral("KOI8-R"), value);
-    case WellKnownCharsets::IBM_901_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-901_P100-1999"), value);
-    case WellKnownCharsets::IBM_902_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-902_P100-1999"), value);
-    case WellKnownCharsets::IBM_922_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-922_P100-1999"), value);
     case WellKnownCharsets::KOI8_U:
         return convertCharsetInternal(QStringLiteral("KOI8-U"), value);
-    case WellKnownCharsets::IBM_4909_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-4909_P100-1999"), value);
     case WellKnownCharsets::Windows_1250:
         return convertCharsetInternal(QStringLiteral("windows-1250"), value);
     case WellKnownCharsets::Windows_1251:
@@ -1240,30 +1192,6 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
         return convertCharsetInternal(QStringLiteral("windows-1257"), value);
     case WellKnownCharsets::Windows_1258:
         return convertCharsetInternal(QStringLiteral("windows-1258"), value);
-    case WellKnownCharsets::IBM_1250_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1250_P100-1995"), value);
-    case WellKnownCharsets::IBM_1251_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1251_P100-1995"), value);
-    case WellKnownCharsets::IBM_1252_P100_2000:
-        return convertCharsetInternal(QStringLiteral("ibm-1252_P100-2000"), value);
-    case WellKnownCharsets::IBM_1253_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1253_P100-1995"), value);
-    case WellKnownCharsets::IBM_1254_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1254_P100-1995"), value);
-    case WellKnownCharsets::IBM_1255_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1255_P100-1995"), value);
-    case WellKnownCharsets::IBM_5351_P100_1998:
-        return convertCharsetInternal(QStringLiteral("ibm-5351_P100-1998"), value);
-    case WellKnownCharsets::IBM_1256_P110_1997:
-        return convertCharsetInternal(QStringLiteral("ibm-1256_P110-1997"), value);
-    case WellKnownCharsets::IBM_5352_P100_1998:
-        return convertCharsetInternal(QStringLiteral("ibm-5352_P100-1998"), value);
-    case WellKnownCharsets::IBM_1257_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1257_P100-1995"), value);
-    case WellKnownCharsets::IBM_5353_P100_1998:
-        return convertCharsetInternal(QStringLiteral("ibm-5353_P100-1998"), value);
-    case WellKnownCharsets::IBM_1258_P100_1997:
-        return convertCharsetInternal(QStringLiteral("ibm-1258_P100-1997"), value);
     case WellKnownCharsets::Macintosh:
         return convertCharsetInternal(QStringLiteral("macintosh"), value);
     case WellKnownCharsets::X_Mac_Greek:
@@ -1278,66 +1206,20 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
         return convertCharsetInternal(QStringLiteral("hp-roman8"), value);
     case WellKnownCharsets::Adobe_Standard_Encoding:
         return convertCharsetInternal(QStringLiteral("Adobe-Standard-Encoding"), value);
-    case WellKnownCharsets::IBM_1006_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1006_P100-1995"), value);
-    case WellKnownCharsets::IBM_1098_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1098_P100-1995"), value);
-    case WellKnownCharsets::IBM_1124_P100_1996:
-        return convertCharsetInternal(QStringLiteral("ibm-1124_P100-1996"), value);
-    case WellKnownCharsets::IBM_1125_P100_1997:
-        return convertCharsetInternal(QStringLiteral("ibm-1125_P100-1997"), value);
-    case WellKnownCharsets::IBM_1129_P100_1997:
-        return convertCharsetInternal(QStringLiteral("ibm-1129_P100-1997"), value);
-    case WellKnownCharsets::IBM_1131_P100_1997:
-        return convertCharsetInternal(QStringLiteral("ibm-1131_P100-1997"), value);
-    case WellKnownCharsets::IBM_1133_P100_1997:
-        return convertCharsetInternal(QStringLiteral("ibm-1133_P100-1997"), value);
-    case WellKnownCharsets::GSM_03_38_2009:
-        return convertCharsetInternal(QStringLiteral("gsm-03.38-2009"), value);
     case WellKnownCharsets::ISO_2022_JP:
         return convertCharsetInternal(QStringLiteral("ISO-2022-JP"), value);
     case WellKnownCharsets::ISO_2022_JP_1:
         return convertCharsetInternal(QStringLiteral("ISO-2022-JP-1"), value);
     case WellKnownCharsets::ISO_2022_JP_2:
         return convertCharsetInternal(QStringLiteral("ISO-2022-JP-2"), value);
-    case WellKnownCharsets::ISO_2022_Locale_JA_Version_3:
-        return convertCharsetInternal(QStringLiteral("ISO_2022,locale=ja,version=3"), value);
-    case WellKnownCharsets::ISO_2022_Locale_JA_Version_4:
-        return convertCharsetInternal(QStringLiteral("ISO_2022,locale=ja,version=4"), value);
     case WellKnownCharsets::ISO_2022_KR:
         return convertCharsetInternal(QStringLiteral("ISO-2022-KR"), value);
-    case WellKnownCharsets::ISO_2022_Locale_KO_Version_1:
-        return convertCharsetInternal(QStringLiteral("ISO_2022,locale=ko,version=1"), value);
     case WellKnownCharsets::ISO_2022_CN:
         return convertCharsetInternal(QStringLiteral("ISO-2022-CN"), value);
     case WellKnownCharsets::ISO_2022_CN_EXT:
         return convertCharsetInternal(QStringLiteral("ISO-2022-CN-EXT"), value);
-    case WellKnownCharsets::ISO_2022_Locale_ZH_Version_2:
-        return convertCharsetInternal(QStringLiteral("ISO_2022,locale=zh,version=2"), value);
     case WellKnownCharsets::HZ_GB_2312:
         return convertCharsetInternal(QStringLiteral("HZ-GB-2312"), value);
-    case WellKnownCharsets::X11_Compound_Text:
-        return convertCharsetInternal(QStringLiteral("x11-compound-text"), value);
-    case WellKnownCharsets::ISCII_Version_0:
-        return convertCharsetInternal(QStringLiteral("ISCII,version=0"), value);
-    case WellKnownCharsets::ISCII_Version_1:
-        return convertCharsetInternal(QStringLiteral("ISCII,version=1"), value);
-    case WellKnownCharsets::ISCII_Version_2:
-        return convertCharsetInternal(QStringLiteral("ISCII,version=2"), value);
-    case WellKnownCharsets::ISCII_Version_3:
-        return convertCharsetInternal(QStringLiteral("ISCII,version=3"), value);
-    case WellKnownCharsets::ISCII_Version_4:
-        return convertCharsetInternal(QStringLiteral("ISCII,version=4"), value);
-    case WellKnownCharsets::ISCII_Version_5:
-        return convertCharsetInternal(QStringLiteral("ISCII,version=5"), value);
-    case WellKnownCharsets::ISCII_Version_6:
-        return convertCharsetInternal(QStringLiteral("ISCII,version=6"), value);
-    case WellKnownCharsets::ISCII_Version_7:
-        return convertCharsetInternal(QStringLiteral("ISCII,version=7"), value);
-    case WellKnownCharsets::ISCII_Version_8:
-        return convertCharsetInternal(QStringLiteral("ISCII,version=8"), value);
-    case WellKnownCharsets::LMBCS_1:
-        return convertCharsetInternal(QStringLiteral("LMBCS-1"), value);
     case WellKnownCharsets::IBM037:
         return convertCharsetInternal(QStringLiteral("IBM037"), value);
     case WellKnownCharsets::IBM273:
@@ -1362,50 +1244,18 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
         return convertCharsetInternal(QStringLiteral("IBM424"), value);
     case WellKnownCharsets::IBM500:
         return convertCharsetInternal(QStringLiteral("IBM500"), value);
-    case WellKnownCharsets::IBM_803_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-803_P100-1999"), value);
     case WellKnownCharsets::IBM_Thai:
         return convertCharsetInternal(QStringLiteral("IBM-Thai"), value);
     case WellKnownCharsets::IBM870:
         return convertCharsetInternal(QStringLiteral("IBM870"), value);
     case WellKnownCharsets::IBM871:
         return convertCharsetInternal(QStringLiteral("IBM871"), value);
-    case WellKnownCharsets::IBM_875_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-875_P100-1995"), value);
     case WellKnownCharsets::IBM918:
         return convertCharsetInternal(QStringLiteral("IBM918"), value);
-    case WellKnownCharsets::IBM_930_P120_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-930_P120-1999"), value);
-    case WellKnownCharsets::IBM_933_P110_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-933_P110-1995"), value);
-    case WellKnownCharsets::IBM_935_P110_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-935_P110-1999"), value);
-    case WellKnownCharsets::IBM_937_P110_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-937_P110-1999"), value);
-    case WellKnownCharsets::IBM_939_P120_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-939_P120-1999"), value);
-    case WellKnownCharsets::IBM_1025_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1025_P100-1995"), value);
     case WellKnownCharsets::IBM1026:
         return convertCharsetInternal(QStringLiteral("IBM1026"), value);
     case WellKnownCharsets::IBM1047:
         return convertCharsetInternal(QStringLiteral("IBM1047"), value);
-    case WellKnownCharsets::IBM_1097_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1097_P100-1995"), value);
-    case WellKnownCharsets::IBM_1112_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1112_P100-1995"), value);
-    case WellKnownCharsets::IBM_1122_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1122_P100-1999"), value);
-    case WellKnownCharsets::IBM_1123_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-1123_P100-1995"), value);
-    case WellKnownCharsets::IBM_1130_P100_1997:
-        return convertCharsetInternal(QStringLiteral("ibm-1130_P100-1997"), value);
-    case WellKnownCharsets::IBM_1132_P100_1998:
-        return convertCharsetInternal(QStringLiteral("ibm-1132_P100-1998"), value);
-    case WellKnownCharsets::IBM_1137_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1137_P100-1999"), value);
-    case WellKnownCharsets::IBM_4517_P100_2005:
-        return convertCharsetInternal(QStringLiteral("ibm-4517_P100-2005"), value);
     case WellKnownCharsets::IBM01140:
         return convertCharsetInternal(QStringLiteral("IBM01140"), value);
     case WellKnownCharsets::IBM01141:
@@ -1426,78 +1276,6 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
         return convertCharsetInternal(QStringLiteral("IBM01148"), value);
     case WellKnownCharsets::IBM01149:
         return convertCharsetInternal(QStringLiteral("IBM01149"), value);
-    case WellKnownCharsets::IBM_1153_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1153_P100-1999"), value);
-    case WellKnownCharsets::IBM_1154_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1154_P100-1999"), value);
-    case WellKnownCharsets::IBM_1155_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1155_P100-1999"), value);
-    case WellKnownCharsets::IBM_1156_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1156_P100-1999"), value);
-    case WellKnownCharsets::IBM_1157_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1157_P100-1999"), value);
-    case WellKnownCharsets::IBM_1158_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1158_P100-1999"), value);
-    case WellKnownCharsets::IBM_1160_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1160_P100-1999"), value);
-    case WellKnownCharsets::IBM_1164_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1164_P100-1999"), value);
-    case WellKnownCharsets::IBM_1364_P110_2007:
-        return convertCharsetInternal(QStringLiteral("ibm-1364_P110-2007"), value);
-    case WellKnownCharsets::IBM_1371_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-1371_P100-1999"), value);
-    case WellKnownCharsets::IBM_1388_P103_2001:
-        return convertCharsetInternal(QStringLiteral("ibm-1388_P103-2001"), value);
-    case WellKnownCharsets::IBM_1390_P110_2003:
-        return convertCharsetInternal(QStringLiteral("ibm-1390_P110-2003"), value);
-    case WellKnownCharsets::IBM_1399_P110_2003:
-        return convertCharsetInternal(QStringLiteral("ibm-1399_P110-2003"), value);
-    case WellKnownCharsets::IBM_5123_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-5123_P100-1999"), value);
-    case WellKnownCharsets::IBM_8482_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-8482_P100-1999"), value);
-    case WellKnownCharsets::IBM_4899_P100_1998:
-        return convertCharsetInternal(QStringLiteral("ibm-4899_P100-1998"), value);
-    case WellKnownCharsets::IBM_4971_P100_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-4971_P100-1999"), value);
-    case WellKnownCharsets::IBM_9067_X100_2005:
-        return convertCharsetInternal(QStringLiteral("ibm-9067_X100-2005"), value);
-    case WellKnownCharsets::IBM_12712_P100_1998:
-        return convertCharsetInternal(QStringLiteral("ibm-12712_P100-1998"), value);
-    case WellKnownCharsets::IBM_16804_X110_1999:
-        return convertCharsetInternal(QStringLiteral("ibm-16804_X110-1999"), value);
-    case WellKnownCharsets::IBM_37_P100_1995_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-37_P100-1995,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1047_P100_1995_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1047_P100-1995,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1140_P100_1997_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1140_P100-1997,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1141_P100_1997_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1141_P100-1997,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1142_P100_1997_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1142_P100-1997,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1143_P100_1997_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1143_P100-1997,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1144_P100_1997_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1144_P100-1997,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1145_P100_1997_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1145_P100-1997,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1146_P100_1997_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1146_P100-1997,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1147_P100_1997_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1147_P100-1997,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1148_P100_1997_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1148_P100-1997,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1149_P100_1997_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1149_P100-1997,swaplfnl"), value);
-    case WellKnownCharsets::IBM_1153_P100_1999_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-1153_P100-1999,swaplfnl"), value);
-    case WellKnownCharsets::IBM_12712_P100_1998_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-12712_P100-1998,swaplfnl"), value);
-    case WellKnownCharsets::IBM_16804_X110_1999_SwapLFNL:
-        return convertCharsetInternal(QStringLiteral("ibm-16804_X110-1999,swaplfnl"), value);
-    case WellKnownCharsets::EBCDIC_XML_US:
-        return convertCharsetInternal(QStringLiteral("ebcdic-xml-us"), value);
     default:
         m_pScriptEngineLegacy->logOrThrowError(QStringLiteral("Unknown charset specified"));
         return QByteArray();
