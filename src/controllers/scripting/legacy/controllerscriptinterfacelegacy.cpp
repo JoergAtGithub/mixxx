@@ -1514,9 +1514,8 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharsetInternal(
     QByteArray encoderNameArray = targetCharset.toUtf8();
     auto* pCodec = QTextCodec::codecForName(encoderNameArray);
     if (!pCodec) {
-        /* m_pScriptEngineLegacy->logOrThrowError(
-                 QStringLiteral("Unable to get QTextCodec name for charset:
-           %1").arg(targetCharset));*/
+        m_pScriptEngineLegacy->logOrThrowError(
+                QStringLiteral("Unable to get QTextCodec name for charset: %1").arg(targetCharset));
         return QByteArray();
     }
     std::unique_ptr<QTextEncoder> encoder(
