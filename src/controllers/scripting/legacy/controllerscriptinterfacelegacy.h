@@ -31,19 +31,19 @@ class ControllerScriptInterfaceLegacy : public QObject {
         UTF_32,
         UTF_32BE,
         UTF_32LE,
-        /* Platform endianess is not supported Qt <6.4
+        /* Platform endianess is not supported by QTextCodec
         * and is not relevant for controller scripting
         * as the host computer platform is not the target
         UTF16_PlatformEndian,
         UTF16_OppositeEndian,
         UTF32_PlatformEndian,
-        UTF32_OppositeEndian,
-        UTF_16BE_Version_1,
-        UTF_16LE_Version_1,
-        UTF_16_Version_1,
-        UTF_16_Version_2,*/
+        UTF32_OppositeEndian,*/
+        // UTF_16BE_Version_1, // Not supported by QTextCodec
+        // UTF_16LE_Version_1, // Not supported by QTextCodec
+        // UTF_16_Version_1,   // Not supported by QTextCodec
+        // UTF_16_Version_2,   // Not supported by QTextCodec
         UTF_7,
-        // IMAP_Mailbox_Name,
+        // IMAP_Mailbox_Name,  // Not supported by QTextCodec
         SCSU,
         BOCU_1,
         CESU_8,
@@ -55,53 +55,53 @@ class ControllerScriptInterfaceLegacy : public QObject {
         ISO_8859_5,
         ISO_8859_6,
         ISO_8859_7,
-        // IBM_813_P100_1995,
+        // IBM_813_P100_1995,  // Not supported by QTextCodec
         ISO_8859_8,
-        // IBM_916_P100_1995,
+        // IBM_916_P100_1995,  // Not supported by QTextCodec
         ISO_8859_9,
         ISO_8859_10,
-        //ISO_8859_11_2001,
+        // ISO_8859_11_2001,   // Not supported by QTextCodec
         ISO_8859_13,
         ISO_8859_14,
-        //IBM_942_P12A_1999,
+        // IBM_942_P12A_1999,  // Not supported by QTextCodec
         Shift_JIS,
-        //IBM_943_P130_1999,
-        //IBM_33722_P12A_P12A_2009_U2,
-        //IBM_33722_P120_1999,
-        //IBM_954_P101_2007,
+        // IBM_943_P130_1999,  // Not supported by QTextCodec
+        // IBM_33722_P12A_P12A_2009_U2, // Not supported by QTextCodec
+        // IBM_33722_P120_1999, // Not supported by QTextCodec
+        // IBM_954_P101_2007,  // Not supported by QTextCodec
         EUC_JP,
-        //IBM_1373_P100_2002,
+        // IBM_1373_P100_2002, // Not supported by QTextCodec
         Big5,
-        //IBM_950_P110_1999,
+        // IBM_950_P110_1999,  // Not supported by QTextCodec
         Big5_HKSCS,
-        //IBM_5471_P100_2006,
-        //IBM_1386_P100_2001,
+        // IBM_5471_P100_2006, // Not supported by QTextCodec
+        // IBM_1386_P100_2001, // Not supported by QTextCodec
         GBK,
         GB2312,
-        // GB_2312_80, => GB_2312-80 results in an infinite loop in ICU and
-        // stalls the whole QJSEngine theads
-        //EUC_TW_2014,
-        //IBM_964_P110_1999,
-        //IBM_949_P110_1999,
-        //IBM_949_P11A_1999,
+        /* GB_2312_80, => GB_2312-80 results in an infinite loop in ICU and
+        *  stalls the whole QJSEngine theads */
+        // EUC_TW_2014,        // Not supported by QTextCodec
+        // IBM_964_P110_1999,  // Not supported by QTextCodec
+        // IBM_949_P110_1999,  // Not supported by QTextCodec
+        // IBM_949_P11A_1999,  // Not supported by QTextCodec
         EUC_KR,
-        // IBM_971_P100_1995, => ibm-971_P100-1995 results in an infinite loop
-        // in ICU and stalls the whole QJSEngine theads
+        /* IBM_971_P100_1995, => ibm-971_P100-1995 results in an infinite loop
+        * in ICU and stalls the whole QJSEngine theads */
         CP1363,
-        //IBM_1363_P110_1997,
+        // IBM_1363_P110_1997, // Not supported by QTextCodec
         KSC_5601,
         Windows_874_2000,
         TIS_620,
-        //IBM_1162_P100_1999,
+        // IBM_1162_P100_1999, // Not supported by QTextCodec
         IBM437,
-       // IBM_720_P100_1997,
-       // IBM_737_P100_1997,
+        // IBM_720_P100_1997,  // Not supported by QTextCodec
+        // IBM_737_P100_1997,  // Not supported by QTextCodec
         IBM775,
         IBM850,
         CP851,
         IBM852,
         IBM855,
-      //  IBM_856_P100_1995,
+        // IBM_856_P100_1995,  // Not supported by QTextCodec
         IBM857,
         IBM00858,
         IBM860,
@@ -111,15 +111,15 @@ class ControllerScriptInterfaceLegacy : public QObject {
         IBM864,
         IBM865,
         IBM866,
-     //   IBM_867_P100_1998,
+        // IBM_867_P100_1998,  // Not supported by QTextCodec
         IBM868,
         IBM869,
         KOI8_R,
-     //   IBM_901_P100_1999,
-     //   IBM_902_P100_1999,
-      //  IBM_922_P100_1999,
+        // IBM_901_P100_1999,  // Not supported by QTextCodec
+        // IBM_902_P100_1999,  // Not supported by QTextCodec
+        // IBM_922_P100_1999,  // Not supported by QTextCodec
         KOI8_U,
-     //   IBM_4909_P100_1999,
+        // IBM_4909_P100_1999, // Not supported by QTextCodec
         Windows_1250,
         Windows_1251,
         Windows_1252,
@@ -129,18 +129,18 @@ class ControllerScriptInterfaceLegacy : public QObject {
         Windows_1256,
         Windows_1257,
         Windows_1258,
-        //IBM_1250_P100_1995,
-        //IBM_1251_P100_1995,
-        //IBM_1252_P100_2000,
-        //IBM_1253_P100_1995,
-        //IBM_1254_P100_1995,
-        //IBM_1255_P100_1995,
-        //IBM_5351_P100_1998,
-        //IBM_1256_P110_1997,
-        //IBM_5352_P100_1998,
-        //IBM_1257_P100_1995,
-        //IBM_5353_P100_1998,
-        //IBM_1258_P100_1997,
+        // IBM_1250_P100_1995, // Not supported by QTextCodec
+        // IBM_1251_P100_1995, // Not supported by QTextCodec
+        // IBM_1252_P100_2000, // Not supported by QTextCodec
+        // IBM_1253_P100_1995, // Not supported by QTextCodec
+        // IBM_1254_P100_1995, // Not supported by QTextCodec
+        // IBM_1255_P100_1995, // Not supported by QTextCodec
+        // IBM_5351_P100_1998, // Not supported by QTextCodec
+        // IBM_1256_P110_1997, // Not supported by QTextCodec
+        // IBM_5352_P100_1998, // Not supported by QTextCodec
+        // IBM_1257_P100_1995, // Not supported by QTextCodec
+        // IBM_5353_P100_1998, // Not supported by QTextCodec
+        // IBM_1258_P100_1997, // Not supported by QTextCodec
         Macintosh,
         X_Mac_Greek,
         X_Mac_Cyrillic,
@@ -148,36 +148,36 @@ class ControllerScriptInterfaceLegacy : public QObject {
         X_Mac_Turkish,
         HP_Roman8,
         Adobe_Standard_Encoding,
-        //IBM_1006_P100_1995,
-        //IBM_1098_P100_1995,
-        //IBM_1124_P100_1996,
-        //IBM_1125_P100_1997,
-        //IBM_1129_P100_1997,
-        //IBM_1131_P100_1997,
-        //IBM_1133_P100_1997,
-        //GSM_03_38_2009,
+        // IBM_1006_P100_1995, // Not supported by QTextCodec
+        // IBM_1098_P100_1995, // Not supported by QTextCodec
+        // IBM_1124_P100_1996, // Not supported by QTextCodec
+        // IBM_1125_P100_1997, // Not supported by QTextCodec
+        // IBM_1129_P100_1997, // Not supported by QTextCodec
+        // IBM_1131_P100_1997, // Not supported by QTextCodec
+        // IBM_1133_P100_1997, // Not supported by QTextCodec
+        // GSM_03_38_2009,     // Not supported by QTextCodec
         ISO_2022_JP,
         ISO_2022_JP_1,
         ISO_2022_JP_2,
-        //ISO_2022_Locale_JA_Version_3,
-        //ISO_2022_Locale_JA_Version_4,
+        // ISO_2022_Locale_JA_Version_3, // Not supported by QTextCodec
+        // ISO_2022_Locale_JA_Version_4, // Not supported by QTextCodec
         ISO_2022_KR,
-        //ISO_2022_Locale_KO_Version_1,
+        // ISO_2022_Locale_KO_Version_1, // Not supported by QTextCodec
         ISO_2022_CN,
         ISO_2022_CN_EXT,
-        //ISO_2022_Locale_ZH_Version_2,
+        // ISO_2022_Locale_ZH_Version_2, // Not supported by QTextCodec
         HZ_GB_2312,
-        //X11_Compound_Text,
-        //ISCII_Version_0,
-        //ISCII_Version_1,
-        //ISCII_Version_2,
-        //ISCII_Version_3,
-        //ISCII_Version_4,
-        //ISCII_Version_5,
-        //ISCII_Version_6,
-        //ISCII_Version_7,
-        //ISCII_Version_8,
-        //LMBCS_1,
+        // X11_Compound_Text,  // Not supported by QTextCodec
+        // ISCII_Version_0,    // Not supported by QTextCodec
+        // ISCII_Version_1,    // Not supported by QTextCodec
+        // ISCII_Version_2,    // Not supported by QTextCodec
+        // ISCII_Version_3,    // Not supported by QTextCodec
+        // ISCII_Version_4,    // Not supported by QTextCodec
+        // ISCII_Version_5,    // Not supported by QTextCodec
+        // ISCII_Version_6,    // Not supported by QTextCodec
+        // ISCII_Version_7,    // Not supported by QTextCodec
+        // ISCII_Version_8,    // Not supported by QTextCodec
+        // LMBCS_1,            // Not supported by QTextCodec
         IBM037,
         IBM273,
         IBM277,
@@ -190,28 +190,28 @@ class ControllerScriptInterfaceLegacy : public QObject {
         IBM420,
         IBM424,
         IBM500,
-        //IBM_803_P100_1999,
+        // IBM_803_P100_1999,  // Not supported by QTextCodec
         IBM_Thai,
         IBM870,
         IBM871,
-        //IBM_875_P100_1995,
+        // IBM_875_P100_1995,  // Not supported by QTextCodec
         IBM918,
-        //IBM_930_P120_1999,
-        //IBM_933_P110_1995,
-        //IBM_935_P110_1999,
-        //IBM_937_P110_1999,
-        //IBM_939_P120_1999,
-        //IBM_1025_P100_1995,
+        // IBM_930_P120_1999,  // Not supported by QTextCodec
+        // IBM_933_P110_1995,  // Not supported by QTextCodec
+        // IBM_935_P110_1999,  // Not supported by QTextCodec
+        // IBM_937_P110_1999,  // Not supported by QTextCodec
+        // IBM_939_P120_1999,  // Not supported by QTextCodec
+        // IBM_1025_P100_1995, // Not supported by QTextCodec
         IBM1026,
         IBM1047,
-        //IBM_1097_P100_1995,
-        //IBM_1112_P100_1995,
-        //IBM_1122_P100_1999,
-        //IBM_1123_P100_1995,
-        //IBM_1130_P100_1997,
-        //IBM_1132_P100_1998,
-        //IBM_1137_P100_1999,
-        //IBM_4517_P100_2005,
+        // IBM_1097_P100_1995, // Not supported by QTextCodec
+        // IBM_1112_P100_1995, // Not supported by QTextCodec
+        // IBM_1122_P100_1999, // Not supported by QTextCodec
+        // IBM_1123_P100_1995, // Not supported by QTextCodec
+        // IBM_1130_P100_1997, // Not supported by QTextCodec
+        // IBM_1132_P100_1998, // Not supported by QTextCodec
+        // IBM_1137_P100_1999, // Not supported by QTextCodec
+        // IBM_4517_P100_2005, // Not supported by QTextCodec
         IBM01140,
         IBM01141,
         IBM01142,
@@ -222,45 +222,45 @@ class ControllerScriptInterfaceLegacy : public QObject {
         IBM01147,
         IBM01148,
         IBM01149,
-        //IBM_1153_P100_1999,
-        //IBM_1154_P100_1999,
-        //IBM_1155_P100_1999,
-        //IBM_1156_P100_1999,
-        //IBM_1157_P100_1999,
-        //IBM_1158_P100_1999,
-        //IBM_1160_P100_1999,
-        //IBM_1164_P100_1999,
-        //IBM_1364_P110_2007,
-        //IBM_1371_P100_1999,
-        //IBM_1388_P103_2001,
-        //IBM_1390_P110_2003,
-        //IBM_1399_P110_2003,
-        //IBM_5123_P100_1999,
-        //IBM_8482_P100_1999,
-        // IBM_16684_P110_2003, => ibm-16684_P110-2003 results in an infinite
-        // loop in ICU and stalls the whole QJSEngine theads
-        //IBM_4899_P100_1998,
-        //IBM_4971_P100_1999,
-        //IBM_9067_X100_2005,
-        //IBM_12712_P100_1998,
-        //IBM_16804_X110_1999,
-        //IBM_37_P100_1995_SwapLFNL,
-        //IBM_1047_P100_1995_SwapLFNL,
-        //IBM_1140_P100_1997_SwapLFNL,
-        //IBM_1141_P100_1997_SwapLFNL,
-        //IBM_1142_P100_1997_SwapLFNL,
-        //IBM_1143_P100_1997_SwapLFNL,
-        //IBM_1144_P100_1997_SwapLFNL,
-        //IBM_1145_P100_1997_SwapLFNL,
-        //IBM_1146_P100_1997_SwapLFNL,
-        //IBM_1147_P100_1997_SwapLFNL,
-        //IBM_1148_P100_1997_SwapLFNL,
-        //IBM_1149_P100_1997_SwapLFNL,
-        //IBM_1153_P100_1999_SwapLFNL,
-        //IBM_12712_P100_1998_SwapLFNL,
-        //IBM_16804_X110_1999_SwapLFNL,
-        //EBCDIC_XML_US
+        // IBM_1153_P100_1999, // Not supported by QTextCodec
+        // IBM_1154_P100_1999, // Not supported by QTextCodec
+        // IBM_1155_P100_1999, // Not supported by QTextCodec
+        // IBM_1156_P100_1999, // Not supported by QTextCodec
+        // IBM_1157_P100_1999, // Not supported by QTextCodec
+        // IBM_1158_P100_1999, // Not supported by QTextCodec
+        // IBM_1160_P100_1999, // Not supported by QTextCodec
+        // IBM_1164_P100_1999, // Not supported by QTextCodec
+        // IBM_1364_P110_2007, // Not supported by QTextCodec
+        // IBM_1371_P100_1999, // Not supported by QTextCodec
+        // IBM_1388_P103_2001, // Not supported by QTextCodec
+        // IBM_1390_P110_2003, // Not supported by QTextCodec
+        // IBM_1399_P110_2003, // Not supported by QTextCodec
+        // IBM_5123_P100_1999, // Not supported by QTextCodec
+        // IBM_8482_P100_1999, // Not supported by QTextCodec
+        /* IBM_16684_P110_2003, => ibm-16684_P110-2003 results in an infinite
+        * loop in ICU and stalls the whole QJSEngine theads // IBM_4899_P100_1998, */
+        // IBM_4971_P100_1999, // Not supported by QTextCodec
+        // IBM_9067_X100_2005, // Not supported by QTextCodec
+        // IBM_12712_P100_1998, // Not supported by QTextCodec
+        // IBM_16804_X110_1999, // Not supported by QTextCodec
+        // IBM_37_P100_1995_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1047_P100_1995_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1140_P100_1997_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1141_P100_1997_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1142_P100_1997_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1143_P100_1997_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1144_P100_1997_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1145_P100_1997_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1146_P100_1997_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1147_P100_1997_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1148_P100_1997_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1149_P100_1997_SwapLFNL, // Not supported by QTextCodec
+        // IBM_1153_P100_1999_SwapLFNL, // Not supported by QTextCodec
+        // IBM_12712_P100_1998_SwapLFNL, // Not supported by QTextCodec
+        // IBM_16804_X110_1999_SwapLFNL, // Not supported by QTextCodec
+        // EBCDIC_XML_US // Not supported by QTextCodec
     };
+
     Q_ENUM(WellKnownCharsets)
 
     ControllerScriptInterfaceLegacy(ControllerScriptEngineLegacy* m_pEngine,
