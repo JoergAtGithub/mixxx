@@ -308,7 +308,234 @@ declare namespace engine {
         Latin9,
         ISO_8859_15,
         UCS2,
-        ISO_10646_UCS_2
+        ISO_10646_UCS_2,
+        UTF_8,
+        UTF_16,
+        UTF_16BE,
+        UTF_16LE,
+        UTF_32,
+        UTF_32BE,
+        UTF_32LE,
+        UTF16_PlatformEndian,
+        UTF16_OppositeEndian,
+        UTF32_PlatformEndian,
+        UTF32_OppositeEndian,
+        UTF_16BE_Version_1,
+        UTF_16LE_Version_1,
+        UTF_16_Version_1,
+        UTF_16_Version_2,
+        UTF_7,
+        IMAP_Mailbox_Name,
+        SCSU,
+        BOCU_1,
+        CESU_8,
+        US_ASCII,
+        GB18030,
+        ISO_8859_2,
+        ISO_8859_3,
+        ISO_8859_4,
+        ISO_8859_5,
+        ISO_8859_6,
+        ISO_8859_7,
+        IBM_813_P100_1995,
+        ISO_8859_8,
+        IBM_916_P100_1995,
+        ISO_8859_9,
+        ISO_8859_10,
+        ISO_8859_11_2001,
+        ISO_8859_13,
+        ISO_8859_14,
+        IBM_942_P12A_1999,
+        Shift_JIS,
+        IBM_943_P130_1999,
+        IBM_33722_P12A_P12A_2009_U2,
+        IBM_33722_P120_1999,
+        IBM_954_P101_2007,
+        EUC_JP,
+        IBM_1373_P100_2002,
+        Big5,
+        IBM_950_P110_1999,
+        Big5_HKSCS,
+        IBM_5471_P100_2006,
+        IBM_1386_P100_2001,
+        GBK,
+        GB2312,
+        EUC_TW_2014,
+        IBM_964_P110_1999,
+        IBM_949_P110_1999,
+        IBM_949_P11A_1999,
+        EUC_KR,
+        CP1363,
+        IBM_1363_P110_1997,
+        KSC_5601,
+        Windows_874_2000,
+        TIS_620,
+        IBM_1162_P100_1999,
+        IBM437, /** OEM United States */
+        IBM_720_P100_1997,
+        IBM_737_P100_1997,
+        IBM775, /** OEM Baltic */
+        IBM850, /** OEM Multilingual Latin 1 */
+        CP851,
+        IBM852, /** OEM Latin 2 */
+        IBM855, /** OEM Cyrillic */
+        IBM_856_P100_1995,
+        IBM857, /** OEM Turkish */
+        IBM00858, /** OEM Multilingual Latin 1 + Euro symbol */
+        IBM860, /** OEM Portuguese */
+        IBM861, /** OEM Icelandic */
+        IBM862, /** OEM Hebrew */
+        IBM863, /** OEM Canadian French */
+        IBM864, /** OEM Arabic */
+        IBM865, /** OEM Nordic */
+        IBM866, /** OEM Russian */
+        IBM_867_P100_1998,
+        IBM868, /** OEM Arabic */
+        IBM869, /** OEM Greek */
+        KOI8_R, /** KOI8-R */
+        IBM_901_P100_1999,
+        IBM_902_P100_1999,
+        IBM_922_P100_1999,
+        KOI8_U, /** KOI8-U */
+        IBM_4909_P100_1999,
+        Windows_1250, /** Windows Central Europe */
+        Windows_1251, /** Windows Cyrillic */
+        Windows_1252, /** Windows Latin 1 */
+        Windows_1253, /** Windows Greek */
+        Windows_1254, /** Windows Turkish */
+        Windows_1255, /** Windows Hebrew */
+        Windows_1256, /** Windows Arabic */
+        Windows_1257, /** Windows Baltic */
+        Windows_1258, /** Windows Vietnamese */
+        IBM_1250_P100_1995,
+        IBM_1251_P100_1995,
+        IBM_1252_P100_2000,
+        IBM_1253_P100_1995,
+        IBM_1254_P100_1995,
+        IBM_1255_P100_1995,
+        IBM_5351_P100_1998,
+        IBM_1256_P110_1997,
+        IBM_5352_P100_1998,
+        IBM_1257_P100_1995,
+        IBM_5353_P100_1998,
+        IBM_1258_P100_1997,
+        Macintosh,
+        X_Mac_Greek,
+        X_Mac_Cyrillic,
+        X_Mac_CentralEuroRoman,
+        X_Mac_Turkish,
+        HP_Roman8,
+        Adobe_Standard_Encoding,
+        IBM_1006_P100_1995,
+        IBM_1098_P100_1995,
+        IBM_1124_P100_1996,
+        IBM_1125_P100_1997,
+        IBM_1129_P100_1997,
+        IBM_1131_P100_1997,
+        IBM_1133_P100_1997,
+        GSM_03_38_2009,
+        ISO_2022_JP,
+        ISO_2022_JP_1,
+        ISO_2022_JP_2,
+        ISO_2022_Locale_JA_Version_3,
+        ISO_2022_Locale_JA_Version_4,
+        ISO_2022_KR,
+        ISO_2022_Locale_KO_Version_1,
+        ISO_2022_CN,
+        ISO_2022_CN_EXT,
+        ISO_2022_Locale_ZH_Version_2,
+        HZ_GB_2312,
+        X11_Compound_Text,
+        ISCII_Version_0,
+        ISCII_Version_1,
+        ISCII_Version_2,
+        ISCII_Version_3,
+        ISCII_Version_4,
+        ISCII_Version_5,
+        ISCII_Version_6,
+        ISCII_Version_7,
+        ISCII_Version_8,
+        LMBCS_1,
+        IBM037, /** IBM EBCDIC US-Canada */
+        IBM273, /** IBM EBCDIC Germany */
+        IBM277, /** IBM EBCDIC Denmark-Norway */
+        IBM278, /** IBM EBCDIC Finland-Sweden */
+        IBM280, /** IBM EBCDIC Italy */
+        IBM284, /** IBM EBCDIC Latin America-Spain */
+        IBM285, /** IBM EBCDIC United Kingdom */
+        IBM290, /** IBM EBCDIC Japanese Katakana Extended */
+        IBM297, /** IBM EBCDIC France */
+        IBM420, /** IBM EBCDIC Arabic */
+        IBM424, /** IBM EBCDIC Hebrew */
+        IBM500, /** IBM EBCDIC International */
+        IBM_803_P100_1999,
+        IBM_Thai,
+        IBM870, /** IBM EBCDIC Multilingual Latin 2 */
+        IBM871, /** IBM EBCDIC Icelandic */
+        IBM_875_P100_1995,
+        IBM918, /** IBM EBCDIC Arabic */
+        IBM_930_P120_1999,
+        IBM_933_P110_1995,
+        IBM_935_P110_1999,
+        IBM_937_P110_1999,
+        IBM_939_P120_1999,
+        IBM_1025_P100_1995,
+        IBM1026, /** IBM EBCDIC Turkish Latin 5 */
+        IBM1047, /** IBM EBCDIC Latin 1 Open System */
+        IBM_1097_P100_1995,
+        IBM_1112_P100_1995,
+        IBM_1122_P100_1999,
+        IBM_1123_P100_1995,
+        IBM_1130_P100_1997,
+        IBM_1132_P100_1998,
+        IBM_1137_P100_1999,
+        IBM_4517_P100_2005,
+        IBM01140, /** IBM EBCDIC US-Canada + Euro symbol */
+        IBM01141, /** IBM EBCDIC Germany + Euro symbol */
+        IBM01142, /** IBM EBCDIC Denmark-Norway + Euro symbol */
+        IBM01143, /** IBM EBCDIC Finland-Sweden + Euro symbol */
+        IBM01144, /** IBM EBCDIC Italy + Euro symbol */
+        IBM01145, /** IBM EBCDIC Latin America-Spain + Euro symbol */
+        IBM01146, /** IBM EBCDIC United Kingdom + Euro symbol */
+        IBM01147, /** IBM EBCDIC France + Euro symbol */
+        IBM01148, /** IBM EBCDIC International + Euro symbol */
+        IBM01149, /** IBM EBCDIC Icelandic + Euro symbol */
+        IBM_1153_P100_1999,
+        IBM_1154_P100_1999,
+        IBM_1155_P100_1999,
+        IBM_1156_P100_1999,
+        IBM_1157_P100_1999,
+        IBM_1158_P100_1999,
+        IBM_1160_P100_1999,
+        IBM_1164_P100_1999,
+        IBM_1364_P110_2007,
+        IBM_1371_P100_1999,
+        IBM_1388_P103_2001,
+        IBM_1390_P110_2003,
+        IBM_1399_P110_2003,
+        IBM_5123_P100_1999,
+        IBM_8482_P100_1999,
+        IBM_4899_P100_1998,
+        IBM_4971_P100_1999,
+        IBM_9067_X100_2005,
+        IBM_12712_P100_1998,
+        IBM_16804_X110_1999,
+        IBM_37_P100_1995_SwapLFNL,
+        IBM_1047_P100_1995_SwapLFNL,
+        IBM_1140_P100_1997_SwapLFNL,
+        IBM_1141_P100_1997_SwapLFNL,
+        IBM_1142_P100_1997_SwapLFNL,
+        IBM_1143_P100_1997_SwapLFNL,
+        IBM_1144_P100_1997_SwapLFNL,
+        IBM_1145_P100_1997_SwapLFNL,
+        IBM_1146_P100_1997_SwapLFNL,
+        IBM_1147_P100_1997_SwapLFNL,
+        IBM_1148_P100_1997_SwapLFNL,
+        IBM_1149_P100_1997_SwapLFNL,
+        IBM_1153_P100_1999_SwapLFNL,
+        IBM_12712_P100_1998_SwapLFNL,
+        IBM_16804_X110_1999_SwapLFNL,
+        EBCDIC_XML_US
     }
 
     /**
@@ -317,14 +544,6 @@ declare namespace engine {
      * This function is useful to display text on a device that does not make use of UTF-8.
      * Available charset names are listed here: http://www.iana.org/assignments/character-sets/character-sets.xhtml.
      * Characters that are unsupported by target charset will be transformed to null character (0x00).
-     * @param targetCharset The charset to encode the string into.
-     * @param value The string to encode
-     * @returns The converted String as an array of bytes. Will return an empty buffer on conversion error.
-     */
-    function convertCharset(targetCharset: string, value: string): ArrayBuffer
-
-    /**
-     * Version of {@link engine.convertCharset} to use with {@link engine.WellKnownCharsets}.
      * @param targetCharset The charset to encode the string into.
      * @param value The string to encode
      * @returns The converted String as an array of bytes. Will return an empty buffer on conversion error.

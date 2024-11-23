@@ -18,6 +18,7 @@
 #include "controllers/controllerenginethreadcontrol.h"
 #include "controllers/rendering/controllerrenderingengine.h"
 #endif
+#include "controllers/scripting/legacy/controllerscriptinterfacelegacy.h"
 #include "controllers/softtakeover.h"
 #include "helpers/log_test.h"
 #include "preferences/usersettings.h"
@@ -659,15 +660,63 @@ TEST_F(ControllerScriptEngineLegacyTest, connectionExecutesWithCorrectThisObject
     EXPECT_DOUBLE_EQ(1.0, pass->get());
 }
 
-TEST_F(ControllerScriptEngineLegacyTest, convertCharsetUndefinedOnUnknownCharset) {
-    const auto result = evaluate("engine.convertCharset('NULL', 'Hello!')");
-
-    EXPECT_EQ(qjsvalue_cast<QByteArray>(result), QByteArrayLiteral(""));
-}
-
 template<int N>
 QByteArray intByteArray(const char (&array)[N]) {
     return QByteArray(array, N);
+}
+
+TEST_F(ControllerScriptEngineLegacyTest, convertCharsetAllWellKnownCharsets) {
+    auto counter = std::make_unique<ControlObject>(ConfigKey("[Test]", "counter"));
+
+    QMetaEnum charsetEnumEntry = QMetaEnum::fromType<
+            ControllerScriptInterfaceLegacy::WellKnownCharsets>();
+
+    QString script = R"(
+        var workingCharsetCounter = 0;
+        var failedCharsets = [];
+        var expectedLengths = {
+            "UCS2": 14,"ISO_10646_UCS_2": 14, "UTF_16": 12, "UTF_16BE": 12, "UTF_16LE": 12,
+            "UTF_32": 24, "UTF_32BE": 24, "UTF_32LE": 24, "UTF16_PlatformEndian": 12, "UTF16_OppositeEndian": 12,
+            "UTF32_PlatformEndian": 24, "UTF32_OppositeEndian": 24, "UTF_16BE_Version_1": 14, "UTF_16LE_Version_1": 14,
+            "UTF_16_Version_1": 14, "UTF_16_Version_2": 14, "ISO_2022_KR": 10, "ISO_2022_Locale_KO_Version_1": 10,
+            "HZ_GB_2312": 8
+        };
+    )";
+
+    for (int i = 0; i < charsetEnumEntry.keyCount(); ++i) {
+        QString key = QString::fromUtf8(charsetEnumEntry.key(i));
+        script += QString(R"(
+            var charset = engine.WellKnownCharsets.%1;
+            var result = engine.convertCharset(charset, 'Hello!');
+            var expectedLength = expectedLengths['%1'] || 6; // The test string "Hello!" has 6 bytes in the most charsets
+            var resultLength = result.byteLength;
+            if (resultLength === expectedLength) {
+                workingCharsetCounter++;
+            } else {
+                failedCharsets.push(`Charset: %1  Result: ${result}  Result-Length: ${resultLength}  Expected-Length: ${expectedLength}`);
+            }
+        )")
+                          .arg(key);
+    }
+
+    script += R"(
+        engine.setValue('[Test]', 'counter', workingCharsetCounter);
+        failedCharsets.join('\n');
+    )";
+
+    QJSValue result = evaluate(script);
+    EXPECT_FALSE(result.isError());
+
+    QString failedCharsetsResult = result.toString();
+    if (!failedCharsetsResult.isEmpty()) {
+        ADD_FAILURE() << "Charsets with result length not equal to expected:\n"
+                      << failedCharsetsResult.toStdString();
+    }
+
+    // ControlObjectScript connections are processed via QueuedConnection. Use
+    // processEvents() to cause Qt to deliver them.
+    processEvents();
+    EXPECT_DOUBLE_EQ(counter->get(), charsetEnumEntry.keyCount());
 }
 
 TEST_F(ControllerScriptEngineLegacyTest, convertCharsetCorrectValueWellKnown) {
@@ -679,17 +728,9 @@ TEST_F(ControllerScriptEngineLegacyTest, convertCharsetCorrectValueWellKnown) {
             intByteArray({0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x21}));
 }
 
-TEST_F(ControllerScriptEngineLegacyTest, convertCharsetCorrectValueStringCharset) {
-    const auto result = evaluate("engine.convertCharset('ISO-8859-15', 'Hello!')");
-
-    // ISO-8859-15 ecoded 'Hello!'
-    EXPECT_EQ(qjsvalue_cast<QByteArray>(result),
-            intByteArray({0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x21}));
-}
-
 TEST_F(ControllerScriptEngineLegacyTest, convertCharsetUnsupportedChars) {
     auto result = qjsvalue_cast<QByteArray>(
-            evaluate("engine.convertCharset('ISO-8859-15', 'مايأ نامز')"));
+            evaluate("engine.convertCharset(engine.WellKnownCharsets.ISO_8859_15, 'مايأ نامز')"));
 
     EXPECT_EQ(result,
             intByteArray(
