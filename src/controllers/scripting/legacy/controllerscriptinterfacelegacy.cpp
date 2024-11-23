@@ -1106,8 +1106,6 @@ QByteArray ControllerScriptInterfaceLegacy::convertCharset(
         return convertCharsetInternal(QStringLiteral("ISO-8859-7"), value);
     case WellKnownCharsets::ISO_8859_8:
         return convertCharsetInternal(QStringLiteral("ISO-8859-8"), value);
-    case WellKnownCharsets::IBM_916_P100_1995:
-        return convertCharsetInternal(QStringLiteral("ibm-916_P100-1995"), value);
     case WellKnownCharsets::ISO_8859_9:
         return convertCharsetInternal(QStringLiteral("ISO-8859-9"), value);
     case WellKnownCharsets::ISO_8859_10:

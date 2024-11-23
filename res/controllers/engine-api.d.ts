@@ -335,7 +335,7 @@ declare namespace engine {
         ISO_8859_7,
        // IBM_813_P100_1995,
         ISO_8859_8,
-        IBM_916_P100_1995,
+        //IBM_916_P100_1995,
         ISO_8859_9,
         ISO_8859_10,
         ISO_8859_11_2001,
