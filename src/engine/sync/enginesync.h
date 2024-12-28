@@ -73,9 +73,9 @@ class EngineSync : public SyncableListener {
     void addSyncableDeck(Syncable* pSyncable);
     EngineChannel* getLeaderChannel() const;
     void onCallbackStart(mixxx::audio::SampleRate sampleRate,
-            int bufferSize,
+            std::size_t bufferSize,
             std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac);
-    void onCallbackEnd(mixxx::audio::SampleRate sampleRate, int bufferSize);
+    void onCallbackEnd(mixxx::audio::SampleRate sampleRate, std::size_t bufferSize);
 
   private:
     /// Iterate over decks, and based on sync and play status, pick a new Leader, or return the

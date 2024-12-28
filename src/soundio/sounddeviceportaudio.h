@@ -69,7 +69,7 @@ class SoundDevicePortAudio : public SoundDevice {
     void updateAudioLatencyUsage(const SINT framesPerBuffer);
 
     // PortAudio stream for this device.
-    PaStream* volatile m_pStream;
+    std::atomic<PaStream*> m_pStream;
     // Struct containing information about this device. Don't free() it, it
     // belongs to PortAudio.
     const PaDeviceInfo* m_deviceInfo;
@@ -94,6 +94,7 @@ class SoundDevicePortAudio : public SoundDevice {
     int m_invalidTimeInfoCount;
     PerformanceTimer m_clkRefTimer;
     PaTime m_lastCallbackEntrytoDacSecs;
+    std::atomic<int> m_callbackResult;
 
     ableton::link::HostTimeFilter<MixxxClockRef> m_hostTimeFilter;
     double m_cummulatedBufferTime;

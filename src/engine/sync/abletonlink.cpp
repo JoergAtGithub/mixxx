@@ -151,7 +151,7 @@ void AbletonLink::updateInstantaneousBpm(mixxx::Bpm) {
 /// If Ableton Link is enabled, it captures the session state and notifies
 /// the engine sync about any changes in tempo and beat distance.
 void AbletonLink::onCallbackStart(int sampleRate,
-        int bufferSize,
+        size_t bufferSize,
         std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac) {
     m_timeAtStartCallback = m_pLink->clock().micros();
 
@@ -184,7 +184,7 @@ void AbletonLink::onCallbackStart(int sampleRate,
     m_pEngineSync->notifyBeatDistanceChanged(this, beatDistance);
 }
 
-void AbletonLink::onCallbackEnd(int sampleRate, int bufferSize) {
+void AbletonLink::onCallbackEnd(int sampleRate, size_t bufferSize) {
     Q_UNUSED(sampleRate)
     Q_UNUSED(bufferSize)
 }

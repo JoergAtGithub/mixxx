@@ -98,9 +98,9 @@ class AbletonLink : public QObject, public Syncable {
     void updateInstantaneousBpm(mixxx::Bpm bpm) override;
 
     void onCallbackStart(int sampleRate,
-            int bufferSize,
+            size_t bufferSize,
             std::chrono::microseconds absTimeWhenPrevOutputBufferReachesDac);
-    void onCallbackEnd(int sampleRate, int bufferSize);
+    void onCallbackEnd(int sampleRate, size_t bufferSize);
 
   private:
     ableton::link::HostTimeFilter<MixxxClockRef> m_hostTimeFilter;
