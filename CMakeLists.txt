@@ -2656,16 +2656,6 @@ if(WIN32)
   target_include_directories(mixxx PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
 
-# ASIO (included in Ableton Link) requires atomic on clang to link `std::__atomic_base<unsigned int>::is_lock_free() const'
-include(CheckAtomic)
-if(HAVE_CXX_ATOMICS_WITH_LIB OR HAVE_CXX_ATOMICS64_WITH_LIB)
-  message(
-    STATUS
-    "Linking libatomic is needed for atomic support on this platform"
-  )
-  target_link_libraries(mixxx-lib PUBLIC atomic)
-endif()
-
 # Ableton Link
 find_package(
   AbletonLink
