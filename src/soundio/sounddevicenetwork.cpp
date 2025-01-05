@@ -111,7 +111,7 @@ SoundDeviceStatus SoundDeviceNetwork::open(bool isClkRefDevice, int syncBuffers)
                         << m_sampleRate << "Hz =" << requestedBufferTime.formatMillisWithUnit();
     }
 
-    m_hostTimeFilter.reset();
+    m_hostTimeFilter.clear();
 
     return SoundDeviceStatus::Ok;
 }
@@ -529,13 +529,20 @@ void SoundDeviceNetwork::updateCallbackEntryToDacTime(SINT framesPerBuffer) {
 
     // Use HostTimeFilter class to create a smooth linear regression
     // between absolute network time and absolute host time
-
     auto hostTime = std::chrono::duration_cast<std::chrono::microseconds>(
             ClockT::now().time_since_epoch());
 
-    m_absTimeWhenPrevOutputBufferReachesDac = m_hostTimeFilter.calcFilteredHostTime(
-                                                      static_cast<double>(currentTime), hostTime) +
-            std::chrono::microseconds(static_cast<long long>(callbackEntrytoDacSecs * 1000000));
+    m_hostTimeFilter.insertTimePoint(static_cast<double>(currentTime), hostTime);
+
+    auto filteredHostTime = m_hostTimeFilter.calcHostTime(static_cast<double>(currentTime));
+    auto outputLatency = std::chrono::microseconds(
+            static_cast<long long>(callbackEntrytoDacSecs * 1000000));
+
+    if (filteredHostTime != HostTimeFilter::kInvalidHostTime) {
+        m_absTimeWhenPrevOutputBufferReachesDac = filteredHostTime + outputLatency;
+    } else {
+        m_absTimeWhenPrevOutputBufferReachesDac = hostTime + outputLatency;
+    }
 
     VisualPlayPosition::setCallbackEntryToDacSecs(callbackEntrytoDacSecs, m_clkRefTimer);
     //qDebug() << callbackEntrytoDacSecs << timeSinceLastCbSecs;

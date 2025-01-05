@@ -410,7 +410,7 @@ SoundDeviceStatus SoundDevicePortAudio::open(bool isClkRefDevice, int syncBuffer
         m_invalidTimeInfoCount = 0;
         m_clkRefTimer.start();
 
-        m_hostTimeFilter.reset();
+        m_hostTimeFilter.clear();
         m_meanOutputLatency.clear();
     }
     m_pStream.store(pStream, std::memory_order_release);
@@ -1105,8 +1105,13 @@ void SoundDevicePortAudio::updateCallbackEntryToDacTime(
     m_cummulatedBufferTime += bufferSizeSec;
     auto hostTime = std::chrono::duration_cast<std::chrono::microseconds>(
             ClockT::now().time_since_epoch());
-    auto filteredHostTimeNow = m_hostTimeFilter.calcFilteredHostTime(
-            m_cummulatedBufferTime, hostTime);
+
+    m_hostTimeFilter.insertTimePoint(m_cummulatedBufferTime, hostTime);
+
+    auto filteredHostTimeNow = m_hostTimeFilter.calcHostTime(m_cummulatedBufferTime);
+    if (filteredHostTimeNow == HostTimeFilter::kInvalidHostTime) {
+        filteredHostTimeNow = hostTime;
+    }
 
     if (CmdlineArgs::Instance().getDeveloper()) {
         qWarning() << "Pa_GetStreamTime: "

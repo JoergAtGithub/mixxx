@@ -4,8 +4,12 @@
 #include <utility>
 #include <vector>
 
+// HostTimeFilter is a class that provides a robust, jitter-free host time
+// for time points of an auxiliary clock using linear regression.
 class HostTimeFilter {
   public:
+    static constexpr std::chrono::microseconds kInvalidHostTime = std::chrono::microseconds::min();
+
     explicit HostTimeFilter(const std::size_t numPoints)
             : m_numPoints(numPoints),
               m_index(0),
@@ -16,7 +20,7 @@ class HostTimeFilter {
         m_points.reserve(m_numPoints);
     }
 
-    void reset() {
+    void clear() {
         m_index = 0;
         m_points.clear();
         m_sumAux = 0.0;
@@ -25,7 +29,9 @@ class HostTimeFilter {
         m_sumAuxSquared = 0.0;
     }
 
-    std::chrono::microseconds calcFilteredHostTime(
+    // Inserts a new time point consisting of an auxiliary time and a host time.
+    // These points are used later to calculate the filtered host time using linear regression.
+    void insertTimePoint(
             double auxiliaryTime, std::chrono::microseconds hostTime) {
         const auto micros = hostTime.count();
         const auto timePoint = std::make_pair(auxiliaryTime, static_cast<double>(micros));
@@ -47,8 +53,26 @@ class HostTimeFilter {
             m_points[m_index] = timePoint;
         }
         m_index = (m_index + 1) % m_numPoints;
+    }
 
-        return linearRegression(timePoint);
+    // Calculates the host time based on the auxiliary time using linear regression.
+    // Returns kInvalidHostTime if there are not enough points or if the calculation isn't possible.
+    std::chrono::microseconds calcHostTime(double auxiliaryTime) const {
+        if (m_points.size() < 2) {
+            return kInvalidHostTime;
+        }
+
+        const double n = static_cast<double>(m_points.size());
+        const double denominator = (n * m_sumAuxSquared - m_sumAux * m_sumAux);
+        if (denominator == 0.0) {
+            return kInvalidHostTime;
+        }
+
+        const double slope = (n * m_sumAuxByHst - m_sumAux * m_sumHst) / denominator;
+        const double intercept = (m_sumHst - slope * m_sumAux) / n;
+
+        return std::chrono::microseconds(
+                static_cast<long long>(slope * auxiliaryTime + intercept));
     }
 
   private:
@@ -59,22 +83,4 @@ class HostTimeFilter {
     double m_sumHst;
     double m_sumAuxByHst;
     double m_sumAuxSquared;
-
-    std::chrono::microseconds linearRegression(const std::pair<double, double>& timePoint) const {
-        if (m_points.size() < 2) {
-            return std::chrono::microseconds(static_cast<long long>(timePoint.second));
-        }
-
-        const double n = static_cast<double>(m_points.size());
-        const double denominator = (n * m_sumAuxSquared - m_sumAux * m_sumAux);
-        if (denominator == 0.0) {
-            return std::chrono::microseconds(static_cast<long long>(timePoint.second));
-        }
-
-        const double slope = (n * m_sumAuxByHst - m_sumAux * m_sumHst) / denominator;
-        const double intercept = (m_sumHst - slope * m_sumAux) / n;
-
-        return std::chrono::microseconds(
-                static_cast<long long>(slope * timePoint.first + intercept));
-    }
 };
