@@ -48,7 +48,7 @@ public:
           double baserate,
           double speed,
           bool paused,
-          int iSamplesPerBuffer,
+          std::size_t samplesPerBuffer,
           bool* pReportScratching,
           bool* pReportReverse);
 
@@ -71,6 +71,11 @@ public:
   static void setRateRampSensitivity(int);
   static int getRateRampSensitivity();
   bool isReverseButtonPressed();
+  // ReadAheadManager::getNextSamples() notifies us each time the play position
+  // wrapped around during one buffer process (beatloop or track repeat) so
+  // PositionScratchController can correctly interpret the sample position delta.
+  void notifyWrapAround(mixxx::audio::FramePos triggerPos,
+          mixxx::audio::FramePos targetPos);
 
 public slots:
   void slotRateRangeChanged(double);
@@ -85,7 +90,7 @@ public slots:
   void slotControlFastBack(double);
 
 private:
-  void processTempRate(const int bufferSamples);
+  void processTempRate(const size_t bufferSamples);
   double getJogFactor() const;
   double getWheelFactor() const;
   SyncMode getSyncMode() const;
@@ -146,6 +151,10 @@ private:
 
   ControlProxy* m_pSyncMode;
   ControlProxy* m_pSlipEnabled;
+
+  int m_wrapAroundCount;
+  mixxx::audio::FramePos m_jumpPos;
+  mixxx::audio::FramePos m_targetPos;
 
   // This is true if we've already started to ramp the rate
   bool m_bTempStarted;

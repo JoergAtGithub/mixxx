@@ -68,7 +68,7 @@ EffectSlot::EffectSlot(const QString& group,
     // Default to disabled to prevent accidental activation of effects
     // at the beginning of a set.
     m_pControlEnabled = std::make_unique<ControlPushButton>(ConfigKey(m_group, "enabled"));
-    m_pControlEnabled->setButtonMode(ControlPushButton::POWERWINDOW);
+    m_pControlEnabled->setButtonMode(mixxx::control::ButtonMode::PowerWindow);
     connect(m_pControlEnabled.get(),
             &ControlObject::valueChanged,
             this,
@@ -211,13 +211,11 @@ void EffectSlot::addEffectParameterSlot(EffectParameterType parameterType) {
     EffectParameterSlotBasePointer pParameterSlot =
             EffectParameterSlotBasePointer();
     if (parameterType == EffectParameterType::Knob) {
-        pParameterSlot = static_cast<EffectParameterSlotBasePointer>(
-                new EffectKnobParameterSlot(
-                        m_group, m_iNumParameterSlots[parameterType]));
+        pParameterSlot = QSharedPointer<EffectKnobParameterSlot>::create(
+                m_group, m_iNumParameterSlots[parameterType]);
     } else if (parameterType == EffectParameterType::Button) {
-        pParameterSlot = static_cast<EffectParameterSlotBasePointer>(
-                new EffectButtonParameterSlot(
-                        m_group, m_iNumParameterSlots[parameterType]));
+        pParameterSlot = QSharedPointer<EffectButtonParameterSlot>::create(
+                m_group, m_iNumParameterSlots[parameterType]);
     }
     ++m_iNumParameterSlots[parameterType];
     const auto pCONumParameterSlots = m_pControlNumParameterSlots[parameterType];
@@ -247,12 +245,14 @@ EffectParameterSlotBasePointer EffectSlot::getEffectParameterSlot(
 }
 
 void EffectSlot::loadEffectFromPreset(const EffectPresetPointer pPreset) {
-    if (!pPreset || pPreset->isEmpty()) {
+    EffectManifestPointer pManifest;
+    if (pPreset && !pPreset->isEmpty()) {
+        pManifest = m_pBackendManager->getManifest(pPreset);
+    }
+    if (!pManifest) {
         loadEffectInner(nullptr, nullptr, true);
         return;
     }
-    EffectManifestPointer pManifest = m_pBackendManager->getManifest(
-            pPreset->id(), pPreset->backendType());
     loadEffectInner(pManifest, pPreset, true);
 }
 
@@ -280,6 +280,14 @@ void EffectSlot::loadEffectInner(const EffectManifestPointer pManifest,
         // No new effect to load; just unload the old effect and return.
         emit effectChanged();
         return;
+    }
+
+    // Don't load an effect into the '---' preset. The preset would remain
+    // selected in WEffectChainPresetSelector and WEffectChainPresetButton and
+    // therefore couldn't be used to clear the chain.
+    // Instead, load an empty, nameless preset, then load the desired effect.
+    if (m_pChain->isEmptyPlaceholderPresetLoaded()) {
+        m_pChain->loadEmptyNamelessPreset();
     }
 
     m_pManifest = pManifest;
@@ -322,8 +330,8 @@ void EffectSlot::loadEffectInner(const EffectManifestPointer pManifest,
                     continue;
                 }
 
-                for (const auto& pParameter :
-                        m_allParameters.value(parameterType)) {
+                const auto& allParameters = m_allParameters.value(parameterType);
+                for (const auto& pParameter : allParameters) {
                     if (pParameter->manifest()->id() == parameterPreset.id()) {
                         m_loadedParameters[parameterType].append(pParameter);
                         break;
@@ -334,6 +342,8 @@ void EffectSlot::loadEffectInner(const EffectManifestPointer pManifest,
     }
 
     loadParameters();
+
+    m_pControlMetaParameter->setDefaultValue(pManifest->metaknobDefault());
 
     m_pControlLoaded->forceSet(1.0);
 
@@ -386,6 +396,8 @@ void EffectSlot::unloadEffect() {
     for (auto& parameterList : m_hiddenParameters) {
         parameterList.clear();
     }
+
+    m_pControlMetaParameter->setDefaultValue(0.0);
 
     m_pManifest.clear();
 
@@ -547,7 +559,7 @@ double EffectSlot::getMetaParameter() const {
 // This function is for the superknob to update individual effects' meta knobs
 // slotEffectMetaParameter does not need to update m_pControlMetaParameter's value
 void EffectSlot::setMetaParameter(double v, bool force) {
-    if (!m_metaknobSoftTakeover.ignore(m_pControlMetaParameter.get(), v) ||
+    if (!m_metaknobSoftTakeover.ignore(*m_pControlMetaParameter, v) ||
             !m_pControlEnabled->toBool() || force) {
         m_pControlMetaParameter->set(v);
         slotEffectMetaParameter(v, force);

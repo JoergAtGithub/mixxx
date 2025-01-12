@@ -43,6 +43,13 @@ void WaveformRendererHSV::paintGL() {
     if (data == nullptr) {
         return;
     }
+#ifdef __STEM__
+    auto stemInfo = pTrack->getStemInfo();
+    // If this track is a stem track, skip the rendering
+    if (!stemInfo.isEmpty() && waveform->hasStem()) {
+        return;
+    }
+#endif
 
     const float devicePixelRatio = m_waveformRenderer->getDevicePixelRatio();
     const int length = static_cast<int>(m_waveformRenderer->getLength() * devicePixelRatio);
@@ -59,7 +66,7 @@ void WaveformRendererHSV::paintGL() {
             (lastVisualFrame - firstVisualFrame) / static_cast<double>(length);
 
     float allGain(1.0);
-    getGains(&allGain, nullptr, nullptr, nullptr);
+    getGains(&allGain, false, nullptr, nullptr, nullptr);
 
     // Get base color of waveform in the HSV format (s and v isn't use)
     float h, s, v;
@@ -71,7 +78,8 @@ void WaveformRendererHSV::paintGL() {
     const float heightFactor = allGain * halfBreadth / m_maxValue;
 
     // Effective visual frame for x
-    double xVisualFrame = firstVisualFrame;
+    double xVisualFrame = qRound(firstVisualFrame / visualIncrementPerPixel) *
+            visualIncrementPerPixel;
 
     const int numVerticesPerLine = 6; // 2 triangles
 

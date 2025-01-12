@@ -52,7 +52,7 @@ EffectChain::EffectChain(const QString& group,
 
     m_pControlChainEnabled =
             std::make_unique<ControlPushButton>(ConfigKey(m_group, "enabled"));
-    m_pControlChainEnabled->setButtonMode(ControlPushButton::POWERWINDOW);
+    m_pControlChainEnabled->setButtonMode(mixxx::control::ButtonMode::PowerWindow);
     // Default to enabled. The skin might not show these buttons.
     m_pControlChainEnabled->setDefaultValue(true);
     m_pControlChainEnabled->set(true);
@@ -82,8 +82,8 @@ EffectChain::EffectChain(const QString& group,
 
     m_pControlChainMixMode =
             std::make_unique<ControlPushButton>(ConfigKey(m_group, "mix_mode"));
-    m_pControlChainMixMode->setButtonMode(ControlPushButton::TOGGLE);
-    m_pControlChainMixMode->setStates(EffectChainMixMode::kNumModes);
+    m_pControlChainMixMode->setBehavior(
+            mixxx::control::ButtonMode::Toggle, EffectChainMixMode::kNumModes);
     double mixModeCODefault = static_cast<double>(EffectChainMixMode::DrySlashWet);
     m_pControlChainMixMode->setDefaultValue(mixModeCODefault);
     m_pControlChainMixMode->set(mixModeCODefault);
@@ -127,21 +127,21 @@ EffectChain::EffectChain(const QString& group,
     // Refer to comment in header for full explanation.
     m_pControlChainShowFocus = std::make_unique<ControlPushButton>(
             ConfigKey(m_group, "show_focus"));
-    m_pControlChainShowFocus->setButtonMode(ControlPushButton::TOGGLE);
+    m_pControlChainShowFocus->setButtonMode(mixxx::control::ButtonMode::Toggle);
 
     m_pControlChainHasControllerFocus = std::make_unique<ControlPushButton>(
             ConfigKey(m_group, "controller_input_active"));
-    m_pControlChainHasControllerFocus->setButtonMode(ControlPushButton::TOGGLE);
+    m_pControlChainHasControllerFocus->setButtonMode(mixxx::control::ButtonMode::Toggle);
 
     m_pControlChainShowParameters = std::make_unique<ControlPushButton>(
             ConfigKey(m_group, "show_parameters"),
             true);
-    m_pControlChainShowParameters->setButtonMode(ControlPushButton::TOGGLE);
+    m_pControlChainShowParameters->setButtonMode(mixxx::control::ButtonMode::Toggle);
 
     m_pControlChainFocusedEffect = std::make_unique<ControlPushButton>(
             ConfigKey(m_group, "focused_effect"),
             true);
-    m_pControlChainFocusedEffect->setButtonMode(ControlPushButton::TOGGLE);
+    m_pControlChainFocusedEffect->setButtonMode(mixxx::control::ButtonMode::Toggle);
 
     addToEngine();
 }
@@ -219,6 +219,23 @@ void EffectChain::loadChainPreset(EffectChainPresetPointer pChainPreset) {
     setControlLoadedPresetIndex(presetIndex());
 }
 
+bool EffectChain::isEmpty() {
+    for (const auto& pEffectSlot : std::as_const(m_effectSlots)) {
+        if (pEffectSlot->isLoaded()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool EffectChain::isEmptyPlaceholderPresetLoaded() {
+    return isEmpty() && presetName() == kNoEffectString;
+}
+
+void EffectChain::loadEmptyNamelessPreset() {
+    loadChainPreset(m_pChainPresetManager->createEmptyNamelessChainPreset());
+}
+
 void EffectChain::sendParameterUpdate() {
     EffectsRequest* pRequest = new EffectsRequest();
     pRequest->type = EffectsRequest::SET_EFFECT_CHAIN_PARAMETERS;
@@ -289,7 +306,7 @@ void EffectChain::registerInputChannel(const ChannelHandleAndGroup& handleGroup,
             true,
             initialValue);
     m_channelEnableButtons.insert(handleGroup, pEnableControl);
-    pEnableControl->setButtonMode(ControlPushButton::POWERWINDOW);
+    pEnableControl->setButtonMode(mixxx::control::ButtonMode::PowerWindow);
     if (pEnableControl->toBool()) {
         enableForInputChannel(handleGroup);
     }
@@ -309,7 +326,7 @@ EffectSlotPointer EffectChain::getEffectSlot(unsigned int slotNumber) {
 }
 
 void EffectChain::slotControlClear(double v) {
-    for (EffectSlotPointer pEffectSlot : std::as_const(m_effectSlots)) {
+    for (const auto& pEffectSlot : std::as_const(m_effectSlots)) {
         pEffectSlot->slotClear(v);
     }
 }
@@ -337,8 +354,7 @@ void EffectChain::slotControlChainPresetSelector(double value) {
 }
 
 void EffectChain::slotControlLoadedChainPresetRequest(double value) {
-    // subtract 1 to make the ControlObject 1-indexed like other ControlObjects
-    int index = static_cast<int>(value) - 1;
+    int index = static_cast<int>(value);
     if (index < 0 || index >= numPresets()) {
         return;
     }
@@ -346,9 +362,8 @@ void EffectChain::slotControlLoadedChainPresetRequest(double value) {
     loadChainPreset(presetAtIndex(index));
 }
 
-void EffectChain::setControlLoadedPresetIndex(uint index) {
-    // add 1 to make the ControlObject 1-indexed like other ControlObjects
-    m_pControlLoadedChainPreset->setAndConfirm(index + 1);
+void EffectChain::setControlLoadedPresetIndex(int index) {
+    m_pControlLoadedChainPreset->setAndConfirm(index);
 }
 
 void EffectChain::slotControlNextChainPreset(double value) {
@@ -418,6 +433,9 @@ void EffectChain::disableForInputChannel(const ChannelHandleAndGroup& handleGrou
 }
 
 int EffectChain::presetIndex() const {
+    // 0-indexed, 0 is the empty '---' preset.
+    // This can be -1 if the name is not found in the presets list,
+    // which is default state of standard effect chains.
     return m_pChainPresetManager->presetIndex(m_presetName);
 }
 

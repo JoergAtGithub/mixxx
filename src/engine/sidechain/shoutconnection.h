@@ -15,6 +15,7 @@
 #include "preferences/broadcastprofile.h"
 #include "preferences/usersettings.h"
 #include "track/track_decl.h"
+#include "util/fifo.h"
 
 // Forward declare libshout structures to prevent leaking shout.h definitions
 // beyond where they are needed.
@@ -22,8 +23,6 @@ typedef struct shout shout_t;
 typedef struct _util_dict shout_metadata_t;
 
 class QTextCodec;
-template<class DataType>
-class FIFO;
 
 class ShoutConnection
         : public QThread, public EncoderCallback, public NetworkOutputStreamWorker {
@@ -34,7 +33,7 @@ class ShoutConnection
 
     // This is called by the Engine implementation for each sample. Encode and
     // send the stream, as well as check for metadata changes.
-    void process(const CSAMPLE* pBuffer, const int iBufferSize) override;
+    void process(const CSAMPLE* pBuffer, const std::size_t bufferSize) override;
 
     void shutdown() override {
     }

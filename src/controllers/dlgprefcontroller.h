@@ -7,17 +7,20 @@
 #include "controllers/ui_dlgprefcontrollerdlg.h"
 #include "preferences/dialog/dlgpreferencepage.h"
 #include "preferences/usersettings.h"
+#include "util/parented_ptr.h"
 
 // Forward declarations
 class Controller;
-class ControllerManager;
-class MappingInfoEnumerator;
-class ControlPickerMenu;
-class DlgControllerLearning;
 class ControllerInputMappingTableModel;
 class ControllerMappingTableProxyModel;
+class ControllerManager;
 class ControllerOutputMappingTableModel;
-class ControllerMappingTableProxyModel;
+class ControlPickerMenu;
+class DlgControllerLearning;
+class MappingInfoEnumerator;
+#ifdef MIXXX_USE_QML
+class ControllerScriptEngineLegacy;
+#endif
 
 /// Configuration dialog for a single DJ controller
 class DlgPrefController : public DlgPreferencePage {
@@ -40,6 +43,8 @@ class DlgPrefController : public DlgPreferencePage {
     /// Called when the user clicks the global "Reset to Defaults" button.
     void slotResetToDefaults() override;
 
+    void slotRecreateControlPickerMenu();
+
   signals:
     void applyMapping(Controller* pController,
             std::shared_ptr<LegacyControllerMapping> pMapping,
@@ -58,6 +63,15 @@ class DlgPrefController : public DlgPreferencePage {
     /// Called when the Controller Learning Wizard is closed.
     void slotStopLearning();
     void enableWizardAndIOTabs(bool enable);
+
+#ifdef MIXXX_USE_QML
+    // Onboard screen controller.
+    void slotShowPreviewScreens(const ControllerScriptEngineLegacy* scriptEngine);
+    // Wrapper used on shutdown.
+    void slotClearPreviewScreens() {
+        slotShowPreviewScreens(nullptr);
+    }
+#endif
 
     // Input mappings
     void addInputMapping();
@@ -79,7 +93,7 @@ class DlgPrefController : public DlgPreferencePage {
     QString mappingDescription(const std::shared_ptr<LegacyControllerMapping> pMapping) const;
     QString mappingSupportLinks(const std::shared_ptr<LegacyControllerMapping> pMapping) const;
     QString mappingFileLinks(const std::shared_ptr<LegacyControllerMapping> pMapping) const;
-    QString mappingPathFromIndex(int index) const;
+    QString mappingFilePathFromIndex(int index) const;
     QString askForMappingName(const QString& prefilledName = QString()) const;
     void applyMappingChanges();
     bool saveMapping();
@@ -111,15 +125,12 @@ class DlgPrefController : public DlgPreferencePage {
             QSharedPointer<MappingInfoEnumerator> pMappingEnumerator,
             const QIcon& icon = QIcon());
 
-    void enableDevice();
-    void disableDevice();
-
     Ui::DlgPrefControllerDlg m_ui;
     UserSettingsPointer m_pConfig;
     const QString m_pUserDir;
     std::shared_ptr<ControllerManager> m_pControllerManager;
     Controller* m_pController;
-    ControlPickerMenu* m_pControlPickerMenu;
+    parented_ptr<ControlPickerMenu> m_pControlPickerMenu;
     DlgControllerLearning* m_pDlgControllerLearning;
     std::shared_ptr<LegacyControllerMapping> m_pMapping;
     QMap<QString, bool> m_pOverwriteMappings;

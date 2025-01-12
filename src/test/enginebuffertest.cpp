@@ -119,6 +119,7 @@ TEST_F(EngineBufferTest, PitchRoundtrip) {
     ASSERT_NEAR(0.0, ControlObject::get(ConfigKey(m_sGroup1, "pitch")), 1e-10);
 }
 
+#ifdef __RUBBERBAND__
 TEST_F(EngineBufferTest, SlowRubberBand) {
     // At very slow speeds, RubberBand needs to reallocate buffers and since
     // this
@@ -152,6 +153,7 @@ TEST_F(EngineBufferTest, SlowRubberBand) {
     ProcessBuffer();
     EXPECT_EQ(m_pMockScaleVinyl1, m_pChannel1->getEngineBuffer()->m_pScale);
 }
+#endif
 
 TEST_F(EngineBufferTest, ScalerNoTransport) {
     // normally use the Vinyl scaler
@@ -254,17 +256,14 @@ TEST_F(EngineBufferE2ETest, BasicProcessingTest) {
     ControlObject::set(ConfigKey(m_sGroup1, "play"), 1.0);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "BasicProcessingTestPlay");
+            QStringLiteral("BasicProcessingTestPlay"));
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "BasicProcessingTestPlaying");
+            QStringLiteral("BasicProcessingTestPlaying"));
     ControlObject::set(ConfigKey(m_sGroup1, "play"), 0.0);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "BasicProcessingTestPause");
+            QStringLiteral("BasicProcessingTestPause"));
 }
 
 TEST_F(EngineBufferE2ETest, ScratchTest) {
@@ -278,8 +277,7 @@ TEST_F(EngineBufferE2ETest, ScratchTest) {
     ControlObject::set(ConfigKey(m_sGroup1, "scratch2"), -1.1);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "ScratchTestMain");
+            QStringLiteral("ScratchTestMain"));
 }
 
 TEST_F(EngineBufferE2ETest, ScratchTestStart) {
@@ -293,8 +291,7 @@ TEST_F(EngineBufferE2ETest, ScratchTestStart) {
     ControlObject::set(ConfigKey(m_sGroup1, "scratch2"), 0.5);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "ScratchTestStart");
+            QStringLiteral("ScratchTestStart"));
 }
 
 TEST_F(EngineBufferE2ETest, ReverseTest) {
@@ -305,8 +302,7 @@ TEST_F(EngineBufferE2ETest, ReverseTest) {
     ControlObject::set(ConfigKey(m_sGroup1, "reverse"), 1.0);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "ReverseTest");
+            QStringLiteral("ReverseTest"));
 }
 
 // DISABLED: This test is too dependent on the sound touch library version.
@@ -321,23 +317,21 @@ TEST_F(EngineBufferE2ETest, DISABLED_SoundTouchToggleTest) {
     ControlObject::set(ConfigKey(m_sGroup1, "keylock"), 1.0);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "SoundTouchTest");
+            QStringLiteral("SoundTouchTest"));
     // Test transition from keylock to vinyl due to slow speed.
     ControlObject::set(ConfigKey(m_sGroup1, "play"), 0.0);
     ControlObject::set(ConfigKey(m_sGroup1, "rateSearch"), 0.0072);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "SoundTouchTestSlow");
+            QStringLiteral("SoundTouchTestSlow"));
     // Test transition back to keylock due to regular speed.
     ControlObject::set(ConfigKey(m_sGroup1, "rateSearch"), 1.0);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "SoundTouchTestRegular");
+            QStringLiteral("SoundTouchTestRegular"));
 }
 
+#ifdef __RUBBERBAND__
 // DISABLED: This test is too dependent on the rubber band library version.
 TEST_F(EngineBufferE2ETest, DISABLED_RubberbandToggleTest) {
    // Test various cases where Rubberband toggles on and off.
@@ -350,22 +344,20 @@ TEST_F(EngineBufferE2ETest, DISABLED_RubberbandToggleTest) {
     ControlObject::set(ConfigKey(m_sGroup1, "keylock"), 1.0);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "RubberbandTest");
+            QStringLiteral("RubberbandTest"));
     // Test transition from keylock to vinyl due to slow speed.
     ControlObject::set(ConfigKey(m_sGroup1, "play"), 0.0);
     ControlObject::set(ConfigKey(m_sGroup1, "rateSearch"), 0.0072);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "RubberbandTestSlow");
+            QStringLiteral("RubberbandTestSlow"));
     // Test transition back to keylock due to regular speed.
     ControlObject::set(ConfigKey(m_sGroup1, "rateSearch"), 1.0);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "RubberbandTestRegular");
+            QStringLiteral("RubberbandTestRegular"));
 }
+#endif
 
 // DISABLED: This test is too dependent on the sound touch library version.
 // NOTE(uklotzde, 2018-01-10): We have also seen spurious failures on the
@@ -386,8 +378,7 @@ TEST_F(EngineBufferE2ETest, DISABLED_KeylockReverseTest) {
     ControlObject::set(ConfigKey(m_sGroup1, "reverse"), 1.0);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "KeylockReverseTest");
+            QStringLiteral("KeylockReverseTest"));
 }
 
 TEST_F(EngineBufferE2ETest, SeekTest) {
@@ -399,8 +390,7 @@ TEST_F(EngineBufferE2ETest, SeekTest) {
             mixxx::audio::FramePos(500), EngineBuffer::SEEK_EXACT);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "SeekTest");
+            QStringLiteral("SeekTest"));
 }
 
 TEST_F(EngineBufferE2ETest, SoundTouchReverseTest) {
@@ -417,6 +407,7 @@ TEST_F(EngineBufferE2ETest, SoundTouchReverseTest) {
     // on the uses library version
 }
 
+#ifdef __RUBBERBAND__
 TEST_F(EngineBufferE2ETest, RubberbandReverseTest) {
     // This test must not crash when changing to reverse while pitch is tweaked
     // Testing issue #8061
@@ -430,6 +421,7 @@ TEST_F(EngineBufferE2ETest, RubberbandReverseTest) {
     // Note: we cannot compare a golden buffer here, because the result depends
     // on the uses library version
 }
+#endif
 
 TEST_F(EngineBufferE2ETest, CueGotoAndStopTest) {
     // Be sure, that the Crossfade buffer is processed only once
@@ -439,8 +431,7 @@ TEST_F(EngineBufferE2ETest, CueGotoAndStopTest) {
     ControlObject::set(ConfigKey(m_sGroup1, "cue_gotoandstop"), 1.0);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "CueGotoAndStopTest");
+            QStringLiteral("CueGotoAndStopTest"));
 }
 
 TEST_F(EngineBufferE2ETest, CueGotoAndPlayTest) {
@@ -454,8 +445,7 @@ TEST_F(EngineBufferE2ETest, CueGotoAndPlayTest) {
     ControlObject::set(ConfigKey(m_sGroup1, "cue_gotoandplay"), 1.0);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "CueGotoAndPlayTest");
+            QStringLiteral("CueGotoAndPlayTest"));
 }
 
 TEST_F(EngineBufferE2ETest, CueStartPlayTest) {
@@ -466,8 +456,7 @@ TEST_F(EngineBufferE2ETest, CueStartPlayTest) {
     ControlObject::set(ConfigKey(m_sGroup1, "start_play"), 1.0);
     ProcessBuffer();
     assertBufferMatchesReference(m_pEngineMixer->getMainBuffer(),
-            kProcessBufferSize,
-            "StartPlayTest");
+            QStringLiteral("StartPlayTest"));
 }
 
 TEST_F(EngineBufferE2ETest, CueGotoAndPlayDenon) {

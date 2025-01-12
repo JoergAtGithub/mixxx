@@ -2,8 +2,8 @@
 
 #include "engine/engine.h"
 #include "sources/mp3decoding.h"
+#include "util/appleosversion.h"
 #include "util/logger.h"
-#include "util/macosversion.h"
 #include "util/math.h"
 
 namespace mixxx {
@@ -50,7 +50,7 @@ SoundSourceProviderPriority SoundSourceProviderCoreAudio::getPriorityHint(
 }
 
 QString SoundSourceProviderCoreAudio::getVersionString() const {
-    return getMacOsVersion();
+    return getAppleOsVersion();
 }
 
 SoundSourceCoreAudio::SoundSourceCoreAudio(QUrl url)
@@ -116,9 +116,9 @@ SoundSource::OpenResult SoundSourceCoreAudio::tryOpen(
 
     // create the output format
     const UInt32 numChannels =
-            params.getSignalInfo().getChannelCount().isValid() ?
-            params.getSignalInfo().getChannelCount() :
-            mixxx::kEngineChannelCount;
+            params.getSignalInfo().getChannelCount().isValid()
+            ? params.getSignalInfo().getChannelCount()
+            : mixxx::kEngineChannelOutputCount;
     m_outputFormat = CAStreamBasicDescription(m_inputFormat.mSampleRate,
             numChannels,
             CAStreamBasicDescription::kPCMFormatFloat32,

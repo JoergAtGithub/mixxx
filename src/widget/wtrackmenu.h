@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "analyzer/analyzertrack.h"
+#include "control/pollingcontrolproxy.h"
 #include "library/coverart.h"
 #include "library/dao/playlistdao.h"
 #include "library/trackprocessing.h"
@@ -15,9 +16,9 @@
 #include "util/color/rgbcolor.h"
 #include "util/parented_ptr.h"
 
-class ControlProxy;
 class DlgTagFetcher;
 class DlgTrackInfo;
+class DlgTrackInfoMulti;
 //class DlgDeleteFilesConfirmation;
 class ExternalTrackCollection;
 class Library;
@@ -26,6 +27,7 @@ class WColorPickerAction;
 class WCoverArtMenu;
 class WFindOnWebMenu;
 class WSearchRelatedTracksMenu;
+class WStarRatingAction;
 
 /// A context menu for track(s).
 /// Can be used with individual track type widgets based on TrackPointer
@@ -63,6 +65,24 @@ class WTrackMenu : public QMenu {
     };
     Q_DECLARE_FLAGS(Features, Feature)
 
+    // Make all deck track widgets provide the same features.
+    // Used by WTrackProperty, WTrackText & WTrackWidgetGroup.
+    static constexpr WTrackMenu::Features kDeckTrackMenuFeatures{
+            WTrackMenu::Feature::SearchRelated |
+            WTrackMenu::Feature::Playlist |
+            WTrackMenu::Feature::Crate |
+            WTrackMenu::Feature::Metadata |
+            WTrackMenu::Feature::Reset |
+            WTrackMenu::Feature::Analyze |
+            WTrackMenu::Feature::BPM |
+            WTrackMenu::Feature::Color |
+            WTrackMenu::Feature::RemoveFromDisk |
+            WTrackMenu::Feature::FileBrowser |
+            WTrackMenu::Feature::Properties |
+            WTrackMenu::Feature::UpdateReplayGainFromPregain |
+            WTrackMenu::Feature::FindOnWeb |
+            WTrackMenu::Feature::SelectInLibrary};
+
     WTrackMenu(QWidget* parent,
             UserSettingsPointer pConfig,
             Library* pLibrary,
@@ -79,24 +99,42 @@ class WTrackMenu : public QMenu {
 
     void loadTrack(
             const TrackPointer& pTrack, const QString& deckGroup);
+    /// Set the track property string which can be used to tell DlgTrackInfo/~Multi
+    /// to focus a specific metadata editor widget
+    void setTrackPropertyName(const QString& property = QString()) {
+        m_trackProperty = property;
+    }
 
     // WARNING: This function hides non-virtual QMenu::popup().
     // This has been done on purpose to ensure menu doesn't popup without loaded track(s).
     void popup(const QPoint& pos, QAction* at = nullptr);
     void slotShowDlgTrackInfo();
-    void showDlgTrackInfo(const QString& property = QString());
     // Library management
     void slotRemoveFromDisk();
+    const QString getDeckGroup() const;
 
   signals:
-    void loadTrackToPlayer(TrackPointer pTrack, const QString& group, bool play = false);
+#ifdef __STEM__
+    void loadTrackToPlayer(TrackPointer pTrack,
+            const QString& group,
+            mixxx::StemChannelSelection stemMask,
+            bool play = false);
+#else
+    void loadTrackToPlayer(TrackPointer pTrack,
+            const QString& group,
+            bool play = false);
+#endif
     void trackMenuVisible(bool visible);
-    void restoreCurrentIndex();
+    void saveCurrentViewState();
+    void restoreCurrentViewStateOrIndex();
 
   private slots:
     // File
     void slotOpenInFileBrowser();
     void slotSelectInLibrary();
+
+    // Track rating
+    void slotSetRating(int rating);
 
     // Row color
     void slotColorPicked(const mixxx::RgbColor::optional_t& color);
@@ -126,6 +164,7 @@ class WTrackMenu : public QMenu {
     void slotLockBpm();
     void slotUnlockBpm();
     void slotScaleBpm(mixxx::Beats::BpmScale scale);
+    void slotUndoBeatsChange();
 
     // Info and metadata
     void slotUpdateReplayGainFromPregain();
@@ -164,6 +203,7 @@ class WTrackMenu : public QMenu {
     QList<TrackRef> getTrackRefs() const;
 
     TrackPointer getFirstTrackPointer() const;
+    TrackPointerList getTrackPointers() const;
 
     std::unique_ptr<mixxx::TrackPointerIterator> newTrackPointerIterator() const;
 
@@ -187,6 +227,13 @@ class WTrackMenu : public QMenu {
     void setupActions();
     void updateMenus();
 
+    void generateTrackLoadMenu(const QString& group,
+            const QString& label,
+            TrackPointer pTrack,
+            QMenu* pParentMenu,
+            bool primaryDeck,
+            bool enabled = true);
+
     bool featureIsEnabled(Feature flag) const;
 
     void addSelectionToPlaylist(int iPlaylistId);
@@ -198,10 +245,22 @@ class WTrackMenu : public QMenu {
     void clearBeats();
     void lockBpm(bool lock);
 
-    void loadSelectionToGroup(const QString& group, bool play = false);
+#ifdef __STEM__
+    void loadSelectionToGroup(const QString& group,
+            mixxx::StemChannelSelection stemMask = mixxx::StemChannelSelection(),
+            bool play = false);
+#else
+    void loadSelectionToGroup(const QString& group,
+            bool play = false);
+#endif
     void clearTrackSelection();
 
     std::pair<bool, bool> getTrackBpmLockStates() const;
+    bool canUndoBeatsChange() const;
+
+    /// Get the common rating of all selected tracks.
+    /// Return 0 if ratings differ.
+    int getCommonTrackRating() const;
 
     /// Get the common track color of all tracks this menu is shown for, or
     /// return `nullopt` if there is no common color. Tracks may have no color
@@ -217,10 +276,6 @@ class WTrackMenu : public QMenu {
     /// If the user right clicked on a track in a deck, this will record which
     /// deck made the request.
     QString m_deckGroup;
-
-    const ControlProxy* m_pNumSamplers{};
-    const ControlProxy* m_pNumDecks{};
-    const ControlProxy* m_pNumPreviewDecks{};
 
     // Submenus
     QMenu* m_pLoadToMenu{};
@@ -250,9 +305,6 @@ class WTrackMenu : public QMenu {
 
     // Save Track Metadata Action:
     QAction* m_pExportMetadataAct{};
-
-    // Load Track to PreviewDeck
-    QAction* m_pAddToPreviewDeck{};
 
     // Send to Auto-DJ Action
     QAction* m_pAutoDJBottomAct{};
@@ -287,8 +339,10 @@ class WTrackMenu : public QMenu {
     QAction* m_pBpmFourThirdsAction{};
     QAction* m_pBpmThreeHalvesAction{};
     QAction* m_pBpmResetAction{};
+    QAction* m_pBpmUndoAction{};
 
-    // Track color
+    // Track rating and color
+    WStarRatingAction* m_pStarRatingAction{};
     WColorPickerAction* m_pColorPickerAction{};
 
     // Analysis actions
@@ -315,7 +369,12 @@ class WTrackMenu : public QMenu {
     const UserSettingsPointer m_pConfig;
     Library* const m_pLibrary;
 
+    PollingControlProxy m_pNumSamplers;
+    PollingControlProxy m_pNumDecks;
+    PollingControlProxy m_pNumPreviewDecks;
+
     std::unique_ptr<DlgTrackInfo> m_pDlgTrackInfo;
+    std::unique_ptr<DlgTrackInfoMulti> m_pDlgTrackInfoMulti;
     std::unique_ptr<DlgTagFetcher> m_pDlgTagFetcher;
 
     struct UpdateExternalTrackCollection {
@@ -330,6 +389,10 @@ class WTrackMenu : public QMenu {
 
     Features m_eActiveFeatures;
     const Features m_eTrackModelFeatures;
+
+    QString m_trackProperty;
+
+    static bool s_showPurgeSuccessPopup;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(WTrackMenu::Features)

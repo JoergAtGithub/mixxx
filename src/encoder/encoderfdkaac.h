@@ -7,9 +7,7 @@
 
 #include "audio/types.h"
 #include "encoder/encoder.h"
-
-template<class DataType>
-class FIFO;
+#include "util/fifo.h"
 
 class EncoderFdkAac : public Encoder {
   public:
@@ -17,7 +15,7 @@ class EncoderFdkAac : public Encoder {
     virtual ~EncoderFdkAac();
 
     int initEncoder(mixxx::audio::SampleRate sampleRate, QString* pUserErrorMessage) override;
-    void encodeBuffer(const CSAMPLE* samples, const int sampleCount) override;
+    void encodeBuffer(const CSAMPLE* samples, const std::size_t bufferSize) override;
     void updateMetaData(const QString& artist, const QString& title, const QString& album) override;
     void flush() override;
     void setEncoderSettings(const EncoderSettings& settings) override;

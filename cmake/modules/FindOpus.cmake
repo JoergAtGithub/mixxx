@@ -1,5 +1,5 @@
 # This file is part of Mixxx, Digital DJ'ing software.
-# Copyright (C) 2001-2023 Mixxx Development Team
+# Copyright (C) 2001-2025 Mixxx Development Team
 # Distributed under the GNU General Public Licence (GPL) version 2 or any later
 # later version. See the LICENSE file for details.
 
@@ -40,15 +40,18 @@ if(PkgConfig_FOUND)
   pkg_check_modules(PC_Opus QUIET opus)
 endif()
 
-find_path(Opus_INCLUDE_DIR
+find_path(
+  Opus_INCLUDE_DIR
   NAMES opus/opus.h
-  PATHS ${PC_Opus_INCLUDE_DIRS}
-  DOC "Opus include directory")
+  HINTS ${PC_Opus_INCLUDE_DIRS}
+  DOC "Opus include directory"
+)
 mark_as_advanced(Opus_INCLUDE_DIR)
 
-find_library(Opus_LIBRARY
+find_library(
+  Opus_LIBRARY
   NAMES opus
-  PATHS ${PC_Opus_LIBRARY_DIRS}
+  HINTS ${PC_Opus_LIBRARY_DIRS}
   DOC "Opus library"
 )
 mark_as_advanced(Opus_LIBRARY)
@@ -71,7 +74,8 @@ if(Opus_FOUND)
 
   if(NOT TARGET Opus::Opus)
     add_library(Opus::Opus UNKNOWN IMPORTED)
-    set_target_properties(Opus::Opus
+    set_target_properties(
+      Opus::Opus
       PROPERTIES
         IMPORTED_LOCATION "${Opus_LIBRARIES}"
         INTERFACE_COMPILE_OPTIONS "${Opus_DEFINITIONS}"

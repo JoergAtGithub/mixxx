@@ -27,6 +27,9 @@ class EffectsManager {
 
     void setup();
     void addDeck(const ChannelHandleAndGroup& deckHandleGroup);
+    void addStem(const ChannelHandleAndGroup& stemHandleGroup);
+
+    void loadDefaultEqsAndQuickEffects();
 
     EffectChainPointer getEffectChain(const QString& group) const;
     EqualizerEffectChainPointer getEqualizerEffectChain(
@@ -86,6 +89,7 @@ class EffectsManager {
 
     void readEffectsXml();
     void readEffectsXmlSingleDeck(const QString& deckGroup);
+    void readEffectsXmlSingleDeckStem(const QString& deckStemGroup);
     void saveEffectsXml();
 
     QSet<ChannelHandleAndGroup> m_registeredInputChannels;
@@ -98,6 +102,7 @@ class EffectsManager {
     // These two store <deck group, effect chain pointer>
     QHash<QString, EqualizerEffectChainPointer> m_equalizerEffectChains;
     QHash<QString, QuickEffectChainPointer> m_quickEffectChains;
+    QHash<QString, QuickEffectChainPointer> m_quickStemEffectChains;
 
     EffectsBackendManagerPointer m_pBackendManager;
     std::shared_ptr<ChannelHandleFactory> m_pChannelHandleFactory;
