@@ -31,6 +31,7 @@ constexpr int kMinBpm = 30;
 // Maximum allowed interval between beats (calculated from kMinBpm).
 const mixxx::Duration kMaxInterval = mixxx::Duration::fromMillis(
         static_cast<qint64>(1000.0 * (60.0 / kMinBpm)));
+const QString kBpmPropertyName = QStringLiteral("bpm");
 
 } // namespace
 
@@ -70,7 +71,7 @@ void DlgTrackInfo::init() {
     m_propertyWidgets.insert("composer", txtComposer);
     m_propertyWidgets.insert("genre", txtGenre);
     m_propertyWidgets.insert("year", txtYear);
-    m_propertyWidgets.insert("bpm", spinBpm);
+    m_propertyWidgets.insert(kBpmPropertyName, spinBpm);
     m_propertyWidgets.insert("tracknumber", txtTrackNumber);
     m_propertyWidgets.insert("key", txtKey);
     m_propertyWidgets.insert("grouping", txtGrouping);
@@ -510,6 +511,9 @@ void DlgTrackInfo::focusField(const QString& property) {
     }
     auto it = m_propertyWidgets.constFind(property);
     if (it != m_propertyWidgets.constEnd()) {
+        if (property == kBpmPropertyName) {
+            tabWidget->setCurrentIndex(tabWidget->indexOf(tabBPM));
+        }
         it.value()->setFocus();
     }
 }
@@ -610,7 +614,7 @@ void DlgTrackInfo::saveTrack() {
     // handlers manually to capture any changes. If the bpm or key was unchanged
     // or invalid then the change will be ignored/rejected.
     slotSpinBpmValueChanged(spinBpm->value());
-    static_cast<void>(updateKeyText()); // discard result
+    updateKeyText();
 
     // Update the cached track
     //
@@ -730,29 +734,26 @@ void DlgTrackInfo::slotSpinBpmValueChanged(double value) {
     updateSpinBpmFromBeats();
 }
 
-mixxx::UpdateResult DlgTrackInfo::updateKeyText() {
-    const auto keyText = txtKey->text().trimmed();
-    const auto updateResult =
-            m_trackRecord.updateGlobalKeyNormalizeText(
-                    keyText,
-                    mixxx::track::io::key::USER);
-    if (updateResult == mixxx::UpdateResult::Rejected) {
-        // Restore the current key text
-        displayKeyText();
-    }
-    return updateResult;
+void DlgTrackInfo::updateKeyText() {
+    const auto keyText = txtKey->text();
+    m_trackRecord.updateGlobalKeyNormalizeText(
+            keyText,
+            mixxx::track::io::key::USER);
+    displayKeyText();
 }
 
 void DlgTrackInfo::displayKeyText() {
-    const QString keyText = m_trackRecord.getMetadata().getTrackInfo().getKeyText();
+    QString keyText;
+    if (m_pLoadedTrack) {
+        keyText = KeyUtils::keyFromKeyTextAndIdValues(
+                m_pLoadedTrack->getKeyText(),
+                m_pLoadedTrack->getKey());
+    }
     txtKey->setText(keyText);
 }
 
 void DlgTrackInfo::slotKeyTextChanged() {
-    if (updateKeyText() != mixxx::UpdateResult::Unchanged) {
-        // Ensure that the text field always reflects the actual value
-        displayKeyText();
-    }
+    updateKeyText();
 }
 
 void DlgTrackInfo::slotRatingChanged(int rating) {
