@@ -7,6 +7,7 @@
 #include <QKeyEvent>
 
 #include "controllers/controller.h"
+#include "controllers/controllerhidreporttabsmanager.h"
 #include "controllers/controllerinputmappingtablemodel.h"
 #include "controllers/controllerlearningeventfilter.h"
 #include "controllers/controllermanager.h"
@@ -191,6 +192,10 @@ DlgPrefController::DlgPrefController(
         m_ui.labelHidUsagePageValue->setVisible(true);
         m_ui.labelHidUsage->setVisible(true);
         m_ui.labelHidUsageValue->setVisible(true);
+
+        // Create HID report tabs
+        ControllerHidReportTabsManager hidReportTabsManager(m_ui.controllerTabs, hidController);
+        hidReportTabsManager.createHidReportTabs();
     } else
 #endif
     {
@@ -1158,7 +1163,7 @@ void DlgPrefController::showMapping(std::shared_ptr<LegacyControllerMapping> pMa
     }
 #endif
 
-    // Inputs tab
+    // MIDI Inputs tab
     ControllerInputMappingTableModel* pInputModel =
             new ControllerInputMappingTableModel(this,
                     m_pControlPickerMenu,
@@ -1186,7 +1191,7 @@ void DlgPrefController::showMapping(std::shared_ptr<LegacyControllerMapping> pMa
     // Trigger search when the model was recreated after hitting Apply
     slotInputControlSearch();
 
-    // Outputs tab
+    // MIDI Outputs tab
     ControllerOutputMappingTableModel* pOutputModel =
             new ControllerOutputMappingTableModel(this,
                     m_pControlPickerMenu,

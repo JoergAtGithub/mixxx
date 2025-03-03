@@ -4717,6 +4717,7 @@ if(HID)
   target_sources(
     mixxx-lib
     PRIVATE
+      src/controllers/controllerhidreporttabsmanager.cpp
       src/controllers/hid/hidcontroller.cpp
       src/controllers/hid/hidiothread.cpp
       src/controllers/hid/hidioglobaloutputreportfifo.cpp
