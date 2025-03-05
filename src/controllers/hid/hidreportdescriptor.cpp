@@ -1,3 +1,5 @@
+#pragma optimize("", off)
+
 #include "controllers/hid/hidreportdescriptor.h"
 
 #include <cstdint>
@@ -5,6 +7,43 @@
 #include "util/assert.h"
 
 namespace hid::reportDescriptor {
+
+QString getScaledUnitString(uint32_t unit) {
+    struct UnitInfo {
+        const char* physicalQuantity[5];
+    };
+
+    const UnitInfo unitInfos[] = {
+            {"", "cm", "radian", "inch", "degree"},
+            {"", "g", "g", "slug", "slug"}, // mass
+            {"", "s", "s", "s", "s"},       // time
+            {"", "K", "K", "°F", "°F"},     // temperature
+            {"", "A", "A", "A", "A"},       // current
+            {"", "cd", "cd", "cd", "cd"}    // luminous intensity
+    };
+
+    int8_t exponents[] = {0, 1, 2, 3, 4, 5, 6, 7, -8, -7, -6, -5, -4, -3, -2, -1};
+
+    QString unitString;
+
+    auto appendQuantity = [&](int shift, const UnitInfo& unitInfo) {
+        int8_t value = (unit >> shift) & 0xF;
+        if (value != 0) {
+            if (!unitString.isEmpty())
+                unitString += "*";
+            unitString += unitInfo.physicalQuantity[(unit & 0xF)];
+            if (exponents[value] != 1) {
+                unitString += "^" + QString::number(exponents[value]);
+            }
+        }
+    };
+
+    for (int quantityIdx = 0; quantityIdx < 6; ++quantityIdx) {
+        appendQuantity(4 + quantityIdx * 4, unitInfos[quantityIdx]);
+    }
+
+    return unitString;
+}
 
 // Class for Controls
 
@@ -14,7 +53,7 @@ Control::Control(const ControlFlags flags,
         const int32_t logicalMaximum,
         const int32_t physicalMinimum,
         const int32_t physicalMaximum,
-        const int32_t unitExponent,
+        const int8_t unitExponent,
         const uint32_t unit,
         const uint16_t bytePosition,
         const uint8_t bitPosition,
@@ -209,7 +248,11 @@ Collection HIDReportDescriptor::parse() {
             globalItems.physicalMaximum = getSignedValue(payload, size);
             break;
         case HidItemTag::UnitExponent:
-            globalItems.unitExponent = getSignedValue(payload, size);
+            // HID class definition restricts the unit exponent range to -8 to +7
+            globalItems.unitExponent = static_cast<int8_t>(payload & 0x0F);
+            if (globalItems.unitExponent >= 8) {
+                globalItems.unitExponent -= 16;
+            }
             break;
         case HidItemTag::Unit:
             globalItems.unit = payload;
@@ -304,8 +347,8 @@ Collection HIDReportDescriptor::parse() {
                 currentReport->increasePosition(globalItems.reportSize * globalItems.reportCount);
             } else if (flags.array_variable == 0) {
                 // Array (e.g. list of pressed keys of a computer keyboard)
-                // TODO: Not relevant for mapping wizard, but could be
-                // implemented by overloaded Control class
+                // NOT IMPLEMENTED as not relevant for mapping wizard,
+                // but could be implemented by overloaded Control class
                 currentReport->increasePosition(globalItems.reportSize * globalItems.reportCount);
             } else {
                 // Normal variable control
