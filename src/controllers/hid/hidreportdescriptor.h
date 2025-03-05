@@ -1,10 +1,13 @@
 #pragma once
 
+#include <QString>
 #include <cstdint>
 #include <iostream>
 #include <vector>
 
 namespace hid::reportDescriptor {
+
+QString getScaledUnitString(uint32_t unit);
 
 constexpr int kNotSet = -1;
 // Value used instead of the ReportID, if device don't have ReportIDs
@@ -118,7 +121,7 @@ class Control {
             const int32_t logicalMaximum,
             const int32_t physicalMinimum,
             const int32_t physicalMaximum,
-            const int32_t unitExponent,
+            const int8_t unitExponent,
             const uint32_t unit,
             const uint16_t bytePosition, // Position of the first byte in the report
             const uint8_t bitPosition,   // Position of first bit in first byte
@@ -131,7 +134,7 @@ class Control {
     const int32_t m_logicalMaximum;
     const int32_t m_physicalMinimum;
     const int32_t m_physicalMaximum;
-    const int32_t m_unitExponent;
+    const int8_t m_unitExponent;
     const uint32_t m_unit;
     const uint16_t m_bytePosition; // Position of the first byte in the report
     const uint8_t m_bitPosition;   // Position of first bit in first byte
@@ -199,7 +202,7 @@ class HIDReportDescriptor {
         int32_t logicalMaximum = 0;
         int32_t physicalMinimum = 0;
         int32_t physicalMaximum = 0;
-        int32_t unitExponent = 0;
+        int8_t unitExponent = 0;
         uint32_t unit = 0;
         uint32_t reportSize = 0;
         uint8_t reportId = 0;

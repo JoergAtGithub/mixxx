@@ -150,7 +150,7 @@ void ControllerHidReportTabsManager::populateHidReportTable(
                 8,
                 createReadOnlyStringItem(
                         hid::reportDescriptor::getScaledUnitString(
-                                control.m_unitExponent, control.m_unit)));
+                                control.m_unit)));
         table->setItem(row,
                 9,
                 createReadOnlyStringItem(control.m_flags.absolute_relative
