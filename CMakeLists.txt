@@ -50,9 +50,9 @@ endif()
 
 if(WIN32)
   if(DEFINED ENV{BUILDENV_BASEPATH})
-    set(BUILDENV_BASEPATH "$ENV{BUILDENV_BASEPATH}\\")
+    set(BUILDENV_BASEPATH "$ENV{BUILDENV_BASEPATH}")
   elseif(NOT DEFINED BUILDENV_BASEPATH)
-    set(BUILDENV_BASEPATH "${CMAKE_SOURCE_DIR}/buildenv/")
+    set(BUILDENV_BASEPATH "${CMAKE_SOURCE_DIR}/buildenv")
   endif()
 
   if(DEFINED ENV{BUILDENV_URL})
@@ -77,8 +77,8 @@ if(WIN32)
   message(STATUS "BUILDENV_NAME is: ${BUILDENV_NAME}")
 
   if(
-    NOT EXISTS "${BUILDENV_BASEPATH}${BUILDENV_NAME}"
-    OR NOT IS_DIRECTORY "${BUILDENV_BASEPATH}${BUILDENV_NAME}"
+    NOT EXISTS "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
+    OR NOT IS_DIRECTORY "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
   )
     if(DEFINED ENV{BUILDENV_SHA256})
       set(BUILDENV_SHA256 "$ENV{BUILDENV_SHA256}")
@@ -86,13 +86,13 @@ if(WIN32)
       message(STATUS "BUILDENV_SHA256 not specified")
     endif()
 
-    if(NOT EXISTS "${BUILDENV_BASEPATH}${BUILDENV_NAME}.zip")
+    if(NOT EXISTS "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip")
       message(
         STATUS
         "Downloading file ${BUILDENV_URL} to ${BUILDENV_BASEPATH} ..."
       )
       file(
-        DOWNLOAD ${BUILDENV_URL} "${BUILDENV_BASEPATH}${BUILDENV_NAME}.zip"
+        DOWNLOAD ${BUILDENV_URL} "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip"
         SHOW_PROGRESS
         TLS_VERIFY ON
       )
@@ -101,9 +101,9 @@ if(WIN32)
     if(NOT ${BUILDENV_SHA256} STREQUAL "")
       message(
         STATUS
-        "Verify SHA256 of downloaded file ${BUILDENV_BASEPATH}${BUILDENV_NAME}.zip ..."
+        "Verify SHA256 of downloaded file ${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip ..."
       )
-      file(SHA256 "${BUILDENV_BASEPATH}${BUILDENV_NAME}.zip" actual_sha256)
+      file(SHA256 "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip" actual_sha256)
 
       if(NOT actual_sha256 STREQUAL ${BUILDENV_SHA256})
         message(
@@ -117,7 +117,7 @@ if(WIN32)
 
     message(
       STATUS
-      "Unpacking file ${BUILDENV_BASEPATH}${BUILDENV_NAME}.zip ..."
+      "Unpacking file ${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip ..."
     )
     execute_process(
       COMMAND ${CMAKE_COMMAND} -E tar xzf "${BUILDENV_NAME}.zip"
