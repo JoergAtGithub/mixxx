@@ -77,9 +77,14 @@ if(WIN32)
   message(STATUS "BUILDENV_NAME is: ${BUILDENV_NAME}")
 
   if(
-    NOT EXISTS "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
-    OR NOT IS_DIRECTORY "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
+    EXISTS "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
+    OR IS_DIRECTORY "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
   )
+    message(
+      STATUS
+      "BUILDENV directory ${BUILDENV_BASEPATH}/${BUILDENV_NAME} exists!"
+    )
+  else()
     if(DEFINED ENV{BUILDENV_SHA256})
       set(BUILDENV_SHA256 "$ENV{BUILDENV_SHA256}")
     elseif(NOT DEFINED BUILDENV_SHA256)
@@ -122,7 +127,14 @@ if(WIN32)
     execute_process(
       COMMAND ${CMAKE_COMMAND} -E tar xzf "${BUILDENV_NAME}.zip"
       WORKING_DIRECTORY ${BUILDENV_BASEPATH}
+      RESULT_VARIABLE unpack_result
     )
+    if(NOT unpack_result EQUAL 0)
+      message(FATAL_ERROR "Failed to unpack ${BUILDENV_NAME}.zip")
+    else()
+      file(REMOVE "${BUILDENV_BASEPATH}/${BUILDENV_NAME}.zip")
+      message(STATUS "Deleted ${BUILDENV_NAME}.zip after successful extraction")
+    endif()
   endif()
 endif()
 
