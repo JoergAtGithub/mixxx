@@ -18,7 +18,9 @@
 #endif
 #include "controllers/defs_controllers.h"
 #include "controllers/dlgcontrollerlearning.h"
+#ifdef __HID__
 #include "controllers/hid/hidcontroller.h"
+#endif
 #include "controllers/midi/legacymidicontrollermapping.h"
 #include "controllers/midi/midicontroller.h"
 #include "controllers/scripting/legacy/controllerscriptenginelegacy.h"
@@ -29,6 +31,7 @@
 #include "util/desktophelper.h"
 #include "util/parented_ptr.h"
 #include "util/string.h"
+#include "widget/wcollapsiblegroupbox.h"
 
 namespace {
 const QString kMappingExt(".midi.xml");
@@ -174,6 +177,7 @@ DlgPrefController::DlgPrefController(
         m_ui.labelUsbInterfaceNumberValue->setVisible(false);
     }
 
+#ifdef __HID__
     // Display HID UsagePage and Usage if the controller is an HidController
     if (auto* hidController = dynamic_cast<HidController*>(m_pController)) {
         m_ui.labelHidUsagePageValue->setText(QStringLiteral("%1 (%2)")
@@ -187,7 +191,9 @@ DlgPrefController::DlgPrefController(
         m_ui.labelHidUsagePageValue->setVisible(true);
         m_ui.labelHidUsage->setVisible(true);
         m_ui.labelHidUsageValue->setVisible(true);
-    } else {
+    } else
+#endif
+    {
         m_ui.labelHidUsagePage->setVisible(false);
         m_ui.labelHidUsagePageValue->setVisible(false);
         m_ui.labelHidUsage->setVisible(false);
@@ -761,6 +767,7 @@ void DlgPrefController::slotMappingSelected(int chosenIndex) {
         if (m_pControllerManager->getConfiguredMappingFileForDevice(
                     m_pController->getName()) != mappingFilePath) {
             setDirty(true);
+            m_settingsCollapsedStates.clear();
         } else if (m_pMapping && m_pMapping->isDirty()) {
             // We have pending changes, don't reload the mapping from file!
             // This is called by show()/slotUpdate() after MIDI learning ended
@@ -802,6 +809,9 @@ void DlgPrefController::slotMappingSelected(int chosenIndex) {
             !mappingFilePath.isEmpty();
     m_ui.controllerTabs->setTabVisible(m_inputMappingsTabIndex, showMidiTabs);
     m_ui.controllerTabs->setTabVisible(m_outputMappingsTabIndex, showMidiTabs);
+    // Also disable accordingly so hidden tabs can not get keyboard focus
+    m_ui.controllerTabs->setTabEnabled(m_inputMappingsTabIndex, showMidiTabs);
+    m_ui.controllerTabs->setTabEnabled(m_outputMappingsTabIndex, showMidiTabs);
 
     // Hide the entire QTabWidget if all tabs are removed
     m_ui.controllerTabs->setVisible(getNumberOfVisibleTabs() > 0);
@@ -1068,7 +1078,40 @@ void DlgPrefController::slotShowMapping(std::shared_ptr<LegacyControllerMapping>
         }
 
         if (pLayout != nullptr && !settings.isEmpty()) {
-            m_ui.settingsTab->layout()->addWidget(pLayout->build(m_ui.settingsTab));
+            QWidget* pSettingsWidget = pLayout->build(m_ui.settingsTab);
+            m_ui.settingsTab->layout()->addWidget(pSettingsWidget);
+
+            // Add an expanding spacer so that when we collapse all groups,
+            // they are pushed to the top.
+            m_ui.settingsTab->layout()->addItem(new QSpacerItem(
+                    1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding));
+
+            // Make all top-level groupboxes checkable so we get the
+            // collapse/expand functionality. Qt::FindDirectChildrenOnly
+            // ensures we only iterate over the top-level groupboxes.
+            const QList<WCollapsibleGroupBox*> boxes =
+                    pSettingsWidget->findChildren<WCollapsibleGroupBox*>(
+                            QString() /* match any ObjectName */,
+                            Qt::FindDirectChildrenOnly);
+            for (auto* pBox : std::as_const(boxes)) {
+                const QString title = pBox->title();
+                pBox->setCheckable(true);
+                // The collapsed state is saved/restored via the groupbox' title.
+                // Note: If multiple top-levle groups happen to have the same title
+                // (which should not normally happen in well-behaved controller mappings,
+                // but is not strictly prohibited), the last one to be expanded/
+                // collapsed determines the state that will be restored.
+                if (m_settingsCollapsedStates.contains(title)) {
+                    pBox->setChecked(m_settingsCollapsedStates.value(title));
+                }
+
+                connect(pBox,
+                        &WCollapsibleGroupBox::toggled,
+                        this,
+                        [this, title](bool checked) {
+                            m_settingsCollapsedStates.insert(title, checked);
+                        });
+            }
 
             for (const auto& setting : std::as_const(settings)) {
                 connect(setting.get(),
@@ -1080,8 +1123,9 @@ void DlgPrefController::slotShowMapping(std::shared_ptr<LegacyControllerMapping>
     }
 
     // Show or hide the settings tab based on the presence of settings
-    m_ui.controllerTabs->setTabVisible(
-            m_settingsTabIndex, pMapping && !pMapping->getSettings().isEmpty());
+    bool showSettings = pMapping && !pMapping->getSettings().isEmpty();
+    m_ui.controllerTabs->setTabVisible(m_settingsTabIndex, showSettings);
+    m_ui.controllerTabs->setTabEnabled(m_settingsTabIndex, showSettings);
 
     // If there is still settings that may be saved and no new mapping selected
     // (e.g restored default), we keep the the dirty mapping live so it can be
@@ -1100,11 +1144,13 @@ void DlgPrefController::slotShowMapping(std::shared_ptr<LegacyControllerMapping>
         auto screens = pMapping->getInfoScreens();
         bool hasScreens = !screens.isEmpty();
         m_ui.controllerTabs->setTabVisible(m_screensTabIndex, hasScreens);
+        m_ui.controllerTabs->setTabEnabled(m_screensTabIndex, hasScreens);
         if (hasScreens) {
             slotShowPreviewScreens(m_pController->getScriptEngine().get());
         }
     } else {
         m_ui.controllerTabs->setTabVisible(m_screensTabIndex, false);
+        m_ui.controllerTabs->setTabEnabled(m_screensTabIndex, false);
     }
 #endif
 
