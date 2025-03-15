@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QStyledItemDelegate>
 #include <QTabWidget>
 #include <QTableWidget>
 #include <memory>
@@ -13,10 +14,25 @@ class ControllerHidReportTabsManager {
     void createHidReportTabs();
 
   private:
-    void populateHidReportTable(QTableWidget* table, const hid::reportDescriptor::Report& report);
     void createReportTabs(QTabWidget* parentTab, hid::reportDescriptor::HidReportType reportType);
+    void populateHidReportTable(QTableWidget* table,
+            const hid::reportDescriptor::Report& report,
+            hid::reportDescriptor::HidReportType reportType);
 
     QTabWidget* m_pParentTabWidget;
     HidController* m_hidController;
     const hid::reportDescriptor::HIDReportDescriptor m_reportDescriptor;
+};
+
+class ValueItemDelegate : public QStyledItemDelegate {
+  public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+
+    QWidget* createEditor(QWidget* parent,
+            const QStyleOptionViewItem& option,
+            const QModelIndex& index) const override;
+
+    void setModelData(QWidget* editor,
+            QAbstractItemModel* model,
+            const QModelIndex& index) const override;
 };

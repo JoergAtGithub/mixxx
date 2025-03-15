@@ -17,7 +17,7 @@ QString getScaledUnitString(uint32_t unit) {
             {"", "cm", "radian", "inch", "degree"},
             {"", "g", "g", "slug", "slug"}, // mass
             {"", "s", "s", "s", "s"},       // time
-            {"", "K", "K", "°F", "°F"},     // temperature
+            {"", "K", "K", "Â°F", "Â°F"},     // temperature
             {"", "A", "A", "A", "A"},       // current
             {"", "cd", "cd", "cd", "cd"}    // luminous intensity
     };
