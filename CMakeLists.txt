@@ -93,10 +93,7 @@ if(WIN32)
 
   message(STATUS "BUILDENV_NAME is: ${BUILDENV_NAME}")
 
-  if(
-    EXISTS "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
-    AND IS_DIRECTORY "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
-  )
+  if(IS_DIRECTORY "${BUILDENV_BASEPATH}/${BUILDENV_NAME}")
     message(
       STATUS
       "BUILDENV directory ${BUILDENV_BASEPATH}/${BUILDENV_NAME} exists!"
@@ -105,7 +102,7 @@ if(WIN32)
     if(NOT DEFINED BUILDENV_URL)
       message(
         FATAL_ERROR
-        "BUILDENV_URL not specified!\nDid you run `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat`?"
+        "Folder ${BUILDENV_BASEPATH}/${BUILDENV_NAME} from BUILDENV_NAME does not exists!\nTry to run `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat` again."
       )
     endif()
     if(NOT DEFINED BUILDENV_SHA256)
