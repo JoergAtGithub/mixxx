@@ -160,6 +160,9 @@ class Report {
 
     const HidReportType m_reportType;
     const uint8_t m_reportId;
+    uint16_t getReportSize() {
+        return m_lastBytePosition;
+    }
 
   private:
     std::vector<Control> m_controls;
