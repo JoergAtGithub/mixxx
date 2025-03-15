@@ -61,34 +61,53 @@ if(WIN32)
     if(DEFINED ENV{BUILDENV_URL})
       set(BUILDENV_URL "$ENV{BUILDENV_URL}")
     else()
-      message(FATAL_ERROR "BUILDENV_URL not specified")
+      message(STATUS "BUILDENV_URL not specified")
     endif()
   endif()
 
-  # Extract the filename from the URL
-  get_filename_component(FILENAME_WITH_EXTENSION "${BUILDENV_URL}" NAME)
+  if(DEFINED BUILDENV_URL)
+    # Extract the filename from the URL
+    get_filename_component(FILENAME_WITH_EXTENSION "${BUILDENV_URL}" NAME)
 
-  # Remove the extension from the filename
-  # Note, that our buildenv file names contain two dots, e.g. mixxx-deps-2.5-x64-windows-875f13b.zip
-  string(
-    REGEX REPLACE
-    "\\.[^.]*$"
-    ""
-    BUILDENV_NAME
-    "${FILENAME_WITH_EXTENSION}"
-  )
+    # Remove the extension from the filename
+    # Note, that our buildenv file names contain two dots, e.g. mixxx-deps-2.5-x64-windows-875f13b.zip
+    string(
+      REGEX REPLACE
+      "\\.[^.]*$"
+      ""
+      BUILDENV_NAME
+      "${FILENAME_WITH_EXTENSION}"
+    )
+  else()
+    if(NOT DEFINED BUILDENV_NAME)
+      if(DEFINED ENV{BUILDENV_NAME})
+        set(BUILDENV_NAME "$ENV{BUILDENV_NAME}")
+      else()
+        message(
+          FATAL_ERROR
+          "Neither BUILDENV_URL nor BUILDENV_NAME specified!\nDid you run `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat`?"
+        )
+      endif()
+    endif()
+  endif()
 
   message(STATUS "BUILDENV_NAME is: ${BUILDENV_NAME}")
 
   if(
     EXISTS "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
-    OR IS_DIRECTORY "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
+    AND IS_DIRECTORY "${BUILDENV_BASEPATH}/${BUILDENV_NAME}"
   )
     message(
       STATUS
       "BUILDENV directory ${BUILDENV_BASEPATH}/${BUILDENV_NAME} exists!"
     )
   else()
+    if(NOT DEFINED BUILDENV_URL)
+      message(
+        FATAL_ERROR
+        "BUILDENV_URL not specified!\nDid you run `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat`?"
+      )
+    endif()
     if(NOT DEFINED BUILDENV_SHA256)
       if(DEFINED ENV{BUILDENV_SHA256})
         set(BUILDENV_SHA256 "$ENV{BUILDENV_SHA256}")
@@ -151,12 +170,12 @@ function(fatal_error_missing_env)
     if(CMAKE_BUILD_TYPE MATCHES "Debug")
       message(
         FATAL_ERROR
-        "Did you download the Mixxx build environment using `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat`?"
+        "Did you run `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat`?"
       )
     else()
       message(
         FATAL_ERROR
-        "Did you download the Mixxx build environment using `${CMAKE_SOURCE_DIR}/tools/windows_release_buildenv.bat` or `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat`(includes Debug)?"
+        "Did you run `${CMAKE_SOURCE_DIR}/tools/windows_release_buildenv.bat` or `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat`(includes Debug)?"
       )
     endif()
   elseif(APPLE AND NOT IOS)
