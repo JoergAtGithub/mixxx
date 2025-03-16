@@ -168,12 +168,12 @@ function(fatal_error_missing_env)
     if(CMAKE_BUILD_TYPE MATCHES "Debug")
       message(
         FATAL_ERROR
-        "Did you run `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat`?"
+        "Did you set the URL for the download of the pre-built build-environment by calling `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat`?"
       )
     else()
       message(
         FATAL_ERROR
-        "Did you run `${CMAKE_SOURCE_DIR}/tools/windows_release_buildenv.bat` or `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat`(includes Debug)?"
+        "Did you set the URL for the download of the pre-built build-environment by calling `${CMAKE_SOURCE_DIR}/tools/windows_release_buildenv.bat` or `${CMAKE_SOURCE_DIR}/tools/windows_buildenv.bat`(includes Debug)?"
       )
     endif()
   elseif(APPLE AND NOT IOS)
