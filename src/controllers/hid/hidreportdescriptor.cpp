@@ -29,8 +29,9 @@ QString getScaledUnitString(uint32_t unit) {
     auto appendQuantity = [&](int shift, const UnitInfo& unitInfo) {
         int8_t value = (unit >> shift) & 0xF;
         if (value != 0) {
-            if (!unitString.isEmpty())
+            if (!unitString.isEmpty()) {
                 unitString += "*";
+            }
             unitString += unitInfo.physicalQuantity[(unit & 0xF)];
             if (exponents[value] != 1) {
                 unitString += "^" + QString::number(exponents[value]);

@@ -67,13 +67,13 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
                                             .rightJustified(2, '0')
                                             .toUpper());
 
-            auto tabWidget = new QWidget(parentTab);
-            auto layout = new QVBoxLayout(tabWidget);
-            auto topWidgetRow = new QHBoxLayout();
+            auto* tabWidget = new QWidget(parentTab);
+            auto* layout = new QVBoxLayout(tabWidget);
+            auto* topWidgetRow = new QHBoxLayout();
 
             // Create buttons
-            auto readButton = new QPushButton(QStringLiteral("Read"), tabWidget);
-            auto sendButton = new QPushButton(QStringLiteral("Send"), tabWidget);
+            auto* readButton = new QPushButton(QStringLiteral("Read"), tabWidget);
+            auto* sendButton = new QPushButton(QStringLiteral("Send"), tabWidget);
 
             // Adjust visibility/enable state based on the report type
             if (reportType == hid::reportDescriptor::HidReportType::Input) {
@@ -87,13 +87,13 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
             topWidgetRow->addWidget(sendButton);
             layout->addLayout(topWidgetRow);
 
-            auto table = new QTableWidget(tabWidget);
+            auto* table = new QTableWidget(tabWidget);
             layout->addWidget(table);
 
-            auto report = nonConstReportDescriptor.getReport(reportType, reportId);
+            auto* report = nonConstReportDescriptor.getReport(reportType, reportId);
             if (report) {
                 // Show payload size
-                auto sizeLabel = new QLabel(tabWidget);
+                auto* sizeLabel = new QLabel(tabWidget);
                 sizeLabel->setText(
                         QStringLiteral("Payload Size: %1 bytes").arg(report->getReportSize()));
                 topWidgetRow->insertWidget(0, sizeLabel);
@@ -136,7 +136,7 @@ void ControllerHidReportTabsManager::slotReadButtonClicked(QTableWidget* table,
             return;
         }
         for (int row = 0; row < table->rowCount(); ++row) {
-            auto item = table->item(row, 5); // Assuming the value column is at index 5
+            auto* item = table->item(row, 5); // Assuming the value column is at index 5
             if (item) {
                 item->setText(QString::number(static_cast<quint8>(reportData.at(row))));
             }
@@ -149,7 +149,7 @@ void ControllerHidReportTabsManager::slotReadButtonClicked(QTableWidget* table,
             return;
         }
         for (int row = 0; row < table->rowCount(); ++row) {
-            auto item = table->item(row, 5); // Assuming the value column is at index 5
+            auto* item = table->item(row, 5); // Assuming the value column is at index 5
             if (item) {
                 item->setText(QString::number(static_cast<quint8>(reportData.at(row))));
             }
@@ -341,7 +341,7 @@ QWidget* ValueItemDelegate::createEditor(QWidget* parent,
         const QModelIndex& index) const {
     // Create a line edit restricted by (logical min, logical max)
     auto dataRange = index.data(Qt::UserRole).value<QPair<int, int>>();
-    auto editor = new QLineEdit(parent);
+    auto* editor = new QLineEdit(parent);
     editor->setValidator(new QIntValidator(dataRange.first, dataRange.second, editor));
     return editor;
 }
@@ -349,9 +349,10 @@ QWidget* ValueItemDelegate::createEditor(QWidget* parent,
 void ValueItemDelegate::setModelData(QWidget* editor,
         QAbstractItemModel* model,
         const QModelIndex& index) const {
-    auto lineEdit = qobject_cast<QLineEdit*>(editor);
-    if (!lineEdit)
+    auto* lineEdit = qobject_cast<QLineEdit*>(editor);
+    if (!lineEdit) {
         return;
+    }
 
     // Confirm the text is an integer within the expected range
     bool ok = false;
