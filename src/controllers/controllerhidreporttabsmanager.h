@@ -8,20 +8,26 @@
 #include "controllers/hid/hidcontroller.h"
 #include "controllers/hid/hidreportdescriptor.h"
 
-class ControllerHidReportTabsManager {
+class ControllerHidReportTabsManager : public QObject {
+    Q_OBJECT
+
   public:
     ControllerHidReportTabsManager(QTabWidget* parentTabWidget, HidController* hidController);
     void createHidReportTabs();
-
-  private:
     void createReportTabs(QTabWidget* parentTab, hid::reportDescriptor::HidReportType reportType);
     void populateHidReportTable(QTableWidget* table,
             const hid::reportDescriptor::Report& report,
             hid::reportDescriptor::HidReportType reportType);
 
+  private slots:
+    void slotReadButtonClicked(QTableWidget* table,
+            quint8 reportId,
+            hid::reportDescriptor::HidReportType reportType);
+
+  private:
     QTabWidget* m_pParentTabWidget;
     HidController* m_hidController;
-    const hid::reportDescriptor::HIDReportDescriptor m_reportDescriptor;
+    hid::reportDescriptor::HIDReportDescriptor m_reportDescriptor;
 };
 
 class ValueItemDelegate : public QStyledItemDelegate {

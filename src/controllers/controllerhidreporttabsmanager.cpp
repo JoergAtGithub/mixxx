@@ -10,6 +10,7 @@
 #include <QVBoxLayout>
 
 #include "controllers/hid/hidusagetables.h"
+#include "moc_controllerhidreporttabsmanager.cpp"
 
 ControllerHidReportTabsManager::ControllerHidReportTabsManager(
         QTabWidget* parentTabWidget, HidController* hidController)
@@ -44,8 +45,7 @@ void ControllerHidReportTabsManager::createHidReportTabs() {
 void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
         hid::reportDescriptor::HidReportType reportType) {
     auto& nonConstReportDescriptor =
-            const_cast<hid::reportDescriptor::HIDReportDescriptor&>(
-                    m_reportDescriptor);
+            const_cast<hid::reportDescriptor::HIDReportDescriptor&>(m_reportDescriptor);
     nonConstReportDescriptor.parse();
 
     for (const auto& reportInfo : nonConstReportDescriptor.getListOfReports()) {
@@ -82,7 +82,6 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
                 readButton->hide();
                 sendButton->setDisabled(true);
             }
-            // For FeatureReports, no changes (both visible).
 
             topWidgetRow->addWidget(readButton);
             topWidgetRow->addWidget(sendButton);
@@ -102,7 +101,44 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
                 populateHidReportTable(table, *report, reportType);
             }
 
+            if (reportType != hid::reportDescriptor::HidReportType::Output) {
+                connect(readButton,
+                        &QPushButton::clicked,
+                        this,
+                        [this, table, reportId, reportType]() {
+                            slotReadButtonClicked(table, reportId, reportType);
+                        });
+            }
+
             parentTab->addTab(tabWidget, tabName);
+        }
+    }
+}
+
+void ControllerHidReportTabsManager::slotReadButtonClicked(QTableWidget* table,
+        quint8 reportId,
+        hid::reportDescriptor::HidReportType reportType) {
+    if (!m_hidController->isOpen()) {
+        qWarning() << "HID controller is not open.";
+        return;
+    }
+
+    HidControllerJSProxy* jsProxy = static_cast<HidControllerJSProxy*>(m_hidController->jsProxy());
+    if (!jsProxy) {
+        qWarning() << "Failed to get JS proxy.";
+        return;
+    }
+
+    auto reportData = jsProxy->getFeatureReport(reportId);
+    if (reportData.isEmpty()) {
+        qWarning() << "Failed to get feature report.";
+        return;
+    }
+
+    for (int row = 0; row < table->rowCount(); ++row) {
+        auto item = table->item(row, 5); // Assuming the value column is at index 5
+        if (item) {
+            item->setText(QString::number(static_cast<quint8>(reportData.at(row))));
         }
     }
 }
@@ -287,7 +323,7 @@ void ControllerHidReportTabsManager::populateHidReportTable(
 }
 
 QWidget* ValueItemDelegate::createEditor(QWidget* parent,
-        const QStyleOptionViewItem& option,
+        const QStyleOptionViewItem&,
         const QModelIndex& index) const {
     // Create a line edit restricted by (logical min, logical max)
     auto dataRange = index.data(Qt::UserRole).value<QPair<int, int>>();
