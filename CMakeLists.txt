@@ -158,6 +158,7 @@ if(WIN32)
       message(STATUS "Deleted ${BUILDENV_NAME}.zip after successful extraction")
     endif()
   endif()
+  set(MIXXX_VCPKG_ROOT "${BUILDENV_BASEPATH}/${BUILDENV_NAME}")
 endif()
 
 # Use this function to throw an error because the build environment is not set
