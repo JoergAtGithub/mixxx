@@ -1,4 +1,4 @@
-#pragma optimize("", off)
+// #pragma optimize("", off)
 
 #include "controllerhidreporttabsmanager.h"
 
@@ -62,8 +62,8 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
                                                             HidReportType::
                                                                     Output
                                             ? QStringLiteral("Output")
-                                            : QStringLiteral("Feature"))
-                            .arg(QString::number(reportId, 16)
+                                            : QStringLiteral("Feature"),
+                                    QString::number(reportId, 16)
                                             .rightJustified(2, '0')
                                             .toUpper());
 
@@ -129,16 +129,30 @@ void ControllerHidReportTabsManager::slotReadButtonClicked(QTableWidget* table,
         return;
     }
 
-    auto reportData = jsProxy->getFeatureReport(reportId);
-    if (reportData.isEmpty()) {
-        qWarning() << "Failed to get feature report.";
+    if (reportType == hid::reportDescriptor::HidReportType::Input) {
+        auto reportData = jsProxy->getInputReport(reportId);
+        if (reportData.isEmpty()) {
+            qWarning() << "Failed to get input report.";
+            return;
+        }
+        for (int row = 0; row < table->rowCount(); ++row) {
+            auto item = table->item(row, 5); // Assuming the value column is at index 5
+            if (item) {
+                item->setText(QString::number(static_cast<quint8>(reportData.at(row))));
+            }
+        }
         return;
-    }
-
-    for (int row = 0; row < table->rowCount(); ++row) {
-        auto item = table->item(row, 5); // Assuming the value column is at index 5
-        if (item) {
-            item->setText(QString::number(static_cast<quint8>(reportData.at(row))));
+    } else if (reportType == hid::reportDescriptor::HidReportType::Feature) {
+        auto reportData = jsProxy->getFeatureReport(reportId);
+        if (reportData.isEmpty()) {
+            qWarning() << "Failed to get feature report.";
+            return;
+        }
+        for (int row = 0; row < table->rowCount(); ++row) {
+            auto item = table->item(row, 5); // Assuming the value column is at index 5
+            if (item) {
+                item->setText(QString::number(static_cast<quint8>(reportData.at(row))));
+            }
         }
     }
 }
@@ -246,7 +260,7 @@ void ControllerHidReportTabsManager::populateHidReportTable(
                 createReadOnlyItem(control.m_unitExponent != 0
                                 ? QStringLiteral("10^%1").arg(
                                           control.m_unitExponent)
-                                : QStringLiteral(""),
+                                : QString(),
                         true));
         // Column 9 - Unit
         table->setItem(row,
