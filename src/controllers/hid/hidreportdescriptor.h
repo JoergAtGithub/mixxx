@@ -141,7 +141,6 @@ class Control {
 
   private:
 };
-Q_DECLARE_METATYPE(hid::reportDescriptor::Control)
 
 int64_t getControlValue(const QByteArray& data, const Control& control);
 bool setControlValue(QByteArray& data, const Control& control, int64_t controlValue);
@@ -249,3 +248,5 @@ class HIDReportDescriptor {
 };
 
 } // namespace hid::reportDescriptor
+
+Q_DECLARE_METATYPE(hid::reportDescriptor::Control)
