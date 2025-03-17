@@ -249,4 +249,4 @@ class HIDReportDescriptor {
 
 } // namespace hid::reportDescriptor
 
-Q_DECLARE_METATYPE(hid::reportDescriptor::Control)
+Q_DECLARE_METATYPE(hid::reportDescriptor::Control);
