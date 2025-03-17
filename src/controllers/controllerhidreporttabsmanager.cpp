@@ -1,4 +1,4 @@
-// #pragma optimize("", off)
+#pragma optimize("", off)
 
 #include "controllerhidreporttabsmanager.h"
 
@@ -80,7 +80,7 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
                 sendButton->hide();
             } else if (reportType == hid::reportDescriptor::HidReportType::Output) {
                 readButton->hide();
-                sendButton->setDisabled(true);
+                // sendButton->setDisabled(true);
             }
 
             topWidgetRow->addWidget(readButton);
@@ -106,7 +106,17 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
                         &QPushButton::clicked,
                         this,
                         [this, table, reportId, reportType]() {
-                            slotReadButtonClicked(table, reportId, reportType);
+                            slotReadReport(table, reportId, reportType);
+                        });
+                // Read once on tab creation
+                slotReadReport(table, reportId, reportType);
+            }
+            if (reportType != hid::reportDescriptor::HidReportType::Input) {
+                connect(sendButton,
+                        &QPushButton::clicked,
+                        this,
+                        [this, table, reportId, reportType]() {
+                            slotSendReport(table, reportId, reportType);
                         });
             }
 
@@ -115,7 +125,7 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
     }
 }
 
-void ControllerHidReportTabsManager::slotReadButtonClicked(QTableWidget* table,
+void ControllerHidReportTabsManager::slotReadReport(QTableWidget* table,
         quint8 reportId,
         hid::reportDescriptor::HidReportType reportType) {
     if (!m_hidController->isOpen()) {
@@ -124,36 +134,95 @@ void ControllerHidReportTabsManager::slotReadButtonClicked(QTableWidget* table,
     }
 
     HidControllerJSProxy* jsProxy = static_cast<HidControllerJSProxy*>(m_hidController->jsProxy());
-    if (!jsProxy) {
-        qWarning() << "Failed to get JS proxy.";
+    VERIFY_OR_DEBUG_ASSERT(jsProxy) {
         return;
     }
 
-    if (reportType == hid::reportDescriptor::HidReportType::Input) {
-        auto reportData = jsProxy->getInputReport(reportId);
-        if (reportData.isEmpty()) {
-            qWarning() << "Failed to get input report.";
-            return;
-        }
-        for (int row = 0; row < table->rowCount(); ++row) {
-            auto* item = table->item(row, 5); // Assuming the value column is at index 5
-            if (item) {
-                item->setText(QString::number(static_cast<quint8>(reportData.at(row))));
-            }
-        }
+    auto report = m_reportDescriptor.getReport(reportType, reportId);
+    VERIFY_OR_DEBUG_ASSERT(report) {
         return;
+    }
+
+    QByteArray reportData;
+    if (reportType == hid::reportDescriptor::HidReportType::Input) {
+        reportData = jsProxy->getInputReport(reportId);
     } else if (reportType == hid::reportDescriptor::HidReportType::Feature) {
-        auto reportData = jsProxy->getFeatureReport(reportId);
-        if (reportData.isEmpty()) {
-            qWarning() << "Failed to get feature report.";
-            return;
-        }
-        for (int row = 0; row < table->rowCount(); ++row) {
-            auto* item = table->item(row, 5); // Assuming the value column is at index 5
-            if (item) {
-                item->setText(QString::number(static_cast<quint8>(reportData.at(row))));
+        reportData = jsProxy->getFeatureReport(reportId);
+    } else {
+        return;
+    }
+
+    if (reportData.size() < report->getReportSize()) {
+        qWarning() << "Failed to get report. Read only " << reportData.size()
+                   << " instead of expected " << report->getReportSize()
+                   << " bytes.";
+        return;
+    }
+
+    for (int row = 0; row < table->rowCount(); ++row) {
+        auto* item = table->item(row, 5); // Value column is at index 5
+        if (item) {
+            // Retrieve custom data from the first cell
+            QVariant customData = table->item(row, 0)->data(Qt::UserRole + 1);
+            if (customData.isValid()) {
+                auto control =
+                        reinterpret_cast<hid::reportDescriptor::Control*>(
+                                customData.value<void*>());
+                // Use the custom data as needed
+                int64_t controlValue = hid::reportDescriptor::getControlValue(reportData, *control);
+                item->setText(QString::number(controlValue));
             }
         }
+    }
+}
+
+void ControllerHidReportTabsManager::slotSendReport(QTableWidget* table,
+        quint8 reportId,
+        hid::reportDescriptor::HidReportType reportType) {
+    if (!m_hidController->isOpen()) {
+        qWarning() << "HID controller is not open.";
+        return;
+    }
+
+    HidControllerJSProxy* jsProxy = static_cast<HidControllerJSProxy*>(m_hidController->jsProxy());
+    VERIFY_OR_DEBUG_ASSERT(jsProxy) {
+        return;
+    }
+
+    auto report = m_reportDescriptor.getReport(reportType, reportId);
+    VERIFY_OR_DEBUG_ASSERT(report) {
+        return;
+    }
+
+    // Create a QByteArray of the size of the report
+    QByteArray reportData(report->getReportSize(), 0);
+
+    // Iterate through each row in the table
+    for (int row = 0; row < table->rowCount(); ++row) {
+        auto* item = table->item(row, 5); // Value column is at index 5
+        if (item) {
+            // Retrieve custom data from the first cell
+            QVariant customData = table->item(row, 0)->data(Qt::UserRole + 1);
+            if (customData.isValid()) {
+                auto control =
+                        reinterpret_cast<hid::reportDescriptor::Control*>(
+                                customData.value<void*>());
+                // Set the control value in the reportData
+                bool success = hid::reportDescriptor::setControlValue(
+                        reportData, *control, item->text().toLongLong());
+                if (!success) {
+                    qWarning() << "Failed to set control value for row" << row;
+                    continue;
+                }
+            }
+        }
+    }
+
+    // Send the reportData
+    if (reportType == hid::reportDescriptor::HidReportType::Feature) {
+        jsProxy->sendFeatureReport(reportId, reportData);
+    } else if (reportType == hid::reportDescriptor::HidReportType::Output) {
+        jsProxy->sendOutputReport(reportId, reportData);
     }
 }
 
@@ -227,13 +296,18 @@ void ControllerHidReportTabsManager::populateHidReportTable(
     int row = 0;
     for (const auto& control : controls) {
         // Column 0 - Byte Position
-        table->setItem(row,
-                0,
-                createReadOnlyItem(QStringLiteral("0x%1").arg(QString::number(
-                                           control.m_bytePosition, 16)
-                                                   .rightJustified(2, '0')
-                                                   .toUpper()),
-                        true));
+        auto* bytePositionItem = createReadOnlyItem(QStringLiteral("0x%1").arg(QString::number(
+                                                            control.m_bytePosition, 16)
+                                                                    .rightJustified(2, '0')
+                                                                    .toUpper()),
+                true);
+        table->setItem(row, 0, bytePositionItem);
+        // Store custom data for the row in the first cell
+        bytePositionItem->setData(Qt::UserRole + 1,
+                QVariant::fromValue(reinterpret_cast<void*>(
+                        const_cast<hid::reportDescriptor::Control*>(
+                                &control))));
+
         // Column 1 - Bit Position
         table->setItem(row, 1, createReadOnlyItem(QString::number(control.m_bitPosition), true));
         // Column 2 - Bit Size
