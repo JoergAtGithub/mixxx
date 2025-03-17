@@ -7,7 +7,6 @@
 #include <QKeyEvent>
 
 #include "controllers/controller.h"
-#include "controllers/controllerhidreporttabsmanager.h"
 #include "controllers/controllerinputmappingtablemodel.h"
 #include "controllers/controllerlearningeventfilter.h"
 #include "controllers/controllermanager.h"
@@ -88,7 +87,8 @@ DlgPrefController::DlgPrefController(
           m_inputMappingsTabIndex(-1),
           m_outputMappingsTabIndex(-1),
           m_settingsTabIndex(-1),
-          m_screensTabIndex(-1) {
+          m_screensTabIndex(-1),
+          m_hidReportTabsManager(nullptr) {
     m_ui.setupUi(this);
     // Create text color for the file and wiki links
     createLinkColor();
@@ -194,8 +194,10 @@ DlgPrefController::DlgPrefController(
         m_ui.labelHidUsageValue->setVisible(true);
 
         // Create HID report tabs
-        ControllerHidReportTabsManager hidReportTabsManager(m_ui.controllerTabs, hidController);
-        hidReportTabsManager.createHidReportTabs();
+        m_hidReportTabsManager =
+                std::make_unique<ControllerHidReportTabsManager>(
+                        m_ui.controllerTabs, hidController);
+        m_hidReportTabsManager->createHidReportTabs();
     } else
 #endif
     {

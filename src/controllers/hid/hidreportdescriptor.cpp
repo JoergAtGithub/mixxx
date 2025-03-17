@@ -8,6 +8,82 @@
 
 namespace hid::reportDescriptor {
 
+int64_t getControlValue(const QByteArray& data, const Control& control) {
+    VERIFY_OR_DEBUG_ASSERT(control.m_bitSize > 0 && control.m_bitSize <= 32) {
+        return 0;
+    }
+
+    uint32_t value = 0;
+    int bitOffset = 0;
+
+    for (int i = 0; i < control.m_bitSize; ++i) {
+        int byteIndex = control.m_bytePosition + (control.m_bitPosition + i) / 8;
+        int bitIndex = (control.m_bitPosition + i) % 8;
+
+        if (byteIndex >= data.size()) {
+            throw std::out_of_range("Byte index out of range");
+        }
+
+        bool bit = (data[byteIndex] >> bitIndex) & 1;
+        value |= (bit << bitOffset);
+        ++bitOffset;
+    }
+
+    bool isSigned = control.m_logicalMinimum < 0;
+    if (isSigned && (value & (1 << (control.m_bitSize - 1)))) {
+        value |= ~((1 << control.m_bitSize) - 1);
+    }
+
+    int64_t finalValue = isSigned
+            ? static_cast<int64_t>(static_cast<int32_t>(value))
+            : static_cast<int64_t>(value);
+
+    VERIFY_OR_DEBUG_ASSERT(finalValue >= control.m_logicalMinimum) {
+        return control.m_logicalMinimum;
+    }
+    VERIFY_OR_DEBUG_ASSERT(finalValue <= control.m_logicalMaximum) {
+        return control.m_logicalMaximum;
+    }
+
+    return finalValue;
+}
+
+bool setControlValue(QByteArray& data, const Control& control, int64_t controlValue) {
+    // Check if the controlValue is within the allowed range
+    if (controlValue < control.m_logicalMinimum || controlValue > control.m_logicalMaximum) {
+        return false;
+    }
+
+    // Ensure the controlValue fits within the bit size of the control
+    uint32_t mask = (1 << control.m_bitSize) - 1;
+    uint32_t value = static_cast<uint32_t>(controlValue) & mask;
+
+    // Check if the value fits into the data (position + bitSize)
+    if (control.m_bytePosition +
+                    (control.m_bitPosition + control.m_bitSize + 7) / 8 >
+            data.size()) {
+        return false;
+    }
+
+    for (int i = 0; i < control.m_bitSize; ++i) {
+        int byteIndex = control.m_bytePosition + (control.m_bitPosition + i) / 8;
+        int bitIndex = (control.m_bitPosition + i) % 8;
+
+        VERIFY_OR_DEBUG_ASSERT(byteIndex < data.size()) {
+            return false;
+        }
+
+        bool bit = (value >> i) & 1;
+        if (bit) {
+            data[byteIndex] |= (1 << bitIndex);
+        } else {
+            data[byteIndex] &= ~(1 << bitIndex);
+        }
+    }
+
+    return true;
+}
+
 QString getScaledUnitString(uint32_t unit) {
     struct UnitInfo {
         const char* physicalQuantity[5];

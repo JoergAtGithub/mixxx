@@ -6,7 +6,6 @@
 #include <vector>
 
 namespace hid::reportDescriptor {
-
 QString getScaledUnitString(uint32_t unit);
 
 constexpr int kNotSet = -1;
@@ -142,6 +141,10 @@ class Control {
 
   private:
 };
+Q_DECLARE_METATYPE(hid::reportDescriptor::Control)
+
+int64_t getControlValue(const QByteArray& data, const Control& control);
+bool setControlValue(QByteArray& data, const Control& control, int64_t controlValue);
 
 // Class representing a report in the HID report descriptor
 class Report {
