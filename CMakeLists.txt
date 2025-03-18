@@ -49,6 +49,27 @@ if(POLICY CMP0135)
 endif()
 
 if(WIN32)
+  string(REPLACE "\\" "/" BUILDENV_BASEPATH "${BUILDENV_BASEPATH}")
+  string(REPLACE "\\" "/" CMAKE_TOOLCHAIN_FILE "${CMAKE_TOOLCHAIN_FILE}")
+endif()
+
+if(
+  WIN32
+  AND
+    (
+      NOT DEFINED CMAKE_TOOLCHAIN_FILE
+      OR
+        (
+          DEFINED BUILDENV_BASEPATH
+          AND DEFINED BUILDENV_NAME
+          AND
+            NOT
+              CMAKE_TOOLCHAIN_FILE
+                MATCHES
+                "${BUILDENV_BASEPATH}/${BUILDENV_NAME}/scripts/buildsystems/vcpkg.cmake"
+        )
+    )
+)
   if(NOT DEFINED BUILDENV_BASEPATH)
     if(DEFINED ENV{BUILDENV_BASEPATH})
       set(BUILDENV_BASEPATH "$ENV{BUILDENV_BASEPATH}")
