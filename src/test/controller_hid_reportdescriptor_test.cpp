@@ -1,6 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <limits>
+
 #include "controllers/hid/hidreportdescriptor.h"
+
+using namespace hid::reportDescriptor;
 
 // Example HID report descriptor data
 
@@ -35,7 +39,6 @@ uint8_t reportDescriptor[] = {
 };
 // clang-format on
 TEST(HidReportDescriptorParserTest, ParseReportDescriptor) {
-    using namespace hid::reportDescriptor;
 
     HIDReportDescriptor parser(reportDescriptor, sizeof(reportDescriptor));
     Collection collection = parser.parse();
@@ -118,4 +121,110 @@ TEST(HidReportDescriptorParserTest, ParseReportDescriptor) {
     ASSERT_EQ(controls[4].m_bitSize, 8);
     ASSERT_EQ(controls[4].m_bytePosition, 2);
     ASSERT_EQ(controls[4].m_bitPosition, 0);
+}
+
+TEST(HIDReportDescriptorTest, ControlValue_1Bit) {
+    auto reportData = QByteArray::fromHex("81'00'00'FF'01");
+    Control control({0}, 0x0009'0001, 0, 1, 0, 1, 0, 0, 3, 0, 1);
+
+    int32_t value = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value, 0x1);
+
+    bool result = applyLogicalValue(reportData, control, 0);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(reportData, QByteArray::fromHex("81'00'00'FE'01"));
+
+    int32_t value2 = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value2, 0x0);
+}
+
+TEST(HIDReportDescriptorTest, ControlValue_unsigned11Bits) {
+    auto reportData = QByteArray::fromHex("81'30'46'00'01");
+    Control control({0}, 0x0009'0001, 0, 2047, 0, 2047, 0, 0, 1, 2, 11);
+
+    int32_t value = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value, 0b001'1000'1100);
+
+    bool result = applyLogicalValue(reportData, control, 0b010'1010'1010);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(reportData, QByteArray::fromHex("81'A8'4A'00'01"));
+
+    int32_t value2 = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value2, 0b010'1010'1010);
+}
+
+TEST(HIDReportDescriptorTest, ControlValue_signed11Bits) {
+    auto reportData = QByteArray::fromHex("AA'BB'CC'DD'EE");
+    Control control({0}, 0x0009'0001, -1000, 1000, -10, 10, 0, 0, 2, 0, 11);
+
+    int32_t value = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value, -564);
+
+    bool result = applyLogicalValue(reportData, control, +200);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(reportData, QByteArray::fromHex("AA'BB'C8'D8'EE"));
+
+    int32_t value2 = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value2, +200);
+
+    bool result2 = applyLogicalValue(reportData, control, -200);
+    EXPECT_TRUE(result2);
+    EXPECT_EQ(reportData, QByteArray::fromHex("AA'BB'38'DF'EE"));
+
+    int32_t value3 = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value3, -200);
+}
+TEST(HIDReportDescriptorTest, ControlValue_unsigned32Bits) {
+    auto reportData = QByteArray::fromHex("0A'21'43'65'B7");
+    Control control({0}, 0x0009'0001, 0, 0x7FFFFFFF, 0, 0x7FFFFFFF, 0, 0, 0, 4, 32);
+
+    int32_t value = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value, 0x76'54'32'10);
+
+    bool result = applyLogicalValue(reportData, control, 0x01'23'45'67);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(reportData, QByteArray::fromHex("7A'56'34'12'B0"));
+
+    int32_t value2 = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value2, 0x01'23'45'67);
+}
+
+TEST(HIDReportDescriptorTest, ControlValue_signed32Bits) {
+    auto reportData = QByteArray::fromHex("0A'21'43'65'B7");
+    Control control({0},
+            0x0009'0001,
+            std::numeric_limits<int32_t>::min(),
+            std::numeric_limits<int32_t>::max(),
+            10,
+            10,
+            0,
+            0,
+            0,
+            4,
+            32);
+
+    int32_t value = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value, 0x76'54'32'10);
+
+    bool result = applyLogicalValue(reportData, control, std::numeric_limits<int32_t>::min());
+    EXPECT_TRUE(result);
+    EXPECT_EQ(reportData, QByteArray::fromHex("0A'00'00'00'B8"));
+
+    int32_t value2 = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value2, std::numeric_limits<int32_t>::min());
+
+    bool result2 = applyLogicalValue(reportData, control, std::numeric_limits<int32_t>::max());
+    EXPECT_TRUE(result2);
+    EXPECT_EQ(reportData, QByteArray::fromHex("FA'FF'FF'FF'B7"));
+
+    int32_t value3 = extractLogicallValue(reportData, control);
+    EXPECT_EQ(value3, std::numeric_limits<int32_t>::max());
+}
+
+TEST(HIDReportDescriptorTest, SetControlValue_OutOfRange) {
+    auto reportData = QByteArray::fromHex("81'00'00'00'01");
+    Control control({0}, 0x0009'0001, 0, 2047, 0, 2047, 0, 0, 0, 0, 11);
+
+    bool result = applyLogicalValue(reportData, control, 3000);
+    EXPECT_FALSE(result);
 }
