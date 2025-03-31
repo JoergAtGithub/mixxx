@@ -1,84 +1,80 @@
-// #pragma optimize("", off)
+#pragma optimize("", off)
 
 #include "controllers/hid/hidreportdescriptor.h"
 
+#include <algorithm>
 #include <cstdint>
 
 #include "util/assert.h"
 
 namespace hid::reportDescriptor {
 
-int64_t getControlValue(const QByteArray& data, const Control& control) {
+/// Extracts the value of the specified control in logical scale,
+/// from the given report data
+int32_t extractLogicallValue(const QByteArray& reportData, const Control& control) {
     VERIFY_OR_DEBUG_ASSERT(control.m_bitSize > 0 && control.m_bitSize <= 32) {
-        return 0;
+        return control.m_logicalMinimum; // Safe value in allowed range
     }
 
-    uint32_t value = 0;
-    int bitOffset = 0;
+    uint8_t numberOfBytesToCopy = ((control.m_bitPosition + control.m_bitSize - 1) / 8) + 1;
 
-    for (int i = 0; i < control.m_bitSize; ++i) {
-        int byteIndex = control.m_bytePosition + (control.m_bitPosition + i) / 8;
-        int bitIndex = (control.m_bitPosition + i) % 8;
+    int64_t value = 0;
+    std::memcpy(&value, reportData.data() + control.m_bytePosition, numberOfBytesToCopy);
 
-        if (byteIndex >= data.size()) {
-            throw std::out_of_range("Byte index out of range");
-        }
-
-        bool bit = (data[byteIndex] >> bitIndex) & 1;
-        value |= (bit << bitOffset);
-        ++bitOffset;
-    }
+    value >>= control.m_bitPosition;
 
     bool isSigned = control.m_logicalMinimum < 0;
-    if (isSigned && (value & (1 << (control.m_bitSize - 1)))) {
-        value |= ~((1 << control.m_bitSize) - 1);
+    // Mask out the bits that are not part of the control
+    if (isSigned) {
+        bool isNegative = value & (1ULL << (control.m_bitSize - 1));
+        value &= (1ULL << (control.m_bitSize - 1)) - 1;
+        if (isNegative) {
+            value = ((1ULL << (control.m_bitSize - 1)) - value) * -1;
+        }
+    } else {
+        value &= (1ULL << control.m_bitSize) - 1;
     }
 
-    int64_t finalValue = isSigned
-            ? static_cast<int64_t>(static_cast<int32_t>(value))
-            : static_cast<int64_t>(value);
-
-    VERIFY_OR_DEBUG_ASSERT(finalValue >= control.m_logicalMinimum) {
+    VERIFY_OR_DEBUG_ASSERT(value >= control.m_logicalMinimum) {
         return control.m_logicalMinimum;
     }
-    VERIFY_OR_DEBUG_ASSERT(finalValue <= control.m_logicalMaximum) {
+    VERIFY_OR_DEBUG_ASSERT(value <= control.m_logicalMaximum) {
         return control.m_logicalMaximum;
     }
 
-    return finalValue;
+    return value;
 }
 
-bool setControlValue(QByteArray& data, const Control& control, int64_t controlValue) {
+/// Sets the bits in the report data of the specified control,
+/// to the given value in logical scale
+bool applyLogicalValue(QByteArray& reportData, const Control& control, int32_t controlValue) {
+    VERIFY_OR_DEBUG_ASSERT(control.m_bitSize > 0 && control.m_bitSize <= 32) {
+        return false;
+    }
+
     // Check if the controlValue is within the allowed range
     if (controlValue < control.m_logicalMinimum || controlValue > control.m_logicalMaximum) {
         return false;
     }
 
-    // Ensure the controlValue fits within the bit size of the control
-    uint32_t mask = (1 << control.m_bitSize) - 1;
-    uint32_t value = static_cast<uint32_t>(controlValue) & mask;
+    uint64_t mask = ((1ULL << control.m_bitSize) - 1) << control.m_bitPosition;
+    uint64_t value = (static_cast<uint64_t>(controlValue) << control.m_bitPosition) & mask;
 
     // Check if the value fits into the data (position + bitSize)
-    if (control.m_bytePosition +
-                    (control.m_bitPosition + control.m_bitSize + 7) / 8 >
-            data.size()) {
+    uint8_t lastByteToCopy = control.m_bytePosition +
+            (control.m_bitPosition + control.m_bitSize - 1) / 8;
+
+    if (lastByteToCopy >= reportData.size()) {
         return false;
     }
 
-    for (int i = 0; i < control.m_bitSize; ++i) {
-        int byteIndex = control.m_bytePosition + (control.m_bitPosition + i) / 8;
-        int bitIndex = (control.m_bitPosition + i) % 8;
-
-        VERIFY_OR_DEBUG_ASSERT(byteIndex < data.size()) {
-            return false;
-        }
-
-        bool bit = (value >> i) & 1;
-        if (bit) {
-            data[byteIndex] |= (1 << bitIndex);
-        } else {
-            data[byteIndex] &= ~(1 << bitIndex);
-        }
+    for (uint8_t byteIdx = control.m_bytePosition; byteIdx <= lastByteToCopy; ++byteIdx) {
+        // Clear the bits that are part of the control
+        reportData[byteIdx] &= ~static_cast<uint8_t>(mask & 0xFF);
+        // Set the new value
+        reportData[byteIdx] |= static_cast<uint8_t>(value & 0xFF);
+        mask >>= 8;
+        value >>= 8;
     }
 
     return true;

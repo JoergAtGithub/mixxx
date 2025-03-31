@@ -169,7 +169,9 @@ void ControllerHidReportTabsManager::slotReadReport(QTableWidget* table,
                         reinterpret_cast<hid::reportDescriptor::Control*>(
                                 customData.value<void*>());
                 // Use the custom data as needed
-                int64_t controlValue = hid::reportDescriptor::getControlValue(reportData, *control);
+                int64_t controlValue =
+                        hid::reportDescriptor::extractLogicallValue(
+                                reportData, *control);
                 item->setText(QString::number(controlValue));
             }
         }
@@ -208,7 +210,7 @@ void ControllerHidReportTabsManager::slotSendReport(QTableWidget* table,
                         reinterpret_cast<hid::reportDescriptor::Control*>(
                                 customData.value<void*>());
                 // Set the control value in the reportData
-                bool success = hid::reportDescriptor::setControlValue(
+                bool success = hid::reportDescriptor::applyLogicalValue(
                         reportData, *control, item->text().toLongLong());
                 if (!success) {
                     qWarning() << "Failed to set control value for row" << row;
