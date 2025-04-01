@@ -1,5 +1,3 @@
-// #pragma optimize("", off)
-
 #include "controllerhidreporttabsmanager.h"
 
 #include <QHBoxLayout>
@@ -15,8 +13,7 @@
 ControllerHidReportTabsManager::ControllerHidReportTabsManager(
         QTabWidget* parentTabWidget, HidController* hidController)
         : m_pParentTabWidget(parentTabWidget),
-          m_hidController(hidController),
-          m_reportDescriptor(hidController->getReportDescriptor()) {
+          m_hidController(hidController) {
 }
 
 void ControllerHidReportTabsManager::createHidReportTabs() {
@@ -44,23 +41,20 @@ void ControllerHidReportTabsManager::createHidReportTabs() {
 
 void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
         hid::reportDescriptor::HidReportType reportType) {
-    auto& nonConstReportDescriptor =
-            const_cast<hid::reportDescriptor::HIDReportDescriptor&>(m_reportDescriptor);
-    nonConstReportDescriptor.parse();
+    auto& reportDescriptor =
+            const_cast<hid::reportDescriptor::HIDReportDescriptor&>(
+                    *m_hidController->getReportDescriptor());
 
-    for (const auto& reportInfo : nonConstReportDescriptor.getListOfReports()) {
+    for (const auto& reportInfo : reportDescriptor.getListOfReports()) {
         auto [index, type, reportId] = reportInfo;
         if (type == reportType) {
             QString tabName =
                     QStringLiteral("%1 Report 0x%2")
                             .arg(reportType ==
-                                                    hid::reportDescriptor::
-                                                            HidReportType::Input
+                                                    hid::reportDescriptor::HidReportType::Input
                                             ? QStringLiteral("Input")
                                             : reportType ==
-                                                    hid::reportDescriptor::
-                                                            HidReportType::
-                                                                    Output
+                                                    hid::reportDescriptor::HidReportType::Output
                                             ? QStringLiteral("Output")
                                             : QStringLiteral("Feature"),
                                     QString::number(reportId, 16)
@@ -90,7 +84,7 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
             auto* table = new QTableWidget(tabWidget);
             layout->addWidget(table);
 
-            auto* report = nonConstReportDescriptor.getReport(reportType, reportId);
+            auto report = reportDescriptor.getReport(reportType, reportId);
             if (report) {
                 // Show payload size
                 auto* sizeLabel = new QLabel(tabWidget);
@@ -121,6 +115,51 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
             }
 
             parentTab->addTab(tabWidget, tabName);
+
+            if (reportType == hid::reportDescriptor::HidReportType::Input) {
+                // Store the table pointer associated with the reportId
+                m_reportIdToTableMap[reportId] = table;
+            }
+
+            // Connect the signal for the reportId
+            HidIoThread* hidIoThread = m_hidController->getHidIoThread();
+            /*connect(hidIoThread, &HidIoThread::receive, this, [this,
+            reportId](const QByteArray& data, mixxx::Duration) {
+                slotProcessInputReport(reportId, data);
+            });*/
+
+            connect(hidIoThread,
+                    &HidIoThread::reportReceived,
+                    this,
+                    &ControllerHidReportTabsManager::slotProcessInputReport);
+        }
+    }
+}
+
+void ControllerHidReportTabsManager::slotProcessInputReport(
+        quint8 reportId, const QByteArray& data) {
+    // Find the table associated with the reportId
+    auto it = m_reportIdToTableMap.find(reportId);
+    if (it == m_reportIdToTableMap.end()) {
+        qWarning() << "No table found for reportId" << reportId;
+        return;
+    }
+    QTableWidget* table = it->second;
+
+    // Process the report data and update the table
+    for (int row = 0; row < table->rowCount(); ++row) {
+        auto* item = table->item(row, 5); // Value column is at index 5
+        if (item) {
+            // Retrieve custom data from the first cell
+            QVariant customData = table->item(row, 0)->data(Qt::UserRole + 1);
+            if (customData.isValid()) {
+                auto control =
+                        reinterpret_cast<hid::reportDescriptor::Control*>(
+                                customData.value<void*>());
+                // Use the custom data as needed
+                int64_t controlValue = hid::reportDescriptor::extractLogicallValue(data, *control);
+                item->setText(QString::number(controlValue));
+            }
         }
     }
 }
@@ -138,7 +177,11 @@ void ControllerHidReportTabsManager::slotReadReport(QTableWidget* table,
         return;
     }
 
-    auto report = m_reportDescriptor.getReport(reportType, reportId);
+    auto& reportDescriptor =
+            const_cast<hid::reportDescriptor::HIDReportDescriptor&>(
+                    *m_hidController->getReportDescriptor());
+
+    auto report = reportDescriptor.getReport(reportType, reportId);
     VERIFY_OR_DEBUG_ASSERT(report) {
         return;
     }
@@ -191,7 +234,11 @@ void ControllerHidReportTabsManager::slotSendReport(QTableWidget* table,
         return;
     }
 
-    auto report = m_reportDescriptor.getReport(reportType, reportId);
+    auto& reportDescriptor =
+            const_cast<hid::reportDescriptor::HIDReportDescriptor&>(
+                    *m_hidController->getReportDescriptor());
+
+    auto report = reportDescriptor.getReport(reportType, reportId);
     VERIFY_OR_DEBUG_ASSERT(report) {
         return;
     }

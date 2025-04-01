@@ -162,12 +162,17 @@ int HidController::open(const QString& resourcePath) {
         return -1;
     }
 
-    reportDescriptorRaw = const_cast<mixxx::hid::DeviceInfo&>(m_deviceInfo)
+    m_reportDescriptorRaw = const_cast<mixxx::hid::DeviceInfo&>(m_deviceInfo)
                                   .getReportDescriptor(pHidDevice);
 
-    setOpen(true);
+    if (m_reportDescriptorRaw.has_value()) {
+        m_reportDescriptor = hid::reportDescriptor::HIDReportDescriptor(
+                m_reportDescriptorRaw->data(), m_reportDescriptorRaw->size());
+        m_reportDescriptor->parse();
+        m_deviceHasReportIds = m_reportDescriptor->isDeviceWithReportIds();
+    }
 
-    m_pHidIoThread = std::make_unique<HidIoThread>(pHidDevice, m_deviceInfo);
+    m_pHidIoThread = std::make_unique<HidIoThread>(pHidDevice, m_deviceInfo, m_deviceHasReportIds);
     m_pHidIoThread->setObjectName(QStringLiteral("HidIoThread ") + getName());
 
     connect(m_pHidIoThread.get(),

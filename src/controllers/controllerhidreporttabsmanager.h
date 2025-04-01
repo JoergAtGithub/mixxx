@@ -28,10 +28,13 @@ class ControllerHidReportTabsManager : public QObject {
             quint8 reportId,
             hid::reportDescriptor::HidReportType reportType);
 
+  public slots:
+    void slotProcessInputReport(quint8 reportId, const QByteArray& data);
+
   private:
     QTabWidget* m_pParentTabWidget;
     HidController* m_hidController;
-    hid::reportDescriptor::HIDReportDescriptor m_reportDescriptor;
+    std::unordered_map<quint8, QTableWidget*> m_reportIdToTableMap;
 };
 
 class ValueItemDelegate : public QStyledItemDelegate {
