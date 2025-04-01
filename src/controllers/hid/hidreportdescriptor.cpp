@@ -1,5 +1,3 @@
-#pragma optimize("", off)
-
 #include "controllers/hid/hidreportdescriptor.h"
 
 #include <algorithm>
@@ -35,13 +33,6 @@ int32_t extractLogicallValue(const QByteArray& reportData, const Control& contro
         value &= (1ULL << control.m_bitSize) - 1;
     }
 
-    VERIFY_OR_DEBUG_ASSERT(value >= control.m_logicalMinimum) {
-        return control.m_logicalMinimum;
-    }
-    VERIFY_OR_DEBUG_ASSERT(value <= control.m_logicalMaximum) {
-        return control.m_logicalMaximum;
-    }
-
     return value;
 }
 
@@ -52,9 +43,23 @@ bool applyLogicalValue(QByteArray& reportData, const Control& control, int32_t c
         return false;
     }
 
-    // Check if the controlValue is within the allowed range
-    if (controlValue < control.m_logicalMinimum || controlValue > control.m_logicalMaximum) {
-        return false;
+    if (control.m_flags.no_null_null) {
+        // Nullable controls allow any possible value in the bitrange
+        if (control.m_logicalMinimum < 0) {
+            if (controlValue < -std::pow(2, control.m_bitSize - 1) ||
+                    controlValue > std::pow(2, control.m_bitSize - 1) - 1) {
+                return false;
+            }
+        } else {
+            if (controlValue < 0 || controlValue > std::pow(2, control.m_bitSize)) {
+                return false;
+            }
+        }
+    } else {
+        // Non-Nullable controls only allow values in the logical range
+        if (controlValue < control.m_logicalMinimum || controlValue > control.m_logicalMaximum) {
+            return false;
+        }
     }
 
     uint64_t mask = ((1ULL << control.m_bitSize) - 1) << control.m_bitPosition;

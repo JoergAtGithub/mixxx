@@ -72,12 +72,12 @@ class HidController final : public Controller {
         return m_deviceInfo.getUsageDescription();
     }
 
-    hid::reportDescriptor::HIDReportDescriptor getReportDescriptor() {
-        if (!reportDescriptorRaw) {
-            return hid::reportDescriptor::HIDReportDescriptor(nullptr, 0);
-        }
-        return hid::reportDescriptor::HIDReportDescriptor(
-                reportDescriptorRaw->data(), reportDescriptorRaw->size());
+    const std::optional<hid::reportDescriptor::HIDReportDescriptor>& getReportDescriptor() const {
+        return m_reportDescriptor;
+    }
+
+    HidIoThread* getHidIoThread() const {
+        return m_pHidIoThread.get();
     }
 
     bool isMappable() const override {
@@ -98,7 +98,10 @@ class HidController final : public Controller {
     bool sendBytes(const QByteArray& data) override;
 
     const mixxx::hid::DeviceInfo m_deviceInfo;
-    std::optional<std::vector<uint8_t>> reportDescriptorRaw;
+    // These optional members are not set before opening the device
+    std::optional<std::vector<uint8_t>> m_reportDescriptorRaw;
+    std::optional<hid::reportDescriptor::HIDReportDescriptor> m_reportDescriptor;
+    std::optional<bool> m_deviceHasReportIds;
 
     std::unique_ptr<HidIoThread> m_pHidIoThread;
     std::unique_ptr<LegacyHidControllerMapping> m_pMapping;
