@@ -55,14 +55,14 @@ DeviceInfo::DeviceInfo(const hid_device_info& device_info)
 // We need an opened hid_device here,
 // but the lifetime of the data is as long as DeviceInfo exists,
 // means the reportDescriptor data remains valid after closing the hid_device
-std::optional<std::vector<uint8_t>> DeviceInfo::getReportDescriptor(hid_device* device) {
+std::optional<std::vector<uint8_t>> DeviceInfo::getReportDescriptor(hid_device* pHidDevice) {
     if (!m_reportDescriptor) {
-        if (!device) {
+        if (!pHidDevice) {
             return std::nullopt;
         }
 
         uint8_t tempReportDescriptor[HID_API_MAX_REPORT_DESCRIPTOR_SIZE];
-        int descriptorSize = hid_get_report_descriptor(device,
+        int descriptorSize = hid_get_report_descriptor(pHidDevice,
                 tempReportDescriptor,
                 HID_API_MAX_REPORT_DESCRIPTOR_SIZE);
         if (descriptorSize > 0) {

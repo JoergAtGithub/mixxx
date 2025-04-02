@@ -33,7 +33,7 @@ class ControllerHidReportTabsManager : public QObject {
 
   private:
     QTabWidget* m_pParentTabWidget;
-    HidController* m_hidController;
+    HidController* m_pHidController;
     std::unordered_map<quint8, QTableWidget*> m_reportIdToTableMap;
 };
 

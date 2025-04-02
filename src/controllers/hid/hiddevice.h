@@ -105,7 +105,7 @@ class DeviceInfo final {
         return mixxx::hid::HidUsageTables::getUsageDescription(usage_page, usage);
     }
 
-    std::optional<std::vector<uint8_t>> getReportDescriptor(hid_device* device);
+    std::optional<std::vector<uint8_t>> getReportDescriptor(hid_device* pHidDevice);
 
     bool isValid() const {
         return !getProductString().isNull() && !getSerialNumber().isNull();

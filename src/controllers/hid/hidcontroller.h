@@ -97,7 +97,7 @@ class HidController final : public Controller {
     // 0x0.
     bool sendBytes(const QByteArray& data) override;
 
-    const mixxx::hid::DeviceInfo m_deviceInfo;
+    mixxx::hid::DeviceInfo m_deviceInfo;
     // These optional members are not set before opening the device
     std::optional<std::vector<uint8_t>> m_reportDescriptorRaw;
     std::optional<hid::reportDescriptor::HIDReportDescriptor> m_reportDescriptor;

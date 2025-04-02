@@ -162,8 +162,7 @@ int HidController::open(const QString& resourcePath) {
         return -1;
     }
 
-    m_reportDescriptorRaw = const_cast<mixxx::hid::DeviceInfo&>(m_deviceInfo)
-                                  .getReportDescriptor(pHidDevice);
+    m_reportDescriptorRaw = m_deviceInfo.getReportDescriptor(pHidDevice);
 
     if (m_reportDescriptorRaw.has_value()) {
         m_reportDescriptor = hid::reportDescriptor::HIDReportDescriptor(
