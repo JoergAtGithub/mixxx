@@ -125,7 +125,7 @@ TEST(HidReportDescriptorParserTest, ParseReportDescriptor) {
 
 TEST(HIDReportDescriptorTest, ControlValue_1Bit) {
     auto reportData = QByteArray::fromHex("81'00'00'FF'01");
-    Control control({0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0x0009'0001, 0, 1, 0, 1, 0, 0, 3, 0, 1);
+    Control control({{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}, 0x0009'0001, 0, 1, 0, 1, 0, 0, 3, 0, 1);
 
     int32_t value = extractLogicalValue(reportData, control);
     EXPECT_EQ(value, 0x1);
@@ -140,7 +140,17 @@ TEST(HIDReportDescriptorTest, ControlValue_1Bit) {
 
 TEST(HIDReportDescriptorTest, ControlValue_unsigned11Bits) {
     auto reportData = QByteArray::fromHex("81'30'46'00'01");
-    Control control({0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0x0009'0001, 0, 2047, 0, 2047, 0, 0, 1, 2, 11);
+    Control control({{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+            0x0009'0001,
+            0,
+            2047,
+            0,
+            2047,
+            0,
+            0,
+            1,
+            2,
+            11);
 
     int32_t value = extractLogicalValue(reportData, control);
     EXPECT_EQ(value, 0b001'1000'1100);
@@ -155,7 +165,7 @@ TEST(HIDReportDescriptorTest, ControlValue_unsigned11Bits) {
 
 TEST(HIDReportDescriptorTest, ControlValue_signed11Bits) {
     auto reportData = QByteArray::fromHex("AA'BB'CC'DD'EE");
-    Control control({0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    Control control({{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
             0x0009'0001,
             -1000,
             1000,
@@ -187,7 +197,7 @@ TEST(HIDReportDescriptorTest, ControlValue_signed11Bits) {
 
 TEST(HIDReportDescriptorTest, ControlValue_unsigned32Bits) {
     auto reportData = QByteArray::fromHex("0A'21'43'65'B7");
-    Control control({0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    Control control({{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
             0x0009'0001,
             0,
             0x7FFFFFFF,
@@ -212,7 +222,7 @@ TEST(HIDReportDescriptorTest, ControlValue_unsigned32Bits) {
 
 TEST(HIDReportDescriptorTest, ControlValue_signed32Bits) {
     auto reportData = QByteArray::fromHex("0A'21'43'65'B7");
-    Control control({0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    Control control({{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
             0x0009'0001,
             std::numeric_limits<int32_t>::min(),
             std::numeric_limits<int32_t>::max(),
@@ -244,7 +254,17 @@ TEST(HIDReportDescriptorTest, ControlValue_signed32Bits) {
 
 TEST(HIDReportDescriptorTest, SetControlValue_OutOfRange) {
     auto reportData = QByteArray::fromHex("81'00'00'00'01");
-    Control control({0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0x0009'0001, 0, 2047, 0, 2047, 0, 0, 0, 0, 11);
+    Control control({{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+            0x0009'0001,
+            0,
+            2047,
+            0,
+            2047,
+            0,
+            0,
+            0,
+            0,
+            11);
 
     bool result = applyLogicalValue(reportData, control, 3000);
     EXPECT_FALSE(result);

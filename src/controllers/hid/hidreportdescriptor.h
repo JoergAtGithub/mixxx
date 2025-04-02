@@ -3,7 +3,6 @@
 #include <QMetaType>
 #include <QString>
 #include <cstdint>
-#include <iostream>
 #include <vector>
 
 namespace hid::reportDescriptor {
