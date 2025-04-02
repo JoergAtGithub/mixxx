@@ -143,7 +143,7 @@ class Control {
   private:
 };
 
-int32_t extractLogicallValue(const QByteArray& data, const Control& control);
+int32_t extractLogicalValue(const QByteArray& data, const Control& control);
 bool applyLogicalValue(QByteArray& data, const Control& control, int32_t controlValue);
 
 // Class representing a report in the HID report descriptor

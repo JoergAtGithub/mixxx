@@ -9,7 +9,7 @@ namespace hid::reportDescriptor {
 
 /// Extracts the value of the specified control in logical scale,
 /// from the given report data
-int32_t extractLogicallValue(const QByteArray& reportData, const Control& control) {
+int32_t extractLogicalValue(const QByteArray& reportData, const Control& control) {
     VERIFY_OR_DEBUG_ASSERT(control.m_bitSize > 0 && control.m_bitSize <= 32) {
         return control.m_logicalMinimum; // Safe value in allowed range
     }
