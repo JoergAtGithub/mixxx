@@ -173,7 +173,8 @@ void Report::increasePosition(unsigned int bitSize) {
 void Collection::addReport(const Report& report) {
     m_reports.push_back(report);
 }
-Report* Collection::getReport(const HidReportType& reportType, const uint8_t& reportId) {
+const Report* Collection::getReport(
+        const HidReportType& reportType, const uint8_t& reportId) const {
     for (auto& report : m_reports) {
         if (report.m_reportType == reportType && report.m_reportId == reportId) {
             return &report;
@@ -506,9 +507,10 @@ Collection HIDReportDescriptor::parse() {
     return collection;
 }
 
-Report* HIDReportDescriptor::getReport(const HidReportType& reportType, const uint8_t& reportId) {
+const Report* HIDReportDescriptor::getReport(
+        const HidReportType& reportType, const uint8_t& reportId) const {
     for (auto& collection : m_topLevelCollections) {
-        Report* report = collection.getReport(reportType, reportId);
+        const Report* report = collection.getReport(reportType, reportId);
         if (report != nullptr) {
             return report;
         }
@@ -516,7 +518,8 @@ Report* HIDReportDescriptor::getReport(const HidReportType& reportType, const ui
     return nullptr;
 }
 
-std::vector<std::tuple<size_t, HidReportType, uint8_t>> HIDReportDescriptor::getListOfReports() {
+const std::vector<std::tuple<size_t, HidReportType, uint8_t>>
+HIDReportDescriptor::getListOfReports() const {
     std::vector<std::tuple<size_t, HidReportType, uint8_t>> orderedList;
     for (size_t i = 0; i < m_topLevelCollections.size(); ++i) {
         for (const auto& report : m_topLevelCollections[i].getReports()) {

@@ -50,7 +50,7 @@ TEST(HidReportDescriptorParserTest, ParseReportDescriptor) {
     ASSERT_EQ(collectionIdx, 0);
 
     // Use getReport to get the report
-    Report* report = parser.getReport(reportType, reportId);
+    const Report* report = parser.getReport(reportType, reportId);
     ASSERT_NE(report, nullptr);
 
     // Validate Report fields

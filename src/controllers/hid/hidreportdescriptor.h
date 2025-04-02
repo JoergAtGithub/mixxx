@@ -162,7 +162,7 @@ class Report {
 
     const HidReportType m_reportType;
     const uint8_t m_reportId;
-    uint16_t getReportSize() {
+    uint16_t getReportSize() const {
         return m_lastBytePosition;
     }
 
@@ -177,7 +177,7 @@ class Collection {
   public:
     Collection() = default;
     void addReport(const Report& report);
-    Report* getReport(const HidReportType& reportType, const uint8_t& reportId);
+    const Report* getReport(const HidReportType& reportType, const uint8_t& reportId) const;
     const std::vector<Report>& getReports() const {
         return m_reports;
     }
@@ -191,13 +191,13 @@ class HIDReportDescriptor {
   public:
     HIDReportDescriptor(const uint8_t* data, size_t length);
 
-    bool isDeviceWithReportIds() {
+    bool isDeviceWithReportIds() const {
         return m_deviceHasReportIds;
     }
 
     Collection parse();
-    Report* getReport(const HidReportType& reportType, const uint8_t& reportId);
-    std::vector<std::tuple<size_t, HidReportType, uint8_t>> getListOfReports();
+    const Report* getReport(const HidReportType& reportType, const uint8_t& reportId) const;
+    const std::vector<std::tuple<size_t, HidReportType, uint8_t>> getListOfReports() const;
 
   private:
     // Define the struct for global items
