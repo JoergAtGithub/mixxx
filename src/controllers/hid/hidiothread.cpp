@@ -33,7 +33,7 @@ HidIoThread::HidIoThread(hid_device* pHidDevice,
         : QThread(),
           m_deviceInfo(deviceInfo),
           // Defining RuntimeLoggingCategories locally in this thread improves
-          // runtime performance significiantly
+          // runtime performance significantly
           m_logBase(loggingCategoryPrefix(deviceInfo.formatName())),
           m_logInput(loggingCategoryPrefix(deviceInfo.formatName()) +
                   QStringLiteral(".input")),
