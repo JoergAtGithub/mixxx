@@ -13,7 +13,7 @@
 ControllerHidReportTabsManager::ControllerHidReportTabsManager(
         QTabWidget* parentTabWidget, HidController* hidController)
         : m_pParentTabWidget(parentTabWidget),
-          m_hidController(hidController) {
+          m_pHidController(hidController) {
 }
 
 void ControllerHidReportTabsManager::createHidReportTabs() {
@@ -43,7 +43,7 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
         hid::reportDescriptor::HidReportType reportType) {
     auto& reportDescriptor =
             const_cast<hid::reportDescriptor::HIDReportDescriptor&>(
-                    *m_hidController->getReportDescriptor());
+                    *m_pHidController->getReportDescriptor());
 
     for (const auto& reportInfo : reportDescriptor.getListOfReports()) {
         auto [index, type, reportId] = reportInfo;
@@ -122,7 +122,7 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
             }
 
             // Connect the signal for the reportId
-            HidIoThread* hidIoThread = m_hidController->getHidIoThread();
+            HidIoThread* hidIoThread = m_pHidController->getHidIoThread();
             /*connect(hidIoThread, &HidIoThread::receive, this, [this,
             reportId](const QByteArray& data, mixxx::Duration) {
                 slotProcessInputReport(reportId, data);
@@ -167,19 +167,19 @@ void ControllerHidReportTabsManager::slotProcessInputReport(
 void ControllerHidReportTabsManager::slotReadReport(QTableWidget* table,
         quint8 reportId,
         hid::reportDescriptor::HidReportType reportType) {
-    if (!m_hidController->isOpen()) {
+    if (!m_pHidController->isOpen()) {
         qWarning() << "HID controller is not open.";
         return;
     }
 
-    HidControllerJSProxy* jsProxy = static_cast<HidControllerJSProxy*>(m_hidController->jsProxy());
+    HidControllerJSProxy* jsProxy = static_cast<HidControllerJSProxy*>(m_pHidController->jsProxy());
     VERIFY_OR_DEBUG_ASSERT(jsProxy) {
         return;
     }
 
     auto& reportDescriptor =
             const_cast<hid::reportDescriptor::HIDReportDescriptor&>(
-                    *m_hidController->getReportDescriptor());
+                    *m_pHidController->getReportDescriptor());
 
     auto report = reportDescriptor.getReport(reportType, reportId);
     VERIFY_OR_DEBUG_ASSERT(report) {
@@ -224,19 +224,19 @@ void ControllerHidReportTabsManager::slotReadReport(QTableWidget* table,
 void ControllerHidReportTabsManager::slotSendReport(QTableWidget* table,
         quint8 reportId,
         hid::reportDescriptor::HidReportType reportType) {
-    if (!m_hidController->isOpen()) {
+    if (!m_pHidController->isOpen()) {
         qWarning() << "HID controller is not open.";
         return;
     }
 
-    HidControllerJSProxy* jsProxy = static_cast<HidControllerJSProxy*>(m_hidController->jsProxy());
+    HidControllerJSProxy* jsProxy = static_cast<HidControllerJSProxy*>(m_pHidController->jsProxy());
     VERIFY_OR_DEBUG_ASSERT(jsProxy) {
         return;
     }
 
     auto& reportDescriptor =
             const_cast<hid::reportDescriptor::HIDReportDescriptor&>(
-                    *m_hidController->getReportDescriptor());
+                    *m_pHidController->getReportDescriptor());
 
     auto report = reportDescriptor.getReport(reportType, reportId);
     VERIFY_OR_DEBUG_ASSERT(report) {
