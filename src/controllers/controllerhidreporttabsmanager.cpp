@@ -157,7 +157,7 @@ void ControllerHidReportTabsManager::slotProcessInputReport(
                         reinterpret_cast<hid::reportDescriptor::Control*>(
                                 customData.value<void*>());
                 // Use the custom data as needed
-                int64_t controlValue = hid::reportDescriptor::extractLogicallValue(data, *control);
+                int64_t controlValue = hid::reportDescriptor::extractLogicalValue(data, *control);
                 item->setText(QString::number(controlValue));
             }
         }
@@ -213,7 +213,7 @@ void ControllerHidReportTabsManager::slotReadReport(QTableWidget* table,
                                 customData.value<void*>());
                 // Use the custom data as needed
                 int64_t controlValue =
-                        hid::reportDescriptor::extractLogicallValue(
+                        hid::reportDescriptor::extractLogicalValue(
                                 reportData, *control);
                 item->setText(QString::number(controlValue));
             }
