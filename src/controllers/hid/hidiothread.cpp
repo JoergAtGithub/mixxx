@@ -155,7 +155,7 @@ void HidIoThread::processInputReport(int bytesRead) {
                          bytesRead),
             mixxx::Time::elapsed());
 
-    if (m_deviceHasReportIds.has_value()) {
+    if (m_deviceHasReportIds.has_value() && bytesRead > 0) {
         if (m_deviceHasReportIds.value()) {
             // Extract the ReportId from the buffer
             quint8 reportId = pCurrentBuffer[0];
