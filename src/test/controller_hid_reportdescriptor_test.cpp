@@ -39,7 +39,6 @@ uint8_t reportDescriptor[] = {
 };
 // clang-format on
 TEST(HidReportDescriptorParserTest, ParseReportDescriptor) {
-
     HIDReportDescriptor parser(reportDescriptor, sizeof(reportDescriptor));
     Collection collection = parser.parse();
 
