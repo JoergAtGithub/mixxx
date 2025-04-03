@@ -70,9 +70,9 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
             // Adjust visibility/enable state based on the report type
             if (reportType == hid::reportDescriptor::HidReportType::Input) {
                 sendButton->hide();
+                readButton->hide();
             } else if (reportType == hid::reportDescriptor::HidReportType::Output) {
                 readButton->hide();
-                // sendButton->setDisabled(true);
             }
 
             topWidgetRow->addWidget(readButton);
@@ -136,8 +136,7 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
 
 void ControllerHidReportTabsManager::updateTableWithReportData(
         QTableWidget* table,
-        const QByteArray& reportData,
-        const hid::reportDescriptor::Report& report) {
+        const QByteArray& reportData) {
     // Temporarily disable updates to speed up processing
     table->setUpdatesEnabled(false);
 
@@ -176,7 +175,7 @@ void ControllerHidReportTabsManager::slotProcessInputReport(
     const auto& reportDescriptor = *m_pHidController->getReportDescriptor();
     auto report = reportDescriptor.getReport(hid::reportDescriptor::HidReportType::Input, reportId);
     if (report) {
-        updateTableWithReportData(table, data, *report);
+        updateTableWithReportData(table, data);
     }
 }
 
@@ -215,7 +214,7 @@ void ControllerHidReportTabsManager::slotReadReport(QTableWidget* table,
         return;
     }
 
-    updateTableWithReportData(table, reportData, *report);
+    updateTableWithReportData(table, reportData);
 }
 
 void ControllerHidReportTabsManager::slotSendReport(QTableWidget* table,
