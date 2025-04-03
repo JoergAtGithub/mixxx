@@ -41,9 +41,7 @@ void ControllerHidReportTabsManager::createHidReportTabs() {
 
 void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
         hid::reportDescriptor::HidReportType reportType) {
-    auto& reportDescriptor =
-            const_cast<hid::reportDescriptor::HIDReportDescriptor&>(
-                    *m_pHidController->getReportDescriptor());
+    const auto& reportDescriptor = *m_pHidController->getReportDescriptor();
 
     for (const auto& reportInfo : reportDescriptor.getListOfReports()) {
         auto [index, type, reportId] = reportInfo;
@@ -136,6 +134,35 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
     }
 }
 
+void ControllerHidReportTabsManager::updateTableWithReportData(
+        QTableWidget* table,
+        const QByteArray& reportData,
+        const hid::reportDescriptor::Report& report) {
+    // Temporarily disable updates to speed up processing
+    table->setUpdatesEnabled(false);
+
+    // Process the report data and update the table
+    for (int row = 0; row < table->rowCount(); ++row) {
+        auto* item = table->item(row, 5); // Value column is at index 5
+        if (item) {
+            // Retrieve custom data from the first cell
+            QVariant customData = table->item(row, 0)->data(Qt::UserRole + 1);
+            if (customData.isValid()) {
+                auto control =
+                        static_cast<const hid::reportDescriptor::Control*>(
+                                customData.value<const void*>());
+                // Use the custom data as needed
+                int64_t controlValue =
+                        hid::reportDescriptor::extractLogicalValue(
+                                reportData, *control);
+                item->setText(QString::number(controlValue));
+            }
+        }
+    }
+
+    table->setUpdatesEnabled(true);
+}
+
 void ControllerHidReportTabsManager::slotProcessInputReport(
         quint8 reportId, const QByteArray& data) {
     // Find the table associated with the reportId
@@ -146,21 +173,10 @@ void ControllerHidReportTabsManager::slotProcessInputReport(
     }
     QTableWidget* table = it->second;
 
-    // Process the report data and update the table
-    for (int row = 0; row < table->rowCount(); ++row) {
-        auto* item = table->item(row, 5); // Value column is at index 5
-        if (item) {
-            // Retrieve custom data from the first cell
-            QVariant customData = table->item(row, 0)->data(Qt::UserRole + 1);
-            if (customData.isValid()) {
-                auto control =
-                        reinterpret_cast<hid::reportDescriptor::Control*>(
-                                customData.value<void*>());
-                // Use the custom data as needed
-                int64_t controlValue = hid::reportDescriptor::extractLogicalValue(data, *control);
-                item->setText(QString::number(controlValue));
-            }
-        }
+    const auto& reportDescriptor = *m_pHidController->getReportDescriptor();
+    auto report = reportDescriptor.getReport(hid::reportDescriptor::HidReportType::Input, reportId);
+    if (report) {
+        updateTableWithReportData(table, data, *report);
     }
 }
 
@@ -177,10 +193,7 @@ void ControllerHidReportTabsManager::slotReadReport(QTableWidget* table,
         return;
     }
 
-    auto& reportDescriptor =
-            const_cast<hid::reportDescriptor::HIDReportDescriptor&>(
-                    *m_pHidController->getReportDescriptor());
-
+    const auto& reportDescriptor = *m_pHidController->getReportDescriptor();
     auto report = reportDescriptor.getReport(reportType, reportId);
     VERIFY_OR_DEBUG_ASSERT(report) {
         return;
@@ -202,23 +215,7 @@ void ControllerHidReportTabsManager::slotReadReport(QTableWidget* table,
         return;
     }
 
-    for (int row = 0; row < table->rowCount(); ++row) {
-        auto* item = table->item(row, 5); // Value column is at index 5
-        if (item) {
-            // Retrieve custom data from the first cell
-            QVariant customData = table->item(row, 0)->data(Qt::UserRole + 1);
-            if (customData.isValid()) {
-                auto control =
-                        reinterpret_cast<hid::reportDescriptor::Control*>(
-                                customData.value<void*>());
-                // Use the custom data as needed
-                int64_t controlValue =
-                        hid::reportDescriptor::extractLogicalValue(
-                                reportData, *control);
-                item->setText(QString::number(controlValue));
-            }
-        }
-    }
+    updateTableWithReportData(table, reportData, *report);
 }
 
 void ControllerHidReportTabsManager::slotSendReport(QTableWidget* table,
@@ -234,9 +231,7 @@ void ControllerHidReportTabsManager::slotSendReport(QTableWidget* table,
         return;
     }
 
-    auto& reportDescriptor =
-            const_cast<hid::reportDescriptor::HIDReportDescriptor&>(
-                    *m_pHidController->getReportDescriptor());
+    const auto& reportDescriptor = *m_pHidController->getReportDescriptor();
 
     auto report = reportDescriptor.getReport(reportType, reportId);
     VERIFY_OR_DEBUG_ASSERT(report) {
@@ -286,13 +281,13 @@ void ControllerHidReportTabsManager::populateHidReportTable(
     const auto& controls = report.getControls();
     table->setRowCount(static_cast<int>(controls.size()));
 
-    bool showVolatileColumn = (reportType == hid::reportDescriptor::HidReportType::Feature ||
-            reportType == hid::reportDescriptor::HidReportType::Output);
-
     // Set the delegate once if needed
-    if (showVolatileColumn) {
+    if (reportType != hid::reportDescriptor::HidReportType::Input) {
         table->setItemDelegateForColumn(5, new ValueItemDelegate(table));
     }
+
+    bool showVolatileColumn = (reportType == hid::reportDescriptor::HidReportType::Feature ||
+            reportType == hid::reportDescriptor::HidReportType::Output);
 
     // Set headers
     QStringList headers = {QStringLiteral("Byte Position"),

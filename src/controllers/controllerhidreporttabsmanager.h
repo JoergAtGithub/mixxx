@@ -32,6 +32,9 @@ class ControllerHidReportTabsManager : public QObject {
     void slotProcessInputReport(quint8 reportId, const QByteArray& data);
 
   private:
+    void updateTableWithReportData(QTableWidget* table,
+            const QByteArray& reportData,
+            const hid::reportDescriptor::Report& report);
     QTabWidget* m_pParentTabWidget;
     HidController* m_pHidController;
     std::unordered_map<quint8, QTableWidget*> m_reportIdToTableMap;
