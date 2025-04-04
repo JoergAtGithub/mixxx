@@ -162,11 +162,11 @@ int HidController::open(const QString& resourcePath) {
         return -1;
     }
 
-    m_reportDescriptorRaw = m_deviceInfo.getReportDescriptor(pHidDevice);
+    m_rawReportDescriptor = m_deviceInfo.fetchRawReportDescriptor(pHidDevice);
 
-    if (m_reportDescriptorRaw.has_value()) {
+    if (m_rawReportDescriptor.has_value()) {
         m_reportDescriptor = hid::reportDescriptor::HIDReportDescriptor(
-                m_reportDescriptorRaw->data(), m_reportDescriptorRaw->size());
+                m_rawReportDescriptor->data(), m_rawReportDescriptor->size());
         m_reportDescriptor->parse();
         m_deviceHasReportIds = m_reportDescriptor->isDeviceWithReportIds();
     }

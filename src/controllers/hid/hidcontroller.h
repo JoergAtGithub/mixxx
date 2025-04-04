@@ -99,7 +99,7 @@ class HidController final : public Controller {
 
     mixxx::hid::DeviceInfo m_deviceInfo;
     // These optional members are not set before opening the device
-    std::optional<std::vector<uint8_t>> m_reportDescriptorRaw;
+    std::optional<std::vector<uint8_t>> m_rawReportDescriptor;
     std::optional<hid::reportDescriptor::HIDReportDescriptor> m_reportDescriptor;
     std::optional<bool> m_deviceHasReportIds;
 
