@@ -15,7 +15,7 @@ class ControllerHidReportTabsManager : public QObject {
     ControllerHidReportTabsManager(QTabWidget* parentTabWidget, HidController* hidController);
 
     void createHidReportTabs();
-    void createReportTabs(QTabWidget* parentTab, hid::reportDescriptor::HidReportType reportType);
+    void createHidReportTab(QTabWidget* parentTab, hid::reportDescriptor::HidReportType reportType);
     void slotSendReport(QTableWidget* table,
             quint8 reportId,
             hid::reportDescriptor::HidReportType reportType);

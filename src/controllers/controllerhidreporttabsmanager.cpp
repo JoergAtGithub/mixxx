@@ -19,45 +19,40 @@ ControllerHidReportTabsManager::ControllerHidReportTabsManager(
 void ControllerHidReportTabsManager::createHidReportTabs() {
     auto hidReportTabs = std::make_unique<QTabWidget>(m_pParentTabWidget);
 
-    // Create tabs for InputReports, OutputReports, and FeatureReports
-    auto inputReportsTab = std::make_unique<QTabWidget>(hidReportTabs.get());
-    auto outputReportsTab = std::make_unique<QTabWidget>(hidReportTabs.get());
-    auto featureReportsTab = std::make_unique<QTabWidget>(hidReportTabs.get());
+    QMetaEnum metaEnum = QMetaEnum::fromType<hid::reportDescriptor::HidReportType>();
 
-    createReportTabs(inputReportsTab.get(), hid::reportDescriptor::HidReportType::Input);
-    createReportTabs(outputReportsTab.get(), hid::reportDescriptor::HidReportType::Output);
-    createReportTabs(featureReportsTab.get(), hid::reportDescriptor::HidReportType::Feature);
+    std::array<hid::reportDescriptor::HidReportType, 3> reportTypes = {
+            hid::reportDescriptor::HidReportType::Input,
+            hid::reportDescriptor::HidReportType::Output,
+            hid::reportDescriptor::HidReportType::Feature};
 
-    if (inputReportsTab->count() > 0) {
-        m_pParentTabWidget->addTab(inputReportsTab.release(), QStringLiteral("Input Reports"));
-    }
-    if (outputReportsTab->count() > 0) {
-        m_pParentTabWidget->addTab(outputReportsTab.release(), QStringLiteral("Output Reports"));
-    }
-    if (featureReportsTab->count() > 0) {
-        m_pParentTabWidget->addTab(featureReportsTab.release(), QStringLiteral("Feature Reports"));
+    for (const auto& reportType : reportTypes) {
+        auto reportTab = std::make_unique<QTabWidget>(hidReportTabs.get());
+        createHidReportTab(reportTab.get(), reportType);
+        if (reportTab->count() > 0) {
+            QString tabName = QStringLiteral("%1 Reports")
+                                      .arg(metaEnum.valueToKey(
+                                              static_cast<int>(reportType)));
+            m_pParentTabWidget->addTab(reportTab.release(), tabName);
+        }
     }
 }
 
-void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
+void ControllerHidReportTabsManager::createHidReportTab(QTabWidget* parentTab,
         hid::reportDescriptor::HidReportType reportType) {
     const auto& reportDescriptor = *m_pHidController->getReportDescriptor();
+
+    QMetaEnum metaEnum = QMetaEnum::fromType<hid::reportDescriptor::HidReportType>();
 
     for (const auto& reportInfo : reportDescriptor.getListOfReports()) {
         auto [index, type, reportId] = reportInfo;
         if (type == reportType) {
-            QString tabName =
-                    QStringLiteral("%1 Report 0x%2")
-                            .arg(reportType ==
-                                                    hid::reportDescriptor::HidReportType::Input
-                                            ? QStringLiteral("Input")
-                                            : reportType ==
-                                                    hid::reportDescriptor::HidReportType::Output
-                                            ? QStringLiteral("Output")
-                                            : QStringLiteral("Feature"),
-                                    QString::number(reportId, 16)
-                                            .rightJustified(2, '0')
-                                            .toUpper());
+            QString tabName = QStringLiteral("%1 Report 0x%2")
+                                      .arg(metaEnum.valueToKey(static_cast<int>(
+                                                   reportType)),
+                                              QString::number(reportId, 16)
+                                                      .rightJustified(2, '0')
+                                                      .toUpper());
 
             auto* tabWidget = new QWidget(parentTab);
             auto* layout = new QVBoxLayout(tabWidget);
