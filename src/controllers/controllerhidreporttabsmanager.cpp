@@ -159,7 +159,7 @@ void ControllerHidReportTabsManager::updateTableWithReportData(
 
 void ControllerHidReportTabsManager::slotProcessInputReport(
         quint8 reportId, const QByteArray& data) {
-    // Do not slow down Mixxx when controler preferences are not visible
+    // Do not slow down Mixxx when controller preferences are not visible
     if (!m_pParentTabWidget->isVisible()) {
         return;
     }
