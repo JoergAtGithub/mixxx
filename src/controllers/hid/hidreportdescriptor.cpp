@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 
+#include "moc_hidreportdescriptor.cpp"
 #include "util/assert.h"
 
 namespace hid::reportDescriptor {

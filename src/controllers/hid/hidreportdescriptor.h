@@ -1,11 +1,16 @@
 #pragma once
 
+#include <qobjectdefs.h>
+
 #include <QMetaType>
 #include <QString>
 #include <cstdint>
 #include <vector>
 
 namespace hid::reportDescriptor {
+
+Q_NAMESPACE
+
 QString getScaledUnitString(uint32_t unit);
 
 constexpr int kNotSet = -1;
@@ -17,6 +22,7 @@ enum class HidReportType {
     Output,
     Feature
 };
+Q_ENUM_NS(HidReportType)
 
 // clang-format off
 // Enum class for HID Item Tags (incl. the two type bits)
