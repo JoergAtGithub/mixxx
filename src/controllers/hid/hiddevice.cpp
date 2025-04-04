@@ -55,7 +55,7 @@ DeviceInfo::DeviceInfo(const hid_device_info& device_info)
 // We need an opened hid_device here,
 // but the lifetime of the data is as long as DeviceInfo exists,
 // means the reportDescriptor data remains valid after closing the hid_device
-std::optional<std::vector<uint8_t>> DeviceInfo::getReportDescriptor(hid_device* pHidDevice) {
+std::optional<std::vector<uint8_t>> DeviceInfo::fetchRawReportDescriptor(hid_device* pHidDevice) {
     if (!m_reportDescriptor) {
         if (!pHidDevice) {
             return std::nullopt;

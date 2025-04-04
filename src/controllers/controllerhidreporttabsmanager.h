@@ -29,7 +29,7 @@ class ControllerHidReportTabsManager : public QObject {
             hid::reportDescriptor::HidReportType reportType);
 
   public slots:
-    void slotProcessInputReport(quint8 reportId, const QByteArray& data);
+    void slotProcessInputReport(quint8 reportId, const QByteArray& reportData);
 
   private:
     void updateTableWithReportData(QTableWidget* table, const QByteArray& reportData);

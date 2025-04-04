@@ -121,11 +121,6 @@ void ControllerHidReportTabsManager::createReportTabs(QTabWidget* parentTab,
 
             // Connect the signal for the reportId
             HidIoThread* hidIoThread = m_pHidController->getHidIoThread();
-            /*connect(hidIoThread, &HidIoThread::receive, this, [this,
-            reportId](const QByteArray& data, mixxx::Duration) {
-                slotProcessInputReport(reportId, data);
-            });*/
-
             connect(hidIoThread,
                     &HidIoThread::reportReceived,
                     this,
@@ -164,6 +159,11 @@ void ControllerHidReportTabsManager::updateTableWithReportData(
 
 void ControllerHidReportTabsManager::slotProcessInputReport(
         quint8 reportId, const QByteArray& data) {
+    // Do not slow down Mixxx when controler preferences are not visible
+    if (!m_pParentTabWidget->isVisible()) {
+        return;
+    }
+
     // Find the table associated with the reportId
     auto it = m_reportIdToTableMap.find(reportId);
     if (it == m_reportIdToTableMap.end()) {
