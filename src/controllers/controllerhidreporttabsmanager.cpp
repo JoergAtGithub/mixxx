@@ -45,9 +45,10 @@ void ControllerHidReportTabsManager::createHidReportTab(QTabWidget* parentReport
     for (const auto& reportInfo : reportDescriptor.getListOfReports()) {
         auto [index, type, reportId] = reportInfo;
         if (type == reportType) {
-            QString tabName = QString("%1 Report 0x%2")
-                                      .arg(metaEnum.valueToKey(static_cast<int>(reportType)))
-                                      .arg(QString::number(reportId, 16)
+            QString tabName = QStringLiteral("%1 Report 0x%2")
+                                      .arg(metaEnum.valueToKey(static_cast<int>(
+                                                   reportType)),
+                                              QString::number(reportId, 16)
                                                       .rightJustified(2, '0')
                                                       .toUpper());
 
