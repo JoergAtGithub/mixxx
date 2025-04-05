@@ -4,6 +4,7 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMetaEnum>
 #include <QPushButton>
 #include <QVBoxLayout>
 
