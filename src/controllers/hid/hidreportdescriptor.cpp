@@ -433,8 +433,13 @@ Collection HIDReportDescriptor::parse() {
             } else {
                 // Normal variable control
                 uint32_t usage = 0;
+                unsigned int numOfControls =
+                        (localItems.UsageMinimum != kNotSet &&
+                                localItems.UsageMaximum != kNotSet)
+                        ? localItems.UsageMaximum - localItems.UsageMinimum + 1
+                        : globalItems.reportCount;
                 for (unsigned int controlIdx = 0;
-                        controlIdx < globalItems.reportCount;
+                        controlIdx < numOfControls;
                         controlIdx++) {
                     if (localItems.UsageMinimum != kNotSet && localItems.UsageMaximum != kNotSet) {
                         if (controlIdx == 0) {
@@ -464,6 +469,9 @@ Collection HIDReportDescriptor::parse() {
                     currentReport->addControl(control);
                     currentReport->increasePosition(globalItems.reportSize);
                 }
+                currentReport->increasePosition(
+                        (globalItems.reportCount - numOfControls) *
+                        globalItems.reportSize);
             }
 
             localItems = LocalItems();
