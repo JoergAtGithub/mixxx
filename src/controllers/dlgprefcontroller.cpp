@@ -197,7 +197,7 @@ DlgPrefController::DlgPrefController(
         m_hidReportTabsManager =
                 std::make_unique<ControllerHidReportTabsManager>(
                         m_ui.controllerTabs, hidController);
-        m_hidReportTabsManager->createHidReportTabs();
+        m_hidReportTabsManager->createReportTypeTabs();
     } else
 #endif
     {

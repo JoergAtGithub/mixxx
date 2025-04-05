@@ -12,30 +12,30 @@
 
 ControllerHidReportTabsManager::ControllerHidReportTabsManager(
         QTabWidget* parentTabWidget, HidController* hidController)
-        : m_pParentTabWidget(parentTabWidget),
+        : m_pParentControllerTab(parentTabWidget),
           m_pHidController(hidController) {
 }
 
-void ControllerHidReportTabsManager::createHidReportTabs() {
-    auto hidReportTabs = std::make_unique<QTabWidget>(m_pParentTabWidget);
+void ControllerHidReportTabsManager::createReportTypeTabs() {
+    auto reportTypeTabs = std::make_unique<QTabWidget>(m_pParentControllerTab);
 
     QMetaEnum metaEnum = QMetaEnum::fromType<hid::reportDescriptor::HidReportType>();
 
     for (int reportTypeIdx = 0; reportTypeIdx < metaEnum.keyCount(); ++reportTypeIdx) {
         auto reportType = static_cast<hid::reportDescriptor::HidReportType>(
                 metaEnum.value(reportTypeIdx));
-        auto reportTab = std::make_unique<QTabWidget>(hidReportTabs.get());
-        createHidReportTab(reportTab.get(), reportType);
-        if (reportTab->count() > 0) {
+        auto reportTypeTab = std::make_unique<QTabWidget>(reportTypeTabs.get());
+        createHidReportTab(reportTypeTab.get(), reportType);
+        if (reportTypeTab->count() > 0) {
             QString tabName = QStringLiteral("%1 Reports")
                                       .arg(metaEnum.valueToKey(
                                               static_cast<int>(reportType)));
-            m_pParentTabWidget->addTab(reportTab.release(), tabName);
+            m_pParentControllerTab->addTab(reportTypeTab.release(), tabName);
         }
     }
 }
 
-void ControllerHidReportTabsManager::createHidReportTab(QTabWidget* parentTab,
+void ControllerHidReportTabsManager::createHidReportTab(QTabWidget* parentReportTypeTab,
         hid::reportDescriptor::HidReportType reportType) {
     const auto& reportDescriptor = *m_pHidController->getReportDescriptor();
 
@@ -44,14 +44,13 @@ void ControllerHidReportTabsManager::createHidReportTab(QTabWidget* parentTab,
     for (const auto& reportInfo : reportDescriptor.getListOfReports()) {
         auto [index, type, reportId] = reportInfo;
         if (type == reportType) {
-            QString tabName = QStringLiteral("%1 Report 0x%2")
-                                      .arg(metaEnum.valueToKey(static_cast<int>(
-                                                   reportType)),
-                                              QString::number(reportId, 16)
+            QString tabName = QString("%1 Report 0x%2")
+                                      .arg(metaEnum.valueToKey(static_cast<int>(reportType)))
+                                      .arg(QString::number(reportId, 16)
                                                       .rightJustified(2, '0')
                                                       .toUpper());
 
-            auto* tabWidget = new QWidget(parentTab);
+            auto* tabWidget = new QWidget(parentReportTypeTab);
             auto* layout = new QVBoxLayout(tabWidget);
             auto* topWidgetRow = new QHBoxLayout();
 
@@ -79,7 +78,8 @@ void ControllerHidReportTabsManager::createHidReportTab(QTabWidget* parentTab,
                 // Show payload size
                 auto* sizeLabel = new QLabel(tabWidget);
                 sizeLabel->setText(
-                        QStringLiteral("Payload Size: %1 bytes").arg(report->getReportSize()));
+                        QStringLiteral("Payload Size: <b>%1 bytes</b>")
+                                .arg(report->getReportSize()));
                 topWidgetRow->insertWidget(0, sizeLabel);
 
                 populateHidReportTable(table, *report, reportType);
@@ -104,7 +104,7 @@ void ControllerHidReportTabsManager::createHidReportTab(QTabWidget* parentTab,
                         });
             }
 
-            parentTab->addTab(tabWidget, tabName);
+            parentReportTypeTab->addTab(tabWidget, tabName);
 
             if (reportType == hid::reportDescriptor::HidReportType::Input) {
                 // Store the table pointer associated with the reportId
@@ -152,7 +152,7 @@ void ControllerHidReportTabsManager::updateTableWithReportData(
 void ControllerHidReportTabsManager::slotProcessInputReport(
         quint8 reportId, const QByteArray& data) {
     // Do not slow down Mixxx when controller preferences are not visible
-    if (!m_pParentTabWidget->isVisible()) {
+    if (!m_pParentControllerTab->isVisible()) {
         return;
     }
 

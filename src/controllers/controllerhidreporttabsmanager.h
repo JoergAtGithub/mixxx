@@ -14,7 +14,7 @@ class ControllerHidReportTabsManager : public QObject {
   public:
     ControllerHidReportTabsManager(QTabWidget* parentTabWidget, HidController* hidController);
 
-    void createHidReportTabs();
+    void createReportTypeTabs();
     void createHidReportTab(QTabWidget* parentTab, hid::reportDescriptor::HidReportType reportType);
     void slotSendReport(QTableWidget* table,
             quint8 reportId,
@@ -33,7 +33,7 @@ class ControllerHidReportTabsManager : public QObject {
 
   private:
     void updateTableWithReportData(QTableWidget* table, const QByteArray& reportData);
-    QTabWidget* m_pParentTabWidget;
+    QTabWidget* m_pParentControllerTab;
     HidController* m_pHidController;
     std::unordered_map<quint8, QTableWidget*> m_reportIdToTableMap;
 };
