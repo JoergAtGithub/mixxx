@@ -152,10 +152,6 @@ void ControllerHidReportTabsManager::updateTableWithReportData(
 
 void ControllerHidReportTabsManager::slotProcessInputReport(
         quint8 reportId, const QByteArray& data) {
-    // Do not slow down Mixxx when controller preferences are not visible
-    if (!m_pParentControllerTab->isVisible()) {
-        return;
-    }
 
     // Find the table associated with the reportId
     auto it = m_reportIdToTableMap.find(reportId);
@@ -438,9 +434,21 @@ void ControllerHidReportTabsManager::populateHidReportTable(
         ++row;
     }
 
-    // Resize columns to contents
-    for (int col = 0; col < table->columnCount(); ++col) {
-        table->horizontalHeader()->setSectionResizeMode(col, QHeaderView::ResizeToContents);
+    // Resize columns to contents once, store width and set column width fixed for peformance
+    for (int colIdx = 0; colIdx < table->columnCount(); ++colIdx) {
+        table->horizontalHeader()->setSectionResizeMode(colIdx, QHeaderView::ResizeToContents);
+    }
+    QVector<int> columnWidths(table->columnCount());
+    for (int colIdx = 0; colIdx < table->columnCount(); ++colIdx) {
+        columnWidths[colIdx] = table->columnWidth(colIdx);
+    }
+    // Set the width of the value column (5) to fit 11 digits (int32 minimum in decimal)
+    QFontMetrics metrics(table->font());
+    int width = metrics.horizontalAdvance(QStringLiteral("0").repeated(11));
+    columnWidths[5] = width;
+    for (int colIdx = 0; colIdx < table->columnCount(); ++colIdx) {
+        table->horizontalHeader()->setSectionResizeMode(colIdx, QHeaderView::Fixed);
+        table->setColumnWidth(colIdx, columnWidths[colIdx]);
     }
 
     table->setUpdatesEnabled(true);
