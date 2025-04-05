@@ -435,7 +435,7 @@ void ControllerHidReportTabsManager::populateHidReportTable(
         ++row;
     }
 
-    // Resize columns to contents once, store width and set column width fixed for peformance
+    // Resize columns to contents once, store width and set column width fixed for performance
     for (int colIdx = 0; colIdx < table->columnCount(); ++colIdx) {
         table->horizontalHeader()->setSectionResizeMode(colIdx, QHeaderView::ResizeToContents);
     }
