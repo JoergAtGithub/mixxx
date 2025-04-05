@@ -21,12 +21,9 @@ void ControllerHidReportTabsManager::createHidReportTabs() {
 
     QMetaEnum metaEnum = QMetaEnum::fromType<hid::reportDescriptor::HidReportType>();
 
-    std::array<hid::reportDescriptor::HidReportType, 3> reportTypes = {
-            hid::reportDescriptor::HidReportType::Input,
-            hid::reportDescriptor::HidReportType::Output,
-            hid::reportDescriptor::HidReportType::Feature};
-
-    for (const auto& reportType : reportTypes) {
+    for (int reportTypeIdx = 0; reportTypeIdx < metaEnum.keyCount(); ++reportTypeIdx) {
+        auto reportType = static_cast<hid::reportDescriptor::HidReportType>(
+                metaEnum.value(reportTypeIdx));
         auto reportTab = std::make_unique<QTabWidget>(hidReportTabs.get());
         createHidReportTab(reportTab.get(), reportType);
         if (reportTab->count() > 0) {
