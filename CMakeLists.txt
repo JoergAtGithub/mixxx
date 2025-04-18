@@ -2241,6 +2241,12 @@ if(WIN32)
     set(CMAKE_INSTALL_DEBUG_LIBRARIES true)
     set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY true)
   endif()
+  cmake_host_system_information(RESULT VS_DIR QUERY VS_17_DIR)
+  file(
+    GLOB MSVC_REDIST_LIBRARIES
+    "${VS_DIR}/../../*/*/VC/Redist/MSVC/*/${MSVC_C_ARCHITECTURE_ID}/Microsoft.VC${MSVC_TOOLSET_VERSION}.CRT/*.dll"
+  )
+  list(APPEND CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS "${MSVC_REDIST_LIBRARIES}")
   include(InstallRequiredSystemLibraries)
 endif()
 
