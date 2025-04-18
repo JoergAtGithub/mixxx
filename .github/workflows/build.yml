@@ -172,6 +172,8 @@ jobs:
       - name: "[Windows] Set up MSVC Developer Command Prompt"
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: 14.4
 
       - name: "[macOS] install ccache and make"
         if: runner.os == 'macOS'
