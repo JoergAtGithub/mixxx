@@ -245,6 +245,20 @@ function(fatal_error_missing_env)
   endif()
 endfunction()
 
+if(UNIX AND NOT APPLE)
+  execute_process(
+    COMMAND uname -r
+    OUTPUT_VARIABLE UNAME_R
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(UNAME_R MATCHES ".*[Mm]icrosoft.*" OR UNAME_R MATCHES ".*WSL.*")
+    message(
+      FATAL_ERROR
+      "Building on Windows Subsystem for Linux (WSL) is not supported. If you want to build Mixxx from command line on Windows, you need to use the \"x64 Native Tools Command Prompt for VS 2022\"!"
+    )
+  endif()
+endif()
+
 # We use here ENV{MIXXX_VCPKG_ROOT} as a workaround to find the overlay folders
 # in manifest mode https://github.com/microsoft/vcpkg/issues/12289.
 # Note: VCPKG_ROOT, the default location for the vcpkg cli tool is later
@@ -422,10 +436,10 @@ elseif(APPLE)
       )
     else()
       if(QT6)
-        # Minimum macOS version supported by Qt 6
+        # Minimum macOS version supported by Qt 6.5
         set(
           CMAKE_OSX_DEPLOYMENT_TARGET
-          10.15
+          11.0
           CACHE STRING
           "Minimum macOS version the build will be able to run on"
         )
@@ -458,8 +472,7 @@ elseif(APPLE)
   endif()
 endif()
 
-project(mixxx VERSION 2.6.0)
-enable_language(C CXX)
+project(mixxx VERSION 2.6.0 LANGUAGES C CXX)
 # Work around missing version suffixes support https://gitlab.kitware.com/cmake/cmake/-/issues/16716
 set(MIXXX_VERSION_PRERELEASE "alpha") # set to "alpha" "beta" or ""
 
@@ -531,6 +544,16 @@ if(MSVC)
   # Remove unreferenced code and data
   # Since c++11 they can safely be removed to speed up linking.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:inline")
+
+  if(NOT DEFINED MSVC_TOOLSET_VERSION OR MSVC_TOOLSET_VERSION VERSION_LESS 143)
+    message(
+      FATAL_ERROR
+      "MSVC_TOOLSET_VERSION is ${MSVC_TOOLSET_VERSION}.\n"
+      "Mixxx requires the Microsoft Visual C++ Redistributable toolset of version 143 (VS2022) or greater, "
+      "as the VCPKG buildenv is built with this version.\n"
+      "Please use the Visual Studio 2022 toolset therefore!"
+    )
+  endif()
 endif()
 
 # Speed up builds on HDDs and prevent wearing of SDDs
@@ -2357,7 +2380,9 @@ endif()
 if(WIN32)
   set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "${MIXXX_INSTALL_BINDIR}")
   if(MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_INSTALL_UCRT_LIBRARIES true)
     set(CMAKE_INSTALL_DEBUG_LIBRARIES true)
+    set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY true)
   endif()
   include(InstallRequiredSystemLibraries)
 endif()
@@ -2892,7 +2917,11 @@ if(WIN32)
 endif()
 
 # Chromaprint
-find_package(Chromaprint REQUIRED)
+find_package(Chromaprint)
+if(NOT Chromaprint_FOUND)
+  # Fail verbose, because with Qt Creator, the verbose error message for Qt is bypassed.
+  fatal_error_missing_env()
+endif()
 target_link_libraries(mixxx-lib PRIVATE Chromaprint::Chromaprint)
 
 # Locale Aware Compare for SQLite
@@ -3293,6 +3322,7 @@ target_include_directories(MP3GuessEnc SYSTEM PUBLIC lib/mp3guessenc-0.27.4)
 target_link_libraries(mixxx-lib PRIVATE MP3GuessEnc)
 
 # OpenGL
+option(QGLES2 "Use GLES 2.0 (or higher) instead of full OpenGL for UNIX" OFF)
 if(IOS)
   target_link_libraries(mixxx-lib PRIVATE "-framework OpenGLES")
   target_compile_definitions(mixxx-lib PUBLIC QT_OPENGL_ES_2)
@@ -3320,6 +3350,9 @@ else()
     )
   else()
     target_link_libraries(mixxx-lib PRIVATE OpenGL::GL)
+  endif()
+  if(UNIX AND QGLES2)
+    target_compile_definitions(mixxx-lib PUBLIC QT_OPENGL_ES_2)
   endif()
   if(APPLE)
     # Restore the previous CMAKE_FIND_FRAMEWORK value
@@ -3413,8 +3446,17 @@ if(QML)
   list(APPEND QT_EXTRA_COMPONENTS "QuickShapesPrivate")
   list(APPEND QT_EXTRA_COMPONENTS "QuickTemplates2")
   list(APPEND QT_EXTRA_COMPONENTS "QuickWidgets")
-  list(APPEND QT_EXTRA_COMPONENTS "QmlWorkerScript")
   list(APPEND QT_EXTRA_COMPONENTS "ShaderTools")
+  if(QT_VERSION VERSION_GREATER_EQUAL 6.7)
+    list(APPEND QT_EXTRA_COMPONENTS "QuickControls2Basic")
+    list(APPEND QT_EXTRA_COMPONENTS "QuickControls2BasicStyleImpl")
+    list(APPEND QT_EXTRA_COMPONENTS "QuickControls2Fusion")
+    list(APPEND QT_EXTRA_COMPONENTS "QuickControls2FusionStyleImpl")
+  endif()
+  if(QT_VERSION VERSION_LESS 6.8)
+    # From Qt 6.8 integrated in Qml via QmlMeta
+    list(APPEND QT_EXTRA_COMPONENTS "QmlWorkerScript")
+  endif()
 endif()
 find_package(
   Qt${QT_VERSION_MAJOR}
@@ -3755,6 +3797,32 @@ else()
           applocal
       )
 
+      if(QT_VERSION VERSION_GREATER_EQUAL 6.7)
+        install(
+          IMPORTED_RUNTIME_ARTIFACTS
+            Qt${QT_VERSION_MAJOR}::QuickControls2Basic
+            Qt${QT_VERSION_MAJOR}::QuickControls2BasicStyleImpl
+            Qt${QT_VERSION_MAJOR}::QuickControls2Fusion
+            Qt${QT_VERSION_MAJOR}::QuickControls2FusionStyleImpl
+            DESTINATION
+            "${MIXXX_INSTALL_DATADIR}"
+            COMPONENT
+            applocal
+        )
+      endif()
+
+      if(QT_VERSION VERSION_LESS 6.8)
+        # From Qt 6.8 integrated in Qml via QmlMeta
+        install(
+          IMPORTED_RUNTIME_ARTIFACTS
+            Qt${QT_VERSION_MAJOR}::QmlWorkerScript
+            DESTINATION
+            "${MIXXX_INSTALL_DATADIR}"
+            COMPONENT
+            applocal
+        )
+      endif()
+
       install(
         IMPORTED_RUNTIME_ARTIFACTS
           Qt${QT_VERSION_MAJOR}::QuickLayouts
@@ -3773,14 +3841,17 @@ else()
           applocal
       )
 
-      install(
-        IMPORTED_RUNTIME_ARTIFACTS
-          Qt${QT_VERSION_MAJOR}::QmlWorkerScript
-          DESTINATION
-          "${MIXXX_INSTALL_DATADIR}"
-          COMPONENT
-          applocal
-      )
+      if(QT_VERSION VERSION_LESS 6.4)
+        # From Qt 6.4 integrated in QuickControls2
+        install(
+          IMPORTED_RUNTIME_ARTIFACTS
+            Qt${QT_VERSION_MAJOR}::QuickTemplates2
+            DESTINATION
+            "${MIXXX_INSTALL_DATADIR}"
+            COMPONENT
+            applocal
+        )
+      endif()
 
       install(
         IMPORTED_RUNTIME_ARTIFACTS
@@ -5066,7 +5137,9 @@ endif()
 
 if(APPLE AND MACOS_BUNDLE)
   set(BUNDLE_NAME "${MIXXX_INSTALL_PREFIX}")
-  set(BUNDLE_DIRS "${CMAKE_PREFIX_PATH}/lib")
+  foreach(PREFIX ${CMAKE_PREFIX_PATH})
+    list(APPEND BUNDLE_DIRS "${PREFIX}/lib")
+  endforeach()
   set(
     APPLE_CODESIGN_ENTITLEMENTS
     "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/Mixxx.entitlements"
