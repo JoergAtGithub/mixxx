@@ -38,7 +38,11 @@ void ControllerHidReportTabsManager::createReportTypeTabs() {
 
 void ControllerHidReportTabsManager::createHidReportTab(QTabWidget* parentReportTypeTab,
         hid::reportDescriptor::HidReportType reportType) {
-    const auto& reportDescriptor = *m_pHidController->getReportDescriptor();
+    const auto& reportDescriptorTemp = m_pHidController->getReportDescriptor();
+    if (!reportDescriptorTemp.has_value()) {
+        return;
+    }
+    const auto& reportDescriptor = *reportDescriptorTemp;
 
     QMetaEnum metaEnum = QMetaEnum::fromType<hid::reportDescriptor::HidReportType>();
 
