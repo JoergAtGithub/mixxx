@@ -410,7 +410,13 @@ elseif(WIN32)
         CACHE STRING
         "The target system processor"
       )
-      set(CPACK_WIX_ARCHITECTURE "arm64")
+      set(
+        CPACK_WIX_ARCHITECTURE
+        "arm64"
+        CACHE STRING
+        "The target system processor"
+        FORCE
+      )
       message(STATUS "Configuring for ARM64 architecture")
     elseif(VCPKG_TARGET_TRIPLET MATCHES "^x64-")
       # Configuration for AMD64
@@ -420,7 +426,13 @@ elseif(WIN32)
         CACHE STRING
         "The target system processor"
       )
-      set(CPACK_WIX_ARCHITECTURE "x64")
+      set(
+        CPACK_WIX_ARCHITECTURE
+        "x64"
+        CACHE STRING
+        "The target system processor"
+        FORCE
+      )
       message(STATUS "Configuring for x64 architecture")
     else()
       message(
