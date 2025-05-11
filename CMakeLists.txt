@@ -408,7 +408,7 @@ message(
   STATUS
   "CMAKE_SYSTEM_PROCESSOR 9 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
 )
-
+message(STATUS "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}")
 project(mixxx VERSION 2.7.0 LANGUAGES C CXX)
 
 message(
