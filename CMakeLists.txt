@@ -629,7 +629,7 @@ if(MSVC)
     endif()
 
     if(OPTIMIZE STREQUAL "portable" OR OPTIMIZE STREQUAL "legacy")
-      if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+      if(CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
         # Target architecture is x64 with SSE and SSE2
         message(STATUS "x86 Enabling SSE2 CPU optimizations (>= Pentium 4)")
         # Define gcc/clang style defines for SSE and SSE2 for compatibility
@@ -643,7 +643,7 @@ if(MSVC)
       else()
         message(
           WARNING
-          "OPTIMIZE=${OPTIMIZE}: Unknown architecture, no optimizations applied"
+          "OPTIMIZE=${OPTIMIZE}: Unknown architecture ${CMAKE_SYSTEM_PROCESSOR}, no optimizations applied"
         )
       endif()
     elseif(OPTIMIZE STREQUAL "native")
@@ -5011,7 +5011,7 @@ if(WIN32)
 
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64")
     set(CPACK_WIX_ARCHITECTURE "arm64")
-  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x64")
+  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
     set(CPACK_WIX_ARCHITECTURE "x64")
   else()
     message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
