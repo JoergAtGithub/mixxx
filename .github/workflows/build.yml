@@ -89,7 +89,7 @@ jobs:
             artifacts_path: build/*.dmg
             artifacts_slug: macos-macosarm
             qt_qpa_platform: offscreen
-          - name: Windows 2022 (MSVC)
+          - name: Windows Server 2022 x64 (MSVC)
             os: windows-2022
             # Attention: If you change the cmake_args for the Windows CI build,
             #            also adjust the for the local Windows build setup in
@@ -117,7 +117,7 @@ jobs:
             artifacts_path: build/*.msi
             artifacts_slug: windows-win64
             qt_qpa_platform: windows
-          - name: Windows ARM64 (MSVC)
+          - name: Windows 11 ARM64 (MSVC)
             os: windows-11-arm
             # Attention: If you change the cmake_args for the Windows CI build,
             #            also adjust the for the local Windows build setup in
@@ -362,10 +362,12 @@ jobs:
           timestamp-digest: SHA256
           timeout: 600
 
-      - name: "Install WiX Toolset3"
+      - name: "[Windows 11 ARM64] Install WiX Toolset3"
         if: matrix.os == 'windows-11-arm'
         run: |
           choco install wixtoolset
+          echo %PATH%
+          where candle
 
       - name: "Package"
         id: package

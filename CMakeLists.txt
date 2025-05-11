@@ -4998,6 +4998,8 @@ set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/packaging/CPackConfig.cmake")
 if(WIN32)
   # override not working default NSIS
   set(CPACK_GENERATOR WIX)
+  message(STATUS "CPACK_WIX_CANDLE_EXECUTABLE: ${CPACK_WIX_CANDLE_EXECUTABLE}")
+
   # uses CMAKE_PROJECT_VERSION
   configure_file(packaging/wix/LICENSE.rtf.in packaging/wix/LICENSE.rtf @ONLY)
 endif()
