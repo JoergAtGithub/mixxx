@@ -366,8 +366,27 @@ jobs:
         if: matrix.os == 'windows-11-arm'
         run: |
           choco install wixtoolset
+
+      - name: "[Windows 11 ARM64] Check WiX Installation in Both Program Files Directories"
+        run: |
+          echo "Checking WiX installation..."
+          echo "PATH environment variable:"
           echo %PATH%
-          where candle
+          echo "Looking for WiX candle executable in PATH:"
+          where candle || echo "candle.exe not found in PATH"
+
+          echo "Searching for WiX installation in 'C:\\Program Files' and 'C:\\Program Files (x86)':"
+          set WIX_FOUND=0
+          for %%D in ("C:\Program Files\WiX Toolset*" "C:\Program Files (x86)\WiX Toolset*") do (
+              if exist "%%D\bin\candle.exe" (
+              echo "WiX Toolset found at %%D"
+              echo "candle.exe found at %%D\bin\candle.exe"
+              set WIX_FOUND=1
+              )
+          )
+          if %WIX_FOUND%==0 (
+              echo "WiX Toolset not found in either 'C:\\Program Files' or 'C:\\Program Files (x86)'."
+          )
 
       - name: "Package"
         id: package
