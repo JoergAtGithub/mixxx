@@ -104,6 +104,7 @@ jobs:
               -DQT6=ON
               -DQML=ON
               -DWAVPACK=ON
+              -DCMAKE_GENERATOR_PLATFORM=ARM64
               -DVCPKG_TARGET_TRIPLET=x64-windows-release
               -DVCPKG_DEFAULT_HOST_TRIPLET=x64-windows-release
             cc: cl

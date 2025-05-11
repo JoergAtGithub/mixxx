@@ -48,6 +48,15 @@ if(POLICY CMP0135)
   cmake_policy(SET CMP0135 NEW)
 endif()
 
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
+
 # Use this function to throw an error because the build environment is not set
 # up correctly.
 function(fatal_error_missing_env)
