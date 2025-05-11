@@ -5000,6 +5000,15 @@ if(WIN32)
   set(CPACK_GENERATOR WIX)
   message(STATUS "CPACK_WIX_CANDLE_EXECUTABLE: ${CPACK_WIX_CANDLE_EXECUTABLE}")
 
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64")
+    set(CPACK_WIX_ARCHITECTURE "arm64")
+  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x64")
+    set(CPACK_WIX_ARCHITECTURE "x64")
+  else()
+    message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
+  message(MESSAGE "CPACK_WIX_ARCHITECTURE: ${CPACK_WIX_ARCHITECTURE}")
+
   # uses CMAKE_PROJECT_VERSION
   configure_file(packaging/wix/LICENSE.rtf.in packaging/wix/LICENSE.rtf @ONLY)
 endif()
