@@ -362,6 +362,11 @@ jobs:
           timestamp-digest: SHA256
           timeout: 600
 
+      - name: "Install WiX Toolset3"
+        if: matrix.os == 'windows-11-arm'
+        run: |
+          choco install wixtoolset
+
       - name: "Package"
         id: package
         if: matrix.cpack_generator != null
