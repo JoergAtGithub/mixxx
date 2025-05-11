@@ -117,6 +117,34 @@ jobs:
             artifacts_path: build/*.msi
             artifacts_slug: windows-win64
             qt_qpa_platform: windows
+          - name: Windows ARM64 (MSVC)
+            os: windows-11-arm
+            # Attention: If you change the cmake_args for the Windows CI build,
+            #            also adjust the for the local Windows build setup in
+            #            ./tools/windows_buildenv.bat
+            cmake_args: >-
+              -DBULK=ON
+              -DHSS1394=ON
+              -DLOCALECOMPARE=ON
+              -DMAD=ON
+              -DMEDIAFOUNDATION=ON
+              -DMODPLUG=ON
+              -DQT6=ON
+              -DQML=ON
+              -DWAVPACK=ON
+              -DVCPKG_TARGET_TRIPLET=arm64-windows
+              -DVCPKG_DEFAULT_HOST_TRIPLET=arm64-windows
+            cc: cl
+            cxx: cl
+            # TODO: Fix these broken tests on Windows
+            ctest_args: --exclude-regex '^AutoDJProcessorTest.*$'
+            cpack_generator: WIX
+            buildenv_basepath: C:\buildenv
+            buildenv_script: tools/windows_buildenv.bat
+            artifacts_name: Windows Installer
+            artifacts_path: build/*.msi
+            artifacts_slug: windows-arm64
+            qt_qpa_platform: windows
 
     env:
       # macOS codesigning
