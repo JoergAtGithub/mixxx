@@ -173,6 +173,14 @@ if(DEFINED MIXXX_VCPKG_ROOT)
     set(VCPKG_OVERLAY_TRIPLETS "${MIXXX_VCPKG_ROOT}/overlay/triplets")
   endif()
 
+  message(
+    STATUS
+    "CMAKE_HOST_SYSTEM_PROCESSOR 2 (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+  )
+  message(
+    STATUS
+    "CMAKE_SYSTEM_PROCESSOR 2 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+  )
   if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(
       CMAKE_TOOLCHAIN_FILE
@@ -182,6 +190,15 @@ if(DEFINED MIXXX_VCPKG_ROOT)
     )
   endif()
 endif()
+
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR 3 (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR 3 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 
 if(NOT DEFINED VCPKG_TARGET_TRIPLET)
   if(DEFINED ENV{VCPKG_TARGET_TRIPLET})
@@ -206,6 +223,15 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/.git" AND NOT WIN32)
   # generating unusable slow Mixxx builds.
   set(default_build_type "Debug")
 endif()
+
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR 4 (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR 4 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 
 if(NOT CMAKE_CONFIGURATION_TYPES)
   if(NOT CMAKE_BUILD_TYPE)
@@ -233,7 +259,25 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
   endif()
 endif()
 
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR 5 (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR 5 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
+
 include(CMakeDependentOption)
+
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR 6 (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR 6 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 
 option(QT6 "Build with Qt6" ON)
 cmake_dependent_option(
@@ -291,6 +335,15 @@ elseif(APPLE)
     )
   endif()
 
+  message(
+    STATUS
+    "CMAKE_HOST_SYSTEM_PROCESSOR 8 (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+  )
+  message(
+    STATUS
+    "CMAKE_SYSTEM_PROCESSOR 8 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+  )
+
   if(VCPKG_TARGET_TRIPLET MATCHES "^[a-zA-Z0-9]+-osx")
     message(STATUS "Targeting macOS (${VCPKG_TARGET_TRIPLET})")
     set(CMAKE_SYSTEM_NAME Darwin CACHE STRING "Target macOS")
@@ -347,6 +400,15 @@ elseif(APPLE)
   endif()
 endif()
 
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR 9 (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR 9 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
+
 project(mixxx VERSION 2.7.0 LANGUAGES C CXX)
 # Work around missing version suffixes support https://gitlab.kitware.com/cmake/cmake/-/issues/16716
 set(MIXXX_VERSION_PRERELEASE "alpha") # set to "alpha" "beta" or ""
@@ -367,6 +429,15 @@ include(ExternalProject)
 include(GNUInstallDirs)
 include(DefaultOption)
 include(IsStaticLibrary)
+
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR 10 (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR 10 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 
 # Verify VCPKG settings
 if(DEFINED _VCPKG_INSTALLED_DIR)
@@ -509,6 +580,15 @@ message(STATUS "Optimization level: ${OPTIMIZE}")
 #  endif()
 #endif()
 
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR 12 (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR 12 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
+
 if(MSVC)
   # Microsoft Visual Studio Compiler
   add_compile_options(/UTF8)
@@ -622,6 +702,14 @@ if(MSVC)
       endif()
       # Note: CMAKE_INTERPROCEDURAL_OPTIMIZATION sets the /GL and /LTCG flags for us
     elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+      message(
+        STATUS
+        "CMAKE_HOST_SYSTEM_PROCESSOR 13 (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+      )
+      message(
+        STATUS
+        "CMAKE_SYSTEM_PROCESSOR 13 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+      )
       # Reduce the size of the binary in Release builds
       # Do not use /OPT:ICF because it has no effect.
       # https://github.com/mixxxdj/mixxx/pull/3660#pullrequestreview-600137258
@@ -629,6 +717,14 @@ if(MSVC)
     endif()
 
     if(OPTIMIZE STREQUAL "portable" OR OPTIMIZE STREQUAL "legacy")
+      message(
+        STATUS
+        "CMAKE_HOST_SYSTEM_PROCESSOR 14 (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+      )
+      message(
+        STATUS
+        "CMAKE_SYSTEM_PROCESSOR 14 (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+      )
       if(CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
         # Target architecture is x64 with SSE and SSE2
         message(STATUS "x86 Enabling SSE2 CPU optimizations (>= Pentium 4)")
@@ -5009,6 +5105,14 @@ if(WIN32)
   set(CPACK_GENERATOR WIX)
   message(STATUS "CPACK_WIX_CANDLE_EXECUTABLE: ${CPACK_WIX_CANDLE_EXECUTABLE}")
 
+  message(
+    STATUS
+    "CMAKE_HOST_SYSTEM_PROCESSOR WIX (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+  )
+  message(
+    STATUS
+    "CMAKE_SYSTEM_PROCESSOR WIX (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+  )
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64")
     set(CPACK_WIX_ARCHITECTURE "arm64")
   elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
