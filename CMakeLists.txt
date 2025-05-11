@@ -434,6 +434,13 @@ elseif(WIN32)
       "Targeting Windows, but VCPKG_TARGET_TRIPLET is not set. This is not a supported scenario!"
     )
   endif()
+  set(
+    CMAKE_HOST_SYSTEM_PROCESSOR
+    "${CMAKE_SYSTEM_PROCESSOR}"
+    CACHE STRING
+    "The host system processor"
+    FORCE
+  )
 endif()
 
 message(
@@ -446,15 +453,6 @@ message(
 )
 message(STATUS "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}")
 project(mixxx VERSION 2.7.0 LANGUAGES C CXX)
-
-if(WIN32)
-  set(
-    CMAKE_HOST_SYSTEM_PROCESSOR
-    "${CMAKE_SYSTEM_PROCESSOR}"
-    CACHE STRING
-    "The host system processor"
-  )
-endif()
 
 message(
   STATUS
