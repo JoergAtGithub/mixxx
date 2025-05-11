@@ -410,10 +410,36 @@ message(
 )
 
 project(mixxx VERSION 2.7.0 LANGUAGES C CXX)
+
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR 9a (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR 9a (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 # Work around missing version suffixes support https://gitlab.kitware.com/cmake/cmake/-/issues/16716
 set(MIXXX_VERSION_PRERELEASE "alpha") # set to "alpha" "beta" or ""
 
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR 9b (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR 9b (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 set(CMAKE_PROJECT_HOMEPAGE_URL "https://www.mixxx.org")
+
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR 9c (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR 9c (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 set(
   CMAKE_PROJECT_DESCRIPTION
   "Mixxx is Free DJ software that gives you everything you need to perform live mixes."
