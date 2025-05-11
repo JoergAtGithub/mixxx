@@ -398,6 +398,42 @@ elseif(APPLE)
       "Targeting an Apple platform, but VCPKG_TARGET_TRIPLET is not set. This is not a supported scenario!"
     )
   endif()
+elseif(WIN32)
+  if(VCPKG_TARGET_TRIPLET MATCHES "^[a-zA-Z0-9]+-windows(-[a-zA-Z0-9]+)?$")
+    message(STATUS "Targeting Windows (${VCPKG_TARGET_TRIPLET})")
+    set(CMAKE_SYSTEM_NAME Windows CACHE STRING "Target Windows")
+    if(VCPKG_TARGET_TRIPLET MATCHES "^arm64-")
+      # Configuration for ARM64
+      set(
+        CMAKE_SYSTEM_PROCESSOR
+        arm64
+        CACHE STRING
+        "The target system processor"
+      )
+      set(CPACK_WIX_ARCHITECTURE "arm64")
+      message(STATUS "Configuring for ARM64 architecture")
+    elseif(VCPKG_TARGET_TRIPLET MATCHES "^x64-")
+      # Configuration for AMD64
+      set(
+        CMAKE_SYSTEM_PROCESSOR
+        AMD64
+        CACHE STRING
+        "The target system processor"
+      )
+      set(CPACK_WIX_ARCHITECTURE "x64")
+      message(STATUS "Configuring for x64 architecture")
+    else()
+      message(
+        WARNING
+        "Targeting Windows, but VCPKG_TARGET_TRIPLET is not set or does not match a known architecture. This is not a supported scenario!"
+      )
+    endif()
+  else()
+    message(
+      WARNING
+      "Targeting Windows, but VCPKG_TARGET_TRIPLET is not set. This is not a supported scenario!"
+    )
+  endif()
 endif()
 
 message(
