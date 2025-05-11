@@ -620,7 +620,7 @@ if(MSVC)
     endif()
 
     if(OPTIMIZE STREQUAL "portable" OR OPTIMIZE STREQUAL "legacy")
-      if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SIZEOF_VOID_P EQUAL 8)
+      if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
         # Target architecture is x64 with SSE and SSE2
         message(STATUS "x86 Enabling SSE2 CPU optimizations (>= Pentium 4)")
         # Define gcc/clang style defines for SSE and SSE2 for compatibility
@@ -642,7 +642,7 @@ if(MSVC)
         STATUS
         "OPTIMIZE=native: Enabling all native processor optimizations"
       )
-      if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SIZEOF_VOID_P EQUAL 8)
+      if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
         # Target architecture is x64 with SSE and SSE2
         message(STATUS "x86 Enabling SSE2 CPU optimizations (>= Pentium 4)")
         # Define gcc/clang style defines for SSE and SSE2 for compatibility
