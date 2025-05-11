@@ -450,7 +450,7 @@ project(mixxx VERSION 2.7.0 LANGUAGES C CXX)
 if(WIN32)
   set(
     CMAKE_HOST_SYSTEM_PROCESSOR
-    ${CMAKE_SYSTEM_PROCESSOR}
+    "xxxx"
     CACHE STRING
     "The host system processor"
   )
