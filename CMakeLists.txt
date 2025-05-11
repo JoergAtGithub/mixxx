@@ -419,15 +419,73 @@ set(
   "Mixxx is Free DJ software that gives you everything you need to perform live mixes."
 )
 
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR A (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR A (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 # Used for force control of color output
 set(BUILD_COLORS "auto" CACHE STRING "Try to use colors auto/always/no")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR B (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR B (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 include(CheckSymbolExists)
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR C (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR C (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 include(CheckIncludeFileCXX)
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR D (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR D (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 include(ExternalProject)
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR E (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR E (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 include(GNUInstallDirs)
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR F (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR F (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 include(DefaultOption)
+
+message(
+  STATUS
+  "CMAKE_HOST_SYSTEM_PROCESSOR G (Host architecture): ${CMAKE_HOST_SYSTEM_PROCESSOR}"
+)
+message(
+  STATUS
+  "CMAKE_SYSTEM_PROCESSOR G (Target architecture): ${CMAKE_SYSTEM_PROCESSOR}"
+)
 include(IsStaticLibrary)
 
 message(
