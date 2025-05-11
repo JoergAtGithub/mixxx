@@ -503,12 +503,6 @@ message(STATUS "Optimization level: ${OPTIMIZE}")
 if(MSVC)
   # Microsoft Visual Studio Compiler
   add_compile_options(/UTF8)
-  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    # Target architecture is x64 -> x64 has alsways SSE and SSE2 instruction sets
-    message(STATUS "x64 Enabling SSE2 CPU optimizations (>= Pentium 4)")
-    # Define gcc/clang style defines for SSE and SSE2 for compatibility
-    add_compile_definitions("__SSE__" "__SSE2__")
-  endif()
 
   # Needed for sccache
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -556,7 +550,7 @@ if(MSVC)
     # unless link time code generation (like CMAKE_INTERPROCEDURAL_OPTIMIZATION) is used, which is contrary to incremental linking.
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-      #optimize Debug Builds as well, to have "normal" behaviour of mixxx during development
+      # Optimize Debug Builds as well, to have "normal" behavior of Mixxx during development
       string(REPLACE "/Od" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
       string(REPLACE "/Od" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS}")
       string(REPLACE "/Ob0" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
@@ -625,36 +619,51 @@ if(MSVC)
       add_link_options(/OPT:REF)
     endif()
 
-    if(OPTIMIZE STREQUAL "portable")
-      if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-        # Target architecture is x86 with SSE and SSE2
+    if(OPTIMIZE STREQUAL "portable" OR OPTIMIZE STREQUAL "legacy")
+      if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SIZEOF_VOID_P EQUAL 8)
+        # Target architecture is x64 with SSE and SSE2
         message(STATUS "x86 Enabling SSE2 CPU optimizations (>= Pentium 4)")
         # Define gcc/clang style defines for SSE and SSE2 for compatibility
         add_compile_definitions("__SSE__" "__SSE2__")
         # Set compiler option for SSE/SSE2
         add_compile_options(/arch:SSE2)
+      elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64")
+        # Target architecture is ARM64
+        message(STATUS "OPTIMIZE=${OPTIMIZE}: Using ARM64 optimizations")
+        # No additional flags needed for ARM64
+      else()
+        message(
+          WARNING
+          "OPTIMIZE=${OPTIMIZE}: Unknown architecture, no optimizations applied"
+        )
       endif()
     elseif(OPTIMIZE STREQUAL "native")
-      message("Enabling optimizations for native system, specified by user")
-      if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-        # Target architecture is x86 with SSE and SSE2
+      message(
+        STATUS
+        "OPTIMIZE=native: Enabling all native processor optimizations"
+      )
+      if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SIZEOF_VOID_P EQUAL 8)
+        # Target architecture is x64 with SSE and SSE2
         message(STATUS "x86 Enabling SSE2 CPU optimizations (>= Pentium 4)")
         # Define gcc/clang style defines for SSE and SSE2 for compatibility
         add_compile_definitions("__SSE__" "__SSE2__")
-      endif()
-      # Define the target processor instruction and other compiler optimization flags here:
-      # https://docs.microsoft.com/en-us/cpp/build/reference/arch-x64?view=msvc-160
-      # add_compile_options(/arch:AVX512)
-      message(
-        FATAL_ERROR
-        "User need to set the MSVC compiler flags for the native processor here!"
-      )
-      add_compile_options("/favor:${CMAKE_SYSTEM_PROCESSOR}")
-    elseif(OPTIMIZE STREQUAL "legacy")
-      if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        message("Enabling pure x64 instruction set (without AVX etc.)")
+        # Define the target processor instruction and other compiler optimization flags here:
+        # https://docs.microsoft.com/en-us/cpp/build/reference/arch-x64?view=msvc-160
+        # add_compile_options(/arch:AVX512)
+        message(
+          FATAL_ERROR
+          "User need to set the MSVC compiler flags for the native processor here!"
+        )
+        add_compile_options("/favor:${CMAKE_SYSTEM_PROCESSOR}")
+      elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64")
+        # Target architecture is ARM64
+        # No additional flags needed for ARM64 native optimizations
+        message(STATUS "ARM64 native optimizations enabled")
       else()
-        message("Enabling pure i386 instruction set (without SSE/SSE2 etc.)")
+        message(
+          WARNING
+          "OPTIMIZE=native: Unknown architecture, no optimizations applied"
+        )
       endif()
     else()
       message(
@@ -665,7 +674,7 @@ if(MSVC)
   else()
     # OPTIMIZE=off
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
-      #Remove optimize flags set by cmake defaults
+      # Remove optimize flags set by cmake defaults
       string(
         REPLACE
         "/O2"
@@ -685,7 +694,7 @@ if(MSVC)
       add_compile_options(/Od) # this implies /Ob0
       add_compile_options(/RTC1)
     elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-      #Remove optimize flags set by cmake defaults
+      # Remove optimize flags set by cmake defaults
       string(
         REPLACE
         "/O2"
