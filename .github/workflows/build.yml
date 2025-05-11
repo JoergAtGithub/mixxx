@@ -369,24 +369,34 @@ jobs:
 
       - name: "[Windows 11 ARM64] Check WiX Installation in Both Program Files Directories"
         run: |
-          echo "Checking WiX installation..."
-          echo "PATH environment variable:"
-          echo %PATH%
-          echo "Looking for WiX candle executable in PATH:"
-          where candle || echo "candle.exe not found in PATH"
+          Write-Host "Checking WiX installation..."
+          Write-Host "PATH environment variable:"
+          Write-Host $env:PATH
+          Write-Host "Looking for WiX candle executable in PATH:"
+          if (Get-Command candle -ErrorAction SilentlyContinue) {
+            Write-Host "candle.exe found in PATH"
+          } else {
+            Write-Host "candle.exe not found in PATH"
+          }
 
-          echo "Searching for WiX installation in 'C:\\Program Files' and 'C:\\Program Files (x86)':"
-          set WIX_FOUND=0
-          for %%D in ("C:\Program Files\WiX Toolset*" "C:\Program Files (x86)\WiX Toolset*") do (
-              if exist "%%D\bin\candle.exe" (
-              echo "WiX Toolset found at %%D"
-              echo "candle.exe found at %%D\bin\candle.exe"
-              set WIX_FOUND=1
-              )
-          )
-          if %WIX_FOUND%==0 (
-              echo "WiX Toolset not found in either 'C:\\Program Files' or 'C:\\Program Files (x86)'."
-          )
+          Write-Host "Searching for WiX installation in 'C:\Program Files' and 'C:\Program Files (x86)':"
+          $wixFound = $false
+          $directories = @("C:\Program Files\WiX Toolset*", "C:\Program Files (x86)\WiX Toolset*")
+          foreach ($dir in $directories) {
+            $resolvedDirs = Get-ChildItem -Path $dir -Directory -ErrorAction SilentlyContinue
+            foreach ($resolvedDir in $resolvedDirs) {
+              $candlePath = Join-Path $resolvedDir.FullName "bin\candle.exe"
+              if (Test-Path $candlePath) {
+                Write-Host "WiX Toolset found at $($resolvedDir.FullName)"
+                Write-Host "candle.exe found at $candlePath"
+                $wixFound = $true
+              }
+            }
+          }
+          if (-not $wixFound) {
+            Write-Host "WiX Toolset not found in either 'C:\Program Files' or 'C:\Program Files (x86)'."
+          }
+        shell: pwsh
 
       - name: "Package"
         id: package
