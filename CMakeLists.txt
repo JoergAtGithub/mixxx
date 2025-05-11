@@ -417,6 +417,13 @@ elseif(WIN32)
         "The target system processor"
         FORCE
       )
+      set(
+        CMAKE_MSVC_ARCH
+        "arm64"
+        CACHE STRING
+        "The target system processor"
+        FORCE
+      )
       message(STATUS "Configuring for ARM64 architecture")
     elseif(VCPKG_TARGET_TRIPLET MATCHES "^x64-")
       # Configuration for AMD64
