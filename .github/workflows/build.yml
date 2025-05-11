@@ -366,6 +366,7 @@ jobs:
         if: matrix.os == 'windows-11-arm'
         run: |
           choco install wixtoolset
+          $Env:PATH="C:\Program Files (x86)\WiX Toolset v3.14\bin;$Env:PATH"
 
       - name: "[Windows 11 ARM64] Check WiX Installation in Both Program Files Directories"
         run: |
