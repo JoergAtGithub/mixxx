@@ -364,9 +364,17 @@ jobs:
 
       - name: "[Windows 11 ARM64] Install WiX Toolset3"
         if: matrix.os == 'windows-11-arm'
+        shell: pwsh
         run: |
           choco install wixtoolset
-          $Env:PATH="C:\Program Files (x86)\WiX Toolset v3.14\bin;$Env:PATH"
+          $wixPath = (Get-ChildItem -Path "C:\Program Files*\WiX Toolset*" -Directory | Select-Object -Last 1).FullName
+          if ($wixPath) {
+            $wixBinPath = "$wixPath\bin"
+            Write-Host "WiX bin path detected: $wixBinPath"
+            Add-Content -Path "$Env:GITHUB_ENV" -Value "PATH=$wixBinPath;$Env:PATH"
+          } else {
+            Write-Host "WiX Toolset bin path not found."
+          }
 
       - name: "[Windows 11 ARM64] Check WiX Installation in Both Program Files Directories"
         run: |
