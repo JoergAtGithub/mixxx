@@ -47,7 +47,11 @@ DlgPrefControllers::DlgPrefControllers(DlgPreferences* pPreferences,
 #ifdef __PORTMIDI__
     checkBox_midithrough->setChecked(m_pConfig->getValue(kMidiThroughCfgKey, false));
     connect(checkBox_midithrough,
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+            &QCheckBox::checkStateChanged,
+#else
             &QCheckBox::stateChanged,
+#endif
             this,
             &DlgPrefControllers::slotMidiThroughChanged);
     txt_midithrough->setTextFormat(Qt::RichText);
@@ -198,7 +202,7 @@ void DlgPrefControllers::setupControllerWidgets() {
     std::sort(controllerList.begin(), controllerList.end(), controllerCompare);
 
     for (auto* pController : std::as_const(controllerList)) {
-        DlgPrefController* pControllerDlg = new DlgPrefController(
+        auto pControllerDlg = make_parented<DlgPrefController>(
                 this, pController, m_pControllerManager, m_pConfig);
         connect(pControllerDlg,
                 &DlgPrefController::mappingStarted,
@@ -209,9 +213,9 @@ void DlgPrefControllers::setupControllerWidgets() {
                 m_pDlgPreferences,
                 &DlgPreferences::show);
         // Recreate the control picker menus when decks or samplers are added
-        m_pNumDecks->connectValueChanged(pControllerDlg,
+        m_pNumDecks->connectValueChanged(pControllerDlg.get(),
                 &DlgPrefController::slotRecreateControlPickerMenu);
-        m_pNumSamplers->connectValueChanged(pControllerDlg,
+        m_pNumSamplers->connectValueChanged(pControllerDlg.get(),
                 &DlgPrefController::slotRecreateControlPickerMenu);
 
         m_controllerPages.append(pControllerDlg);
@@ -219,8 +223,8 @@ void DlgPrefControllers::setupControllerWidgets() {
         connect(pController,
                 &Controller::openChanged,
                 this,
-                [this, pControllerDlg](bool bOpen) {
-                    slotHighlightDevice(pControllerDlg, bOpen);
+                [this, pDlg = pControllerDlg.get()](bool bOpen) {
+                    slotHighlightDevice(pDlg, bOpen);
                 });
 
         QTreeWidgetItem* pControllerTreeItem = new QTreeWidgetItem(
@@ -272,7 +276,13 @@ void DlgPrefControllers::slotHighlightDevice(DlgPrefController* pControllerDlg, 
 }
 
 #ifdef __PORTMIDI__
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+void DlgPrefControllers::slotMidiThroughChanged(Qt::CheckState state) {
+    m_pConfig->setValue(kMidiThroughCfgKey, state != Qt::Unchecked);
+}
+#else
 void DlgPrefControllers::slotMidiThroughChanged(bool checked) {
     m_pConfig->setValue(kMidiThroughCfgKey, checked);
 }
+#endif
 #endif
