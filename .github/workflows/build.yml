@@ -459,6 +459,11 @@ jobs:
         shell: pwsh
         run: choco install -y rsync
 
+      - name: "[Windows] Configure OpenSSH service"
+        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
+        shell: pwsh
+        run: Set-Service ssh-agent -StartupType Manual
+
       - name: "[Windows] Start SSH agent"
         if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
         shell: pwsh
