@@ -458,7 +458,7 @@ jobs:
         if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
         shell: pwsh
         run: |
-          $Env:PATH="C:\ProgramData\chocolatey\bin;$Env:PATH"
+          $Env:PATH="C:\ProgramData\chocolatey\lib\rsync\tools;$Env:PATH"
           choco install rsync -y
           Add-Content -Path "$Env:GITHUB_ENV" -Value "PATH=$Env:PATH"
 
