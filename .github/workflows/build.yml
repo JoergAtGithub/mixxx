@@ -459,40 +459,34 @@ jobs:
         shell: pwsh
         run: choco install -y rsync
 
-      - name: "[Windows] Configure OpenSSH service"
+      - name: "[Windows] Upload build to downloads.mixxx.org"
+        # Only upload on push events and when SSH_PRIVATE_KEY is set
         if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
         shell: pwsh
-        run: Set-Service ssh-agent -StartupType Manual
-
-      - name: "[Windows] Start SSH agent"
-        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
-        shell: pwsh
-        run: Start-Service ssh-agent
-
-      - name: "[Windows] Add SSH key"
-        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
-        shell: pwsh
-        run: echo $env:SSH_PRIVATE_KEY | ssh-add -
         env:
+          DESTDIR: public_html/downloads
+          SSH_HOST: downloads-hostgator.mixxx.org
+          SSH_USER: mixxx
           SSH_PRIVATE_KEY: ${{ secrets.DOWNLOADS_HOSTGATOR_DOT_MIXXX_DOT_ORG_KEY }}
-
-      - name: "[Windows] Add downloads-hostgator.mixxx.org to known_hosts"
-        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
-        shell: pwsh
         run: |
+          # Configure OpenSSH service
+          Set-Service ssh-agent -StartupType Manual
+
+          # Start OpenSSH service
+          Start-Service ssh-agent
+
+          # Add SSH key to OpenSSH agent
+          echo $env:SSH_PRIVATE_KEY | ssh-add -
+
+          # Add download server to list of known_hosts
           mkdir $env:USERPROFILE\.ssh
-          ssh-keyscan downloads-hostgator.mixxx.org >> $env:USERPROFILE\.ssh\known_hosts
+          ssh-keyscan $env:SSH_HOST >> $env:USERPROFILE\.ssh\known_hosts
 
-      - name: "[Windows] Upload build to downloads.mixxx.org using rsync"
-        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
-        shell: pwsh
-        run: |
-          rsync.exe --verbose --recursive --checksum --times --delay-updates "deploy/" "mixxx@downloads-hostgator.mixxx.org:public_html/downloads/"
+          # Upload build to downloads.mixxx.org using rsync
+          rsync.exe --verbose --recursive --checksum --times --delay-updates "deploy/" "$env:SSH_USER@$env:SSH_HOST:$env:DESTDIR/"
 
-      - name: "[Windows] Remove SSH key from agent"
-        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
-        shell: pwsh
-        run: ssh-add -D
+          # Remove all identities/keys from the OpenSSH agent
+          ssh-add -D
 
       - name: "[Linux/macOS] Prepare for deployment"
         # Copy the desired directory structure to the deploy/ directory. This
@@ -529,7 +523,7 @@ jobs:
           ssh-keyscan "${SSH_HOST}" >> "${HOME}/.ssh/known_hosts"
           echo "SSH_AUTH_SOCK=${SSH_AUTH_SOCK}" >> "${GITHUB_ENV}"
 
-      - name: "[macOS/Windows] Upload build to downloads.mixxx.org"
+      - name: "[macOS] Upload build to downloads.mixxx.org"
         # skip deploying Ubuntu builds to downloads.mixxx.org because these are deployed to the PPA
         if: runner.os != 'Linux' && github.event_name == 'push' && env.SSH_AUTH_SOCK != null
         shell: bash --login -eo pipefail "{0}"
