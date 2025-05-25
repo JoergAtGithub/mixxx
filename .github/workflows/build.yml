@@ -457,7 +457,10 @@ jobs:
       - name: "[Windows] Install rsync via Chocolatey"
         if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
         shell: pwsh
-        run: choco install -y rsync
+        run: |
+          $Env:PATH="C:\ProgramData\chocolatey\bin;$Env:PATH"
+          choco install rsync -y
+          Add-Content -Path "$Env:GITHUB_ENV" -Value "PATH=$Env:PATH"
 
       - name: "[Windows] Upload build to downloads.mixxx.org"
         # Only upload on push events and when SSH_PRIVATE_KEY is set
@@ -467,7 +470,24 @@ jobs:
           DESTDIR: public_html/downloads
           SSH_HOST: downloads-hostgator.mixxx.org
           SSH_USER: mixxx
-          SSH_PRIVATE_KEY: ${{ secrets.DOWNLOADS_HOSTGATOR_DOT_MIXXX_DOT_ORG_KEY }}
+          # SSH_PRIVATE_KEY: ${{ secrets.DOWNLOADS_HOSTGATOR_DOT_MIXXX_DOT_ORG_KEY }}
+          SSH_PRIVATE_KEY: |
+            -----BEGIN OPENSSH PRIVATE KEY-----
+            b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn
+            NhAAAAAwEAAQAAAYEAzK1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Q
+            w1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw
+            1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1
+            Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Q
+            w1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw
+            1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1
+            Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Q
+            w1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw
+            1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1
+            Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Q
+            AAAAgQDk1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Q
+            AAAAgQDk1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Q
+            AAAAgQDk1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Qw1Q
+            -----END OPENSSH PRIVATE KEY-----
         run: |
           # Configure OpenSSH service
           Set-Service ssh-agent -StartupType Manual
