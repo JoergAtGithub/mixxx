@@ -455,47 +455,39 @@ jobs:
           timeout: 600
 
       - name: "[Windows] Install rsync via Chocolatey"
-        if: runner.os == 'Windows' && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
+        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
         shell: pwsh
-        run: |
-          # Install rsync via Chocolatey
-          choco install -y rsync
+        run: choco install -y rsync
 
-      - name: "[Windows] Upload build to downloads.mixxx.org using rsync"
-        if: runner.os == 'Windows' && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
+      - name: "[Windows] Start SSH agent"
+        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
         shell: pwsh
+        run: Start-Service ssh-agent
+
+      - name: "[Windows] Add SSH key"
+        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
+        shell: pwsh
+        run: echo $env:SSH_PRIVATE_KEY | ssh-add -
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DOWNLOADS_HOSTGATOR_DOT_MIXXX_DOT_ORG_KEY }}
-          SSH_HOST: downloads-hostgator.mixxx.org
-          SSH_USER: mixxx
-          DESTDIR: public_html/downloads
+
+      - name: "[Windows] Add downloads-hostgator.mixxx.org to known_hosts"
+        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
+        shell: pwsh
         run: |
-          # Check for Windows system OpenSSH and rsync executable presence
-          Get-Command ssh-keyscan
-          Get-Command rsync.exe
+          mkdir $env:USERPROFILE\.ssh
+          ssh-keyscan downloads-hostgator.mixxx.org >> $env:USERPROFILE\.ssh\known_hosts
 
-          # Write SSH key to a temporary file
-          $keyPath = "$env:USERPROFILE\.ssh\id_rsa"
-          $sshDir = [System.IO.Path]::GetDirectoryName($keyPath)
-          if (!(Test-Path $sshDir)) { New-Item -ItemType Directory -Path $sshDir | Out-Null }
-          # Normalize line endings and write the private key content to the file.
-          [System.IO.File]::WriteAllText($keyPath, $env:SSH_PRIVATE_KEY.Replace("`r`n", "`n"))
-          # Restrict permissions on the private key file to the current user for security.
-          icacls $keyPath /inheritance:r /grant:r "$($env:USERNAME):R"
+      - name: "[Windows] Upload build to downloads.mixxx.org using rsync"
+        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
+        shell: pwsh
+        run: |
+          rsync.exe --verbose --recursive --checksum --times --delay-updates "deploy/" "mixxx@downloads-hostgator.mixxx.org:public_html/downloads/"
 
-          # Set up known_hosts to avoid prompt
-          $knownHostsPath = "$env:USERPROFILE\.ssh\known_hosts"
-          if (!(Test-Path $knownHostsPath)) { New-Item -ItemType File -Path $knownHostsPath | Out-Null }
-          ssh-keyscan $env:SSH_HOST | Out-File -Encoding ascii -Append $knownHostsPath
-
-          # Set the RSYNC_RSH environment variable to configure how rsync will connect via SSH.
-          # This configures rsync to use the specified SSH options for authentication and host verification.
-          $env:RSYNC_RSH = "ssh -i $keyPath -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$knownHostsPath"
-          # Executes the file transfer using the above configuration.
-          & rsync.exe --verbose --recursive --checksum --times --delay-updates "deploy/" "$($env:SSH_USER)@$($env:SSH_HOST):$($env:DESTDIR)/"
-
-          # Remove the private key file after use to minimize the risk of key exposure.
-          Remove-Item $keyPath -Force
+      - name: "[Windows] Remove SSH key from agent"
+        if: runner.os == 'Windows' # && github.event_name == 'push' && env.SSH_PRIVATE_KEY != null
+        shell: pwsh
+        run: ssh-add -D
 
       - name: "[Linux/macOS] Prepare for deployment"
         # Copy the desired directory structure to the deploy/ directory. This
