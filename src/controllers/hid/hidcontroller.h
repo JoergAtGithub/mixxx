@@ -1,6 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
+#include <optional>
+#include <thread>
 
 #include "controllers/controller.h"
 #include "controllers/hid/hiddevice.h"
@@ -91,6 +94,12 @@ class HidController final : public Controller {
 
     bool matchMapping(const MappingInfo& mapping) override;
 
+    // Start fetching the device's HID report descriptor in a background thread.
+    // The fetched raw descriptor is stored inside the DeviceInfo owned by this
+    // HidController instance so it will be available later when the device is
+    // opened for real.
+    void fetchReportDescriptorInBackground();
+
   private:
     int open(const QString& resourcePath) override;
     int close() override;
@@ -106,6 +115,15 @@ class HidController final : public Controller {
 
     std::unique_ptr<HidIoThread> m_pHidIoThread;
     std::unique_ptr<LegacyHidControllerMapping> m_pMapping;
+
+    // Background thread used to fetch raw HID report descriptor during
+    // enumeration so mapping detection can use it without blocking the UI.
+    std::optional<std::thread> m_reportDescriptorThread;
+
+    // Protects access to m_reportDescriptor and m_deviceUsesReportIds from
+    // concurrent access between the background fetch thread and the main
+    // thread that opens the device.
+    mutable std::mutex m_reportDescriptorMutex;
 
     friend class HidControllerJSProxy;
 };
