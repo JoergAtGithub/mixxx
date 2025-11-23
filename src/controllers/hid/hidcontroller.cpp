@@ -30,9 +30,16 @@ HidController::HidController(
     // but a HID can also be input only (e.g. a USB HID mouse)
     setInputDevice(true);
     setOutputDevice(true);
+
+    // Start background fetch of report descriptor to avoid blocking enumeration.
+    fetchReportDescriptorInBackground();
 }
 
 HidController::~HidController() {
+    if (m_reportDescriptorThread && m_reportDescriptorThread->joinable()) {
+        m_reportDescriptorThread->join();
+    }
+
     if (isOpen()) {
         close();
     }
@@ -233,19 +240,28 @@ int HidController::open(const QString& resourcePath) {
     }
 
 #ifndef Q_OS_ANDROID
-    // When fetching the report descriptor, from m_deviceInfo or if not read yet from the device
-    const std::vector<uint8_t>& rawReportDescriptor =
-            m_deviceInfo.fetchRawReportDescriptor(pHidDevice);
+    // First check if background thread already parsed the report descriptor.
+    {
+        std::lock_guard<std::mutex> lock(m_reportDescriptorMutex);
+        if (m_reportDescriptor) {
+            m_deviceUsesReportIds = m_reportDescriptor->isDeviceWithReportIds();
+        } else {
+            // When fetching the report descriptor, from m_deviceInfo or if not
+            // read yet from the device
+            const std::vector<uint8_t>& rawReportDescriptor =
+                    m_deviceInfo.fetchRawReportDescriptor(pHidDevice);
 
-    if (!rawReportDescriptor.empty()) {
-        m_reportDescriptor =
-                std::make_shared<hid::reportDescriptor::HidReportDescriptor>(
-                        rawReportDescriptor);
-        m_reportDescriptor->parse();
-        m_deviceUsesReportIds = m_reportDescriptor->isDeviceWithReportIds();
-    } else {
-        m_reportDescriptor.reset();
-        m_deviceUsesReportIds = std::nullopt;
+            if (!rawReportDescriptor.empty()) {
+                m_reportDescriptor =
+                        std::make_shared<hid::reportDescriptor::HidReportDescriptor>(
+                                rawReportDescriptor);
+                m_reportDescriptor->parse();
+                m_deviceUsesReportIds = m_reportDescriptor->isDeviceWithReportIds();
+            } else {
+                m_reportDescriptor.reset();
+                m_deviceUsesReportIds = std::nullopt;
+            }
+        }
     }
 
 #endif
@@ -358,4 +374,53 @@ bool HidController::sendBytes(const QByteArray& data) {
 
 ControllerJSProxy* HidController::jsProxy() {
     return new HidControllerJSProxy(this);
+}
+
+void HidController::fetchReportDescriptorInBackground() {
+#ifndef Q_OS_ANDROID
+    // Launch a thread to open the device and fetch the report descriptor
+    // without blocking the enumerator UI thread. We intentionally don't keep the
+    // hid_device handle open after fetching to avoid holding resources.
+    m_reportDescriptorThread = std::thread([this]() {
+        // Try to open by path first
+        hid_device* pHidDevice = hid_open_path(this->m_deviceInfo.pathRaw());
+        if (!pHidDevice) {
+            // Try vendor/product/serial
+            pHidDevice = hid_open(this->m_deviceInfo.getVendorId(),
+                    this->m_deviceInfo.getProductId(),
+                    this->m_deviceInfo.serialNumberRaw());
+        }
+        if (!pHidDevice) {
+            // Try vendor/product only
+            pHidDevice = hid_open(this->m_deviceInfo.getVendorId(),
+                    this->m_deviceInfo.getProductId(),
+                    nullptr);
+        }
+
+        if (!pHidDevice) {
+            return; // give up
+        }
+
+        // Set non-blocking briefly, not strictly necessary here
+        hid_set_nonblocking(pHidDevice, 1);
+
+        // Fetch descriptor - DeviceInfo stores it internally
+        const std::vector<uint8_t>& raw = this->m_deviceInfo.fetchRawReportDescriptor(pHidDevice);
+        if (!raw.empty()) {
+            auto parsed = std::make_shared<hid::reportDescriptor::HidReportDescriptor>(raw);
+            parsed->parse();
+            bool usesReportIds = parsed->isDeviceWithReportIds();
+
+            std::lock_guard<std::mutex> lock(this->m_reportDescriptorMutex);
+            if (!this->m_reportDescriptor) {
+                this->m_reportDescriptor = parsed;
+                this->m_deviceUsesReportIds = usesReportIds;
+            }
+        }
+
+        hid_close(pHidDevice);
+    });
+#else
+    Q_UNUSED(m_reportDescriptorThread);
+#endif
 }
