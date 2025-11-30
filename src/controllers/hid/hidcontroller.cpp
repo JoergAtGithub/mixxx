@@ -102,6 +102,13 @@ int HidController::open(const QString& resourcePath) {
         return -1;
     }
 
+    // Try to acquire a persistent lock on the report descriptor.
+    // The lock is released in close().
+    std::unique_lock<std::mutex> lock(m_reportDescriptorMutex, std::try_to_lock);
+    if (lock.owns_lock()) {
+        m_reportDescriptorLock.emplace(std::move(lock));
+    }
+
     VERIFY_OR_DEBUG_ASSERT(!m_pHidIoThread) {
         qWarning() << "HidIoThread already present for" << getName();
         return -1;
@@ -312,6 +319,13 @@ int HidController::close() {
 
     qCInfo(m_logBase) << "Shutting down HID device" << getName();
 
+    // Release persistent report descriptor lock acquired in open(), if any.
+    // The requested behaviour is to keep the mutex locked while the device is open
+    // and only release it when close() runs.
+    if (m_reportDescriptorLock.has_value()) {
+        m_reportDescriptorLock.reset();
+    }
+
     // Stop the InputReport polling, but allow sending OutputReports in JavaScript mapping shutdown procedure
     VERIFY_OR_DEBUG_ASSERT(m_pHidIoThread) {
         qWarning() << "HidIoThread not present for" << getName()
@@ -382,6 +396,14 @@ void HidController::fetchReportDescriptorInBackground() {
 #ifndef Q_OS_ANDROID
     // Launch a concurrent task to open the device and fetch the report descriptor
     m_reportDescriptorFuture = QtConcurrent::run([this]() {
+        // Try to acquire the mutex without blocking. If another thread is already
+        // locked the report descriptor, skip the background fetch.
+        std::unique_lock<std::mutex> lock(this->m_reportDescriptorMutex, std::try_to_lock);
+        if (!lock.owns_lock()) {
+            qCWarning(m_logBase) << "HID Report Descriptor structure is locked" << getName();
+            return;
+        }
+
         hid_device* pHidDevice = hid_open_path(this->m_deviceInfo.pathRaw());
         if (!pHidDevice) {
             pHidDevice = hid_open(this->m_deviceInfo.getVendorId(),
@@ -405,7 +427,6 @@ void HidController::fetchReportDescriptorInBackground() {
             parsed->parse();
             bool usesReportIds = parsed->isDeviceWithReportIds();
 
-            std::lock_guard<std::mutex> lock(this->m_reportDescriptorMutex);
             if (!this->m_reportDescriptor) {
                 this->m_reportDescriptor = parsed;
                 this->m_deviceUsesReportIds = usesReportIds;

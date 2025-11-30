@@ -3,6 +3,7 @@
 #include <QFuture>
 #include <memory>
 #include <mutex>
+#include <optional>
 
 #include "controllers/controller.h"
 #include "controllers/hid/hiddevice.h"
@@ -120,9 +121,15 @@ class HidController final : public Controller {
     QFuture<void> m_reportDescriptorFuture;
 
     // Protects access to m_reportDescriptor and m_deviceUsesReportIds from
-    // concurrent access between the background fetch thread and the main
-    // thread that opens the device.
+    // concurrent access between the background fetch thread
+    // and the hid controller thread that opens the device.
     mutable std::mutex m_reportDescriptorMutex;
+
+    // A persistent lock on m_reportDescriptorMutex, acquired in open() and
+    // released in close(). This prevents the background fetch thread from
+    // modifying the report descriptor while it is being used. When a
+    // unique_lock is reseted, it automatically releases the mutex it holds.
+    std::optional<std::unique_lock<std::mutex>> m_reportDescriptorLock;
 
     friend class HidControllerJSProxy;
 };
