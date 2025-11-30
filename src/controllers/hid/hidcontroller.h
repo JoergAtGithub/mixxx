@@ -1,9 +1,8 @@
 #pragma once
 
+#include <QFuture>
 #include <memory>
 #include <mutex>
-#include <optional>
-#include <thread>
 
 #include "controllers/controller.h"
 #include "controllers/hid/hiddevice.h"
@@ -117,8 +116,8 @@ class HidController final : public Controller {
     std::unique_ptr<LegacyHidControllerMapping> m_pMapping;
 
     // Background thread used to fetch raw HID report descriptor during
-    // enumeration so mapping detection can use it without blocking the UI.
-    std::optional<std::thread> m_reportDescriptorThread;
+    // enumeration so mapping detection can use it without blocking the startup.
+    QFuture<void> m_reportDescriptorFuture;
 
     // Protects access to m_reportDescriptor and m_deviceUsesReportIds from
     // concurrent access between the background fetch thread and the main

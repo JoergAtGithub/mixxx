@@ -8,6 +8,7 @@
 #else
 #include <hidapi.h>
 #endif
+#include <QtConcurrent>
 
 #include "controllers/defs_controllers.h"
 #include "moc_hidcontroller.cpp"
@@ -36,8 +37,9 @@ HidController::HidController(
 }
 
 HidController::~HidController() {
-    if (m_reportDescriptorThread && m_reportDescriptorThread->joinable()) {
-        m_reportDescriptorThread->join();
+    // Wait for background report descriptor task to finish if running.
+    if (m_reportDescriptorFuture.isRunning()) {
+        m_reportDescriptorFuture.waitForFinished();
     }
 
     if (isOpen()) {
@@ -378,34 +380,26 @@ ControllerJSProxy* HidController::jsProxy() {
 
 void HidController::fetchReportDescriptorInBackground() {
 #ifndef Q_OS_ANDROID
-    // Launch a thread to open the device and fetch the report descriptor
-    // without blocking the enumerator UI thread. We intentionally don't keep the
-    // hid_device handle open after fetching to avoid holding resources.
-    m_reportDescriptorThread = std::thread([this]() {
-        // Try to open by path first
+    // Launch a concurrent task to open the device and fetch the report descriptor
+    m_reportDescriptorFuture = QtConcurrent::run([this]() {
         hid_device* pHidDevice = hid_open_path(this->m_deviceInfo.pathRaw());
         if (!pHidDevice) {
-            // Try vendor/product/serial
             pHidDevice = hid_open(this->m_deviceInfo.getVendorId(),
                     this->m_deviceInfo.getProductId(),
                     this->m_deviceInfo.serialNumberRaw());
         }
         if (!pHidDevice) {
-            // Try vendor/product only
             pHidDevice = hid_open(this->m_deviceInfo.getVendorId(),
                     this->m_deviceInfo.getProductId(),
                     nullptr);
         }
-
         if (!pHidDevice) {
-            return; // give up
+            return;
         }
-
-        // Set non-blocking briefly, not strictly necessary here
         hid_set_nonblocking(pHidDevice, 1);
 
-        // Fetch descriptor - DeviceInfo stores it internally
-        const std::vector<uint8_t>& raw = this->m_deviceInfo.fetchRawReportDescriptor(pHidDevice);
+        const std::vector<uint8_t>& raw =
+                this->m_deviceInfo.fetchRawReportDescriptor(pHidDevice);
         if (!raw.empty()) {
             auto parsed = std::make_shared<hid::reportDescriptor::HidReportDescriptor>(raw);
             parsed->parse();
@@ -417,10 +411,9 @@ void HidController::fetchReportDescriptorInBackground() {
                 this->m_deviceUsesReportIds = usesReportIds;
             }
         }
-
         hid_close(pHidDevice);
     });
 #else
-    Q_UNUSED(m_reportDescriptorThread);
+    Q_UNUSED(m_reportDescriptorFuture);
 #endif
 }
