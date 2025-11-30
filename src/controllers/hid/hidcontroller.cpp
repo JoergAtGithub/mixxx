@@ -32,7 +32,8 @@ HidController::HidController(
     setInputDevice(true);
     setOutputDevice(true);
 
-    // Start background fetch of report descriptor to avoid blocking enumeration.
+    // Start background fetch of report descriptor to avoid blocking controller
+    // enumeration at startup.
     fetchReportDescriptorInBackground();
 }
 
@@ -102,12 +103,10 @@ int HidController::open(const QString& resourcePath) {
         return -1;
     }
 
-    // Try to acquire a persistent lock on the report descriptor.
+    // Acquire a persistent lock on the m_reportDescriptor/m_deviceUsesReportIds.
     // The lock is released in close().
-    std::unique_lock<std::mutex> lock(m_reportDescriptorMutex, std::try_to_lock);
-    if (lock.owns_lock()) {
-        m_reportDescriptorLock.emplace(std::move(lock));
-    }
+    std::unique_lock<std::mutex> lock(m_reportDescriptorMutex);
+    m_reportDescriptorLock.emplace(std::move(lock));
 
     VERIFY_OR_DEBUG_ASSERT(!m_pHidIoThread) {
         qWarning() << "HidIoThread already present for" << getName();
@@ -249,27 +248,23 @@ int HidController::open(const QString& resourcePath) {
     }
 
 #ifndef Q_OS_ANDROID
-    // First check if background thread already parsed the report descriptor.
-    {
-        std::lock_guard<std::mutex> lock(m_reportDescriptorMutex);
-        if (m_reportDescriptor) {
+    if (m_reportDescriptor) {
+        m_deviceUsesReportIds = m_reportDescriptor->isDeviceWithReportIds();
+    } else {
+        // When fetching the report descriptor, from m_deviceInfo or if not
+        // read yet from the device
+        const std::vector<uint8_t>& rawReportDescriptor =
+                m_deviceInfo.fetchRawReportDescriptor(pHidDevice);
+
+        if (!rawReportDescriptor.empty()) {
+            m_reportDescriptor =
+                    std::make_shared<hid::reportDescriptor::HidReportDescriptor>(
+                            rawReportDescriptor);
+            m_reportDescriptor->parse();
             m_deviceUsesReportIds = m_reportDescriptor->isDeviceWithReportIds();
         } else {
-            // When fetching the report descriptor, from m_deviceInfo or if not
-            // read yet from the device
-            const std::vector<uint8_t>& rawReportDescriptor =
-                    m_deviceInfo.fetchRawReportDescriptor(pHidDevice);
-
-            if (!rawReportDescriptor.empty()) {
-                m_reportDescriptor =
-                        std::make_shared<hid::reportDescriptor::HidReportDescriptor>(
-                                rawReportDescriptor);
-                m_reportDescriptor->parse();
-                m_deviceUsesReportIds = m_reportDescriptor->isDeviceWithReportIds();
-            } else {
-                m_reportDescriptor.reset();
-                m_deviceUsesReportIds = std::nullopt;
-            }
+            m_reportDescriptor.reset();
+            m_deviceUsesReportIds = std::nullopt;
         }
     }
 
