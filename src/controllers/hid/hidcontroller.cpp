@@ -8,7 +8,7 @@
 #else
 #include <hidapi.h>
 #endif
-#include <QtConcurrent>
+#include <QtConcurrent/QtConcurrentRun>
 
 #include "controllers/defs_controllers.h"
 #include "moc_hidcontroller.cpp"
