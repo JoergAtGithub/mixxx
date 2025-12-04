@@ -324,15 +324,24 @@ void WPushButton::paintEvent(QPaintEvent* e) {
 void WPushButton::paintOnDevice(QPaintDevice* pd, int idx) {
     QStyleOption option;
     option.initFrom(this);
-    std::unique_ptr<QStylePainter> p(pd ? new QStylePainter(pd, this) : new QStylePainter(this));
-    p->drawPrimitive(QStyle::PE_Widget, option);
+
+    QPainter painter;
+    if (pd) {
+        painter.begin(pd);
+    } else {
+        painter.begin(this);
+    }
+
+    // Draw widget background and frame using the style directly via QPainter
+    style()->drawPrimitive(QStyle::PE_Widget, &option, &painter, this);
 
     if (m_iNoStates == 0) {
+        painter.end();
         return;
     }
 
     if (m_pPixmapBack) {
-        m_pPixmapBack->draw(rect(), p.get());
+        m_pPixmapBack->draw(rect(), &painter);
     }
 
     const QVector<PaintablePointer>& pixmaps = m_bPressed ?
@@ -342,6 +351,7 @@ void WPushButton::paintOnDevice(QPaintDevice* pd, int idx) {
     // m_text, m_pressedPixmaps and m_unpressedPixmaps are all the same size (as
     // per setup()) so if one is empty, all are empty.
     if (pixmaps.isEmpty()) {
+        painter.end();
         return;
     }
 
@@ -354,7 +364,7 @@ void WPushButton::paintOnDevice(QPaintDevice* pd, int idx) {
 
     PaintablePointer pPixmap = pixmaps.at(idx);
     if (pPixmap && !pPixmap->isNull()) {
-        pPixmap->draw(rect(), p.get());
+        pPixmap->draw(rect(), &painter);
     }
 
     QString text = m_text.at(idx);
@@ -367,12 +377,14 @@ void WPushButton::paintOnDevice(QPaintDevice* pd, int idx) {
 //        int textWidth = width() - lPad - rPad;
 //        QRect textRect = rect().adjust(x1, y1, x2, y2);
         QString elidedText = metrics.elidedText(text, m_elideMode, width());
-        p->drawText(rect(), m_align.at(idx), elidedText);
+        painter.drawText(rect(), m_align.at(idx), elidedText);
     }
 
     if (pd == nullptr && m_pLongPressLatching) {
-        m_pLongPressLatching->paint(p.get());
+        m_pLongPressLatching->paint(&painter);
     }
+
+    painter.end();
 }
 
 void WPushButton::mousePressEvent(QMouseEvent * e) {
