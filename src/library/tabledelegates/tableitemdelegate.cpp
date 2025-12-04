@@ -58,17 +58,25 @@ void TableItemDelegate::paint(
     painter->setPen(brush.color());
 #endif
 
-    QStyle* style = m_pTableView->style();
-    if (style) {
-        style->drawControl(
-                QStyle::CE_ItemViewItem,
-                // Use the original option here to not screw up
-                // the Key and Preview delegates.
-                &option,
-                painter,
-                m_pTableView);
+    // Optimized: avoid calling the style's drawControl for every item which
+    // is expensive. Instead draw only the minimal background/selection/focus
+    // needed for the item and let paintItem() draw the content. This reduces
+    // overhead during fast scrolling and resizing.
+
+    // First, paint model-provided background (e.g. color column placeholders)
+    paintItemBackground(painter, opt, index);
+
+    // Draw selection background if selected
+    if (opt.state & QStyle::State_Selected) {
+        painter->fillRect(option.rect, opt.palette.highlight());
     }
 
+    // Draw focus border if needed
+    if (opt.state & QStyle::State_HasFocus) {
+        drawBorder(painter, m_focusBorderColor, option.rect);
+    }
+
+    // Draw the actual item contents (delegates override paintItem)
     paintItem(painter, opt, index);
 }
 
