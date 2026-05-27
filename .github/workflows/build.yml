@@ -430,6 +430,42 @@ jobs:
           ${{ matrix.compiler_cache }} --show-stats
           ${{ matrix.compiler_cache }} --cleanup
 
+      - name: "[android] Start AVD (arm64 emulator)"
+        if: startsWith(matrix.artifacts_slug, 'android')
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: arm64-v8a
+          target: google_apis
+          profile: Nexus 6
+          avd-name: test_avd
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: echo "AVD started"
+
+      - name: "[android] Push and run tests via ADB"
+        if: startsWith(matrix.artifacts_slug, 'android')
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: arm64-v8a
+          target: google_apis
+          profile: Nexus 6
+          avd-name: test_avd
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            adb wait-for-device
+            adb shell mkdir -p /data/local/tmp/mixxx-tests
+            # Push the test binary
+            adb push build/mixxx-test /data/local/tmp/mixxx-tests/
+            # Push required test resources
+            adb push res /data/local/tmp/mixxx-tests/res || true
+            # Make executable and run
+            adb shell chmod +x /data/local/tmp/mixxx-tests/mixxx-test
+            adb shell "cd /data/local/tmp/mixxx-tests && ./mixxx-test" \
+              --gtest_output="xml:/data/local/tmp/mixxx-tests/results.xml"
+            # Pull results back
+            adb pull /data/local/tmp/mixxx-tests/results.xml build/test-results-android.xml
+
       - name: "Test"
         if: matrix.crosscompile != true
         run: ctest --timeout 45 ${{ matrix.ctest_args }}
