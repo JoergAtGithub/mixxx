@@ -183,8 +183,10 @@ jobs:
               -DVCPKG_TARGET_TRIPLET=arm64-android
               -DVCPKG_DEFAULT_HOST_TRIPLET=x64-linux-release
               -DCMAKE_SYSTEM_NAME=Android
-              -DBUILD_TESTING=OFF
+              -DBUILD_TESTING=ON
               -DBUILD_BENCH=OFF
+              -DOpenMP_CXX_VERSION=3.1
+              -DOpenMP_C_VERSION=3.1
             buildenv_basepath: /home/runner/buildenv
             buildenv_script: tools/android_buildenv.sh
             artifacts_name: Android 15 APK
