@@ -2,54 +2,58 @@
 # FindFFmpeg
 # ----------
 #
-# Try to find the required ffmpeg components (default: libavformat, libavutil, libavcodec)
+# Try to find the required FFmpeg components (default: AVCODEC, AVFORMAT, AVUTIL)
 #
 # Next variables can be used to hint FFmpeg libs search:
 #
 # ::
 #
-#   PC_<component>_LIBRARY_DIRS
 #   PC_FFmpeg_LIBRARY_DIRS
-#   PC_<component>_INCLUDE_DIRS
 #   PC_FFmpeg_INCLUDE_DIRS
 #
 # Once done this will define
 #
 # ::
 #
-#   FFmpeg_FOUND         - System has the all required components.
-#   FFmpeg_INCLUDE_DIRS  - Include directory necessary for using the required components headers.
-#   FFmpeg_LIBRARIES     - Link these to use the required ffmpeg components.
-#   FFmpeg_DEFINITIONS   - Compiler switches required for using the required ffmpeg components.
+#   FFmpeg_FOUND         - System has all required components.
+#   FFmpeg_INCLUDE_DIRS  - Include directories for all required components.
+#   FFmpeg_LIBRARIES     - Libraries to link for all required components.
+#   FFmpeg_DEFINITIONS   - Compiler switches required for using FFmpeg.
 #
 # For each of the components it will additionally set.
 #
 # ::
 #
-#   libavcodec
-#   libavdevice
-#   libavformat
-#   libavfilter
-#   libavutil
-#   libswscale
-#   libswresample
+#   FFmpeg_<COMPONENT>_FOUND        - System has <COMPONENT>
+#   FFmpeg_<COMPONENT>_INCLUDE_DIRS - Include directories for <COMPONENT>
+#   FFmpeg_<COMPONENT>_LIBRARIES    - Libraries to link for <COMPONENT>
+#   FFmpeg_<COMPONENT>_DEFINITIONS  - Compiler switches for <COMPONENT>
+#   FFmpeg_<COMPONENT>_VERSION      - Version of <COMPONENT>
 #
-# the following variables will be defined
+# The following imported targets are created:
 #
 # ::
 #
-#   <component>_FOUND        - System has <component>
-#   <component>_INCLUDE_DIRS - Include directory necessary for using the <component> headers
-#   <component>_LIBRARIES    - Link these to use <component>
-#   <component>_DEFINITIONS  - Compiler switches required for using <component>
-#   <component>_VERSION      - The components version
+#   FFmpeg::FFmpeg     - interface target aggregating all found components
+#   FFmpeg::avcodec    - libavcodec
+#   FFmpeg::avformat   - libavformat
+#   FFmpeg::avdevice   - libavdevice
+#   FFmpeg::avutil     - libavutil
+#   FFmpeg::avfilter   - libavfilter
+#   FFmpeg::swscale    - libswscale
+#   FFmpeg::swresample - libswresample
 #
-# the following import targets is created
+# Component names are Qt-compliant uppercase (AVCODEC, AVFORMAT, …) as
+# required by Qt6's internal find_dependency() calls in
+# Qt6FFmpegMediaPluginImplPrivateDependencies.cmake:
 #
-# ::
+#   find_dependency(FFmpeg COMPONENTS AVCODEC AVFORMAT AVUTIL SWRESAMPLE SWSCALE)
 #
-#   FFmpeg::FFmpeg - for all components
-#   FFmpeg::<component> - where <component> in lower case (FFmpeg::avcodec) for each components
+# Imported target names are lowercase (FFmpeg::avcodec, …) as listed in
+# Qt6FFmpegMediaPluginImplPrivateDependencies.cmake:
+#
+#   provided_targets "FFmpeg::avcodec;FFmpeg::avformat;FFmpeg::avutil;
+#                     FFmpeg::swresample;FFmpeg::swscale"
 #
 # Copyright (c) 2006, Matthias Kretz, <kretz@kde.org>
 # Copyright (c) 2008, Alexander Neundorf, <neundorf@kde.org>
@@ -62,33 +66,60 @@
 
 include(FindPackageHandleStandardArgs)
 
-# Qt-compliant component names (uppercase, no lib prefix):
-#   AVCODEC, AVFORMAT, AVDEVICE, AVUTIL, AVFILTER, SWSCALE, SWRESAMPLE
+# Default components when none are requested
 if(NOT FFmpeg_FIND_COMPONENTS)
   set(FFmpeg_FIND_COMPONENTS AVCODEC AVFORMAT AVUTIL)
 endif()
+
+# Maps uppercase component name → lowercase library stem (used for both the
+# imported target suffix and the pkg-config / find_library name)
+set(_FFmpeg_AVCODEC_lower avcodec)
+set(_FFmpeg_AVFORMAT_lower avformat)
+set(_FFmpeg_AVDEVICE_lower avdevice)
+set(_FFmpeg_AVUTIL_lower avutil)
+set(_FFmpeg_AVFILTER_lower avfilter)
+set(_FFmpeg_SWSCALE_lower swscale)
+set(_FFmpeg_SWRESAMPLE_lower swresample)
+
+# Maps uppercase component name → pkg-config module name
+set(_FFmpeg_AVCODEC_pkgconfig libavcodec)
+set(_FFmpeg_AVFORMAT_pkgconfig libavformat)
+set(_FFmpeg_AVDEVICE_pkgconfig libavdevice)
+set(_FFmpeg_AVUTIL_pkgconfig libavutil)
+set(_FFmpeg_AVFILTER_pkgconfig libavfilter)
+set(_FFmpeg_SWSCALE_pkgconfig libswscale)
+set(_FFmpeg_SWRESAMPLE_pkgconfig libswresample)
+
+# Maps uppercase component name → primary header
+set(_FFmpeg_AVCODEC_header libavcodec/avcodec.h)
+set(_FFmpeg_AVFORMAT_header libavformat/avformat.h)
+set(_FFmpeg_AVDEVICE_header libavdevice/avdevice.h)
+set(_FFmpeg_AVUTIL_header libavutil/avutil.h)
+set(_FFmpeg_AVFILTER_header libavfilter/avfilter.h)
+set(_FFmpeg_SWSCALE_header libswscale/swscale.h)
+set(_FFmpeg_SWRESAMPLE_header libswresample/swresample.h)
 
 #
 ### Macro: find_component
 #
 # Checks for the given component by invoking pkgconfig and then looking up
 # the libraries and include directories.
-# component  - Qt-compliant uppercase name, e.g. AVCODEC
-# pkgconfig  - pkg-config module name, e.g. libavcodec
-# library    - library, e.g. avcodec
-# header     - header path, e.g. libavcodec/avcodec.h
 #
-macro(find_component component pkgconfig library header)
-  # use pkg-config to get the directories and then use these values
-  # in the FIND_PATH() and FIND_LIBRARY() calls
+# component - uppercase Qt-compliant name, e.g. AVCODEC
+#
+macro(find_component component)
+  set(_lower "${_FFmpeg_${component}_lower}")
+  set(_pkgcfg "${_FFmpeg_${component}_pkgconfig}")
+  set(_header "${_FFmpeg_${component}_header}")
+
   find_package(PkgConfig QUIET)
   if(PkgConfig_FOUND)
-    pkg_check_modules(PC_FFmpeg_${component} QUIET ${pkgconfig})
+    pkg_check_modules(PC_FFmpeg_${component} QUIET ${_pkgcfg})
   endif()
 
   find_path(
     FFmpeg_${component}_INCLUDE_DIRS
-    ${header}
+    ${_header}
     HINTS
       ${PC_FFmpeg_${component}_INCLUDEDIR}
       ${PC_FFmpeg_${component}_INCLUDE_DIRS}
@@ -98,15 +129,12 @@ macro(find_component component pkgconfig library header)
 
   find_library(
     FFmpeg_${component}_LIBRARIES
-    NAMES ${PC_FFmpeg_${component}_LIBRARIES} ${library}
+    NAMES ${PC_FFmpeg_${component}_LIBRARIES} ${_lower}
     HINTS
       ${PC_FFmpeg_${component}_LIBDIR}
       ${PC_FFmpeg_${component}_LIBRARY_DIRS}
       ${PC_FFmpeg_LIBRARY_DIRS}
   )
-
-  #message(STATUS ${FFmpeg_${component}_LIBRARIES})
-  #message(STATUS ${PC_FFmpeg_${component}_LIBRARIES})
 
   set(
     FFmpeg_${component}_DEFINITIONS
@@ -134,30 +162,29 @@ macro(find_component component pkgconfig library header)
     FFmpeg_${component}_DEFINITIONS
     FFmpeg_${component}_VERSION
   )
+
+  unset(_lower)
+  unset(_pkgcfg)
+  unset(_header)
 endmacro()
 
 message(STATUS "Searching for FFmpeg components")
-# Check for all possible component.
-find_component(AVCODEC    libavcodec    avcodec    libavcodec/avcodec.h)
-find_component(AVFORMAT   libavformat   avformat   libavformat/avformat.h)
-find_component(AVDEVICE   libavdevice   avdevice   libavdevice/avdevice.h)
-find_component(AVUTIL     libavutil     avutil     libavutil/avutil.h)
-find_component(AVFILTER   libavfilter   avfilter   libavfilter/avfilter.h)
-find_component(SWSCALE    libswscale    swscale    libswscale/swscale.h)
-find_component(SWRESAMPLE libswresample swresample libswresample/swresample.h)
+find_component(AVCODEC)
+find_component(AVFORMAT)
+find_component(AVDEVICE)
+find_component(AVUTIL)
+find_component(AVFILTER)
+find_component(SWSCALE)
+find_component(SWRESAMPLE)
 
+# Aggregate libraries, definitions and include dirs from requested components
 set(FFmpeg_LIBRARIES "")
 set(FFmpeg_DEFINITIONS "")
-# Check if the required components were found and add their stuff to the FFmpeg_* vars.
+set(FFmpeg_INCLUDE_DIRS "")
 foreach(component ${FFmpeg_FIND_COMPONENTS})
   if(FFmpeg_${component}_FOUND)
-    #message(STATUS "Required component ${component} present.")
-    set(FFmpeg_LIBRARIES ${FFmpeg_LIBRARIES} ${FFmpeg_${component}_LIBRARIES})
-    set(
-      FFmpeg_DEFINITIONS
-      ${FFmpeg_DEFINITIONS}
-      ${FFmpeg_${component}_DEFINITIONS}
-    )
+    list(APPEND FFmpeg_LIBRARIES ${FFmpeg_${component}_LIBRARIES})
+    list(APPEND FFmpeg_DEFINITIONS ${FFmpeg_${component}_DEFINITIONS})
     list(APPEND FFmpeg_INCLUDE_DIRS ${FFmpeg_${component}_INCLUDE_DIRS})
   endif()
 endforeach()
@@ -205,3 +232,58 @@ endforeach()
 
 # Give a nice error message if some of the required vars are missing.
 find_package_handle_standard_args(FFmpeg DEFAULT_MSG ${FFmpeg_REQUIRED_VARS})
+
+# ---------------------------------------------------------------------------
+# Create IMPORTED targets
+#
+# Qt6FFmpegMediaPluginImplPrivateDependencies.cmake (same content on both
+# macOS and Windows) specifies exactly:
+#
+#   provided_targets:
+#     "FFmpeg::avcodec;FFmpeg::avformat;FFmpeg::avutil;
+#      FFmpeg::swresample;FFmpeg::swscale"
+#
+# These targets MUST exist after find_package(FFmpeg) returns, otherwise
+# vcpkg's _add_executable wrapper rejects any target that transitively
+# links against them.
+# ---------------------------------------------------------------------------
+if(FFmpeg_FOUND)
+  foreach(
+    component
+    AVCODEC
+    AVFORMAT
+    AVDEVICE
+    AVUTIL
+    AVFILTER
+    SWSCALE
+    SWRESAMPLE
+  )
+    if(FFmpeg_${component}_FOUND)
+      set(_target "FFmpeg::${_FFmpeg_${component}_lower}")
+      if(NOT TARGET ${_target})
+        add_library(${_target} UNKNOWN IMPORTED)
+        set_target_properties(
+          ${_target}
+          PROPERTIES
+            IMPORTED_LOCATION "${FFmpeg_${component}_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${FFmpeg_${component}_INCLUDE_DIRS}"
+            INTERFACE_COMPILE_OPTIONS "${FFmpeg_${component}_DEFINITIONS}"
+        )
+      endif()
+      unset(_target)
+    endif()
+  endforeach()
+
+  # Aggregate interface target for convenience
+  if(NOT TARGET FFmpeg::FFmpeg)
+    add_library(FFmpeg::FFmpeg INTERFACE IMPORTED)
+    foreach(component ${FFmpeg_FIND_COMPONENTS})
+      if(FFmpeg_${component}_FOUND)
+        target_link_libraries(
+          FFmpeg::FFmpeg
+          INTERFACE "FFmpeg::${_FFmpeg_${component}_lower}"
+        )
+      endif()
+    endforeach()
+  endif()
+endif()
