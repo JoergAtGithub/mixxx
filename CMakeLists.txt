@@ -2814,7 +2814,8 @@ if(FFmpeg)
       __STDC_LIMIT_MACROS
       __STDC_FORMAT_MACROS
   )
-  target_link_libraries(mixxx-lib PRIVATE "${FFmpeg_LIBRARIES}")
+
+  target_link_libraries(mixxx-lib PRIVATE FFmpeg::FFmpeg)
   target_include_directories(mixxx-lib PUBLIC "${FFmpeg_INCLUDE_DIRS}")
 endif()
 
@@ -4845,12 +4846,12 @@ endif()
 
 # FDK-AAC is loaded dynamically at runtime by EncoderFdkAac using QLibrary,
 # so copy it into the Windows and macOS packages, but do not link to it.
-if(APPLE AND MACOS_BUNDLE)
-  find_library(FDK_AAC_LIBRARY fdk-aac)
-  if(FDK_AAC_LIBRARY)
-    message(STATUS "Found fdk-aac: ${FDK_AAC_LIBRARY}")
+find_package(FdkAac QUIET)
+if(FdkAac_FOUND)
+  if(APPLE AND MACOS_BUNDLE)
+    message(STATUS "Found fdk-aac: ${FdkAac_LIBRARY}")
     file(
-      COPY ${FDK_AAC_LIBRARY}
+      COPY "${FdkAac_LIBRARY}"
       DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/lib/fdk-aac-install"
       FOLLOW_SYMLINK_CHAIN
     )
@@ -4858,18 +4859,16 @@ if(APPLE AND MACOS_BUNDLE)
       DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib/fdk-aac-install/"
       DESTINATION "${MIXXX_INSTALL_PREFIX}/Contents/Frameworks"
     )
-  else()
-    message(STATUS "Could NOT find libfdk-aac.dylib")
+  elseif(WIN32)
+    if(FdkAac_DLL)
+      message(STATUS "Found fdk-aac DLL: ${FdkAac_DLL}")
+      install(FILES "${FdkAac_DLL}" DESTINATION "${MIXXX_INSTALL_BINDIR}")
+    else()
+      message(STATUS "Could NOT find fdk-aac.dll (FdkAac_DLL not set)")
+    endif()
   endif()
-elseif(WIN32)
-  # On Windows find_library finds the .lib file, but the installer needs the .dll file.
-  find_file(FDK_AAC_DLL fdk-aac.dll PATH_SUFFIXES ${CMAKE_INSTALL_BINDIR})
-  if(FDK_AAC_DLL)
-    message(STATUS "Found fdk-aac DLL: ${FDK_AAC_DLL}")
-    install(FILES ${FDK_AAC_DLL} DESTINATION ${MIXXX_INSTALL_BINDIR})
-  else()
-    message(STATUS "Could NOT find fdk-aac.dll")
-  endif()
+else()
+  message(STATUS "Could NOT find fdk-aac (FdkAac_FOUND is FALSE)")
 endif()
 
 # Google PerfTools

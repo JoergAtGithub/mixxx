@@ -65,54 +65,55 @@
 # For details see the accompanying COPYING-CMAKE-SCRIPTS file.
 
 include(FindPackageHandleStandardArgs)
+include(IsStaticLibrary)
 
-# Default components when none are requested
+# Early-return guard: Qt6's find_dependency() chain calls find_package(FFmpeg)
+# once per multimedia plugin.  Imported targets are global and persistent, so
+# if FFmpeg::avcodec already exists the search is done — return silently.
+if(TARGET FFmpeg::avcodec)
+  set(FFmpeg_FOUND TRUE)
+  return()
+endif()
+
 if(NOT FFmpeg_FIND_COMPONENTS)
   set(FFmpeg_FIND_COMPONENTS AVCODEC AVFORMAT AVUTIL)
 endif()
 
-# Maps uppercase component name → lowercase library stem (used for both the
-# imported target suffix and the pkg-config / find_library name)
-set(_FFmpeg_AVCODEC_lower avcodec)
-set(_FFmpeg_AVFORMAT_lower avformat)
-set(_FFmpeg_AVDEVICE_lower avdevice)
-set(_FFmpeg_AVUTIL_lower avutil)
-set(_FFmpeg_AVFILTER_lower avfilter)
-set(_FFmpeg_SWSCALE_lower swscale)
-set(_FFmpeg_SWRESAMPLE_lower swresample)
+# Component table: UPPERCASE  lowercase-stem  pkg-config-name  primary-header
+set(
+  _FFmpeg_components
+  "AVCODEC    avcodec    libavcodec    libavcodec/avcodec.h"
+  "AVFORMAT   avformat   libavformat   libavformat/avformat.h"
+  "AVDEVICE   avdevice   libavdevice   libavdevice/avdevice.h"
+  "AVUTIL     avutil     libavutil     libavutil/avutil.h"
+  "AVFILTER   avfilter   libavfilter   libavfilter/avfilter.h"
+  "SWSCALE    swscale    libswscale    libswscale/swscale.h"
+  "SWRESAMPLE swresample libswresample libswresample/swresample.h"
+)
+foreach(_entry IN LISTS _FFmpeg_components)
+  separate_arguments(_fields UNIX_COMMAND "${_entry}")
+  list(GET _fields 0 _uc)
+  list(GET _fields 1 _lc)
+  list(GET _fields 2 _pc)
+  list(GET _fields 3 _hdr)
+  set(_FFmpeg_${_uc}_lower "${_lc}")
+  set(_FFmpeg_${_uc}_pkgconfig "${_pc}")
+  set(_FFmpeg_${_uc}_header "${_hdr}")
+endforeach()
+unset(_entry)
+unset(_fields)
+unset(_uc)
+unset(_lc)
+unset(_pc)
+unset(_hdr)
 
-# Maps uppercase component name → pkg-config module name
-set(_FFmpeg_AVCODEC_pkgconfig libavcodec)
-set(_FFmpeg_AVFORMAT_pkgconfig libavformat)
-set(_FFmpeg_AVDEVICE_pkgconfig libavdevice)
-set(_FFmpeg_AVUTIL_pkgconfig libavutil)
-set(_FFmpeg_AVFILTER_pkgconfig libavfilter)
-set(_FFmpeg_SWSCALE_pkgconfig libswscale)
-set(_FFmpeg_SWRESAMPLE_pkgconfig libswresample)
+find_package(PkgConfig QUIET)
 
-# Maps uppercase component name → primary header
-set(_FFmpeg_AVCODEC_header libavcodec/avcodec.h)
-set(_FFmpeg_AVFORMAT_header libavformat/avformat.h)
-set(_FFmpeg_AVDEVICE_header libavdevice/avdevice.h)
-set(_FFmpeg_AVUTIL_header libavutil/avutil.h)
-set(_FFmpeg_AVFILTER_header libavfilter/avfilter.h)
-set(_FFmpeg_SWSCALE_header libswscale/swscale.h)
-set(_FFmpeg_SWRESAMPLE_header libswresample/swresample.h)
-
-#
-### Macro: find_component
-#
-# Checks for the given component by invoking pkgconfig and then looking up
-# the libraries and include directories.
-#
-# component - uppercase Qt-compliant name, e.g. AVCODEC
-#
 macro(find_component component)
   set(_lower "${_FFmpeg_${component}_lower}")
   set(_pkgcfg "${_FFmpeg_${component}_pkgconfig}")
   set(_header "${_FFmpeg_${component}_header}")
 
-  find_package(PkgConfig QUIET)
   if(PkgConfig_FOUND)
     pkg_check_modules(PC_FFmpeg_${component} QUIET ${_pkgcfg})
   endif()
@@ -126,7 +127,6 @@ macro(find_component component)
       ${PC_FFmpeg_INCLUDE_DIRS}
     PATH_SUFFIXES ffmpeg
   )
-
   find_library(
     FFmpeg_${component}_LIBRARIES
     NAMES ${PC_FFmpeg_${component}_LIBRARIES} ${_lower}
@@ -135,7 +135,6 @@ macro(find_component component)
       ${PC_FFmpeg_${component}_LIBRARY_DIRS}
       ${PC_FFmpeg_LIBRARY_DIRS}
   )
-
   set(
     FFmpeg_${component}_DEFINITIONS
     ${PC_FFmpeg_${component}_CFLAGS_OTHER}
@@ -148,14 +147,6 @@ macro(find_component component)
     CACHE STRING
     "The ${component} version number."
   )
-
-  if(FFmpeg_${component}_LIBRARIES AND FFmpeg_${component}_INCLUDE_DIRS)
-    message(STATUS "  - ${component} ${FFmpeg_${component}_VERSION} found.")
-    set(FFmpeg_${component}_FOUND TRUE)
-  else()
-    message(STATUS "  - ${component} not found.")
-  endif()
-
   mark_as_advanced(
     FFmpeg_${component}_INCLUDE_DIRS
     FFmpeg_${component}_LIBRARIES
@@ -163,21 +154,33 @@ macro(find_component component)
     FFmpeg_${component}_VERSION
   )
 
+  if(FFmpeg_${component}_LIBRARIES AND FFmpeg_${component}_INCLUDE_DIRS)
+    message(STATUS "  - ${component} ${FFmpeg_${component}_VERSION} found.")
+    set(FFmpeg_${component}_FOUND TRUE)
+  else()
+    message(STATUS "  - ${component} not found.")
+  endif()
   unset(_lower)
   unset(_pkgcfg)
   unset(_header)
 endmacro()
 
 message(STATUS "Searching for FFmpeg components")
-find_component(AVCODEC)
-find_component(AVFORMAT)
-find_component(AVDEVICE)
-find_component(AVUTIL)
-find_component(AVFILTER)
-find_component(SWSCALE)
-find_component(SWRESAMPLE)
+foreach(
+  _comp
+  AVCODEC
+  AVFORMAT
+  AVDEVICE
+  AVUTIL
+  AVFILTER
+  SWSCALE
+  SWRESAMPLE
+)
+  find_component(${_comp})
+endforeach()
+unset(_comp)
 
-# Aggregate libraries, definitions and include dirs from requested components
+# Aggregate results for requested components
 set(FFmpeg_LIBRARIES "")
 set(FFmpeg_DEFINITIONS "")
 set(FFmpeg_INCLUDE_DIRS "")
@@ -188,25 +191,21 @@ foreach(component ${FFmpeg_FIND_COMPONENTS})
     list(APPEND FFmpeg_INCLUDE_DIRS ${FFmpeg_${component}_INCLUDE_DIRS})
   endif()
 endforeach()
+list(REMOVE_DUPLICATES FFmpeg_INCLUDE_DIRS)
 
-# Build the include path with duplicates removed.
-if(FFmpeg_INCLUDE_DIRS)
-  list(REMOVE_DUPLICATES FFmpeg_INCLUDE_DIRS)
-endif()
-
-# cache the vars.
-set(
-  FFmpeg_INCLUDE_DIRS
-  ${FFmpeg_INCLUDE_DIRS}
-  CACHE STRING
-  "The FFmpeg include directories."
-  FORCE
-)
+# Cache aggregates (consumed by CMakeLists.txt via "${FFmpeg_LIBRARIES}")
 set(
   FFmpeg_LIBRARIES
   ${FFmpeg_LIBRARIES}
   CACHE STRING
   "The FFmpeg libraries."
+  FORCE
+)
+set(
+  FFmpeg_INCLUDE_DIRS
+  ${FFmpeg_INCLUDE_DIRS}
+  CACHE STRING
+  "The FFmpeg include directories."
   FORCE
 )
 set(
@@ -216,38 +215,23 @@ set(
   "The FFmpeg cflags."
   FORCE
 )
+mark_as_advanced(FFmpeg_LIBRARIES FFmpeg_INCLUDE_DIRS FFmpeg_DEFINITIONS)
 
-mark_as_advanced(FFmpeg_INCLUDE_DIRS FFmpeg_LIBRARIES FFmpeg_DEFINITIONS)
-
-# Compile the list of required vars
-set(FFmpeg_REQUIRED_VARS FFmpeg_LIBRARIES FFmpeg_INCLUDE_DIRS)
+# Build required-vars list from requested components
+set(_FFmpeg_required FFmpeg_LIBRARIES FFmpeg_INCLUDE_DIRS)
 foreach(component ${FFmpeg_FIND_COMPONENTS})
   list(
     APPEND
-    FFmpeg_REQUIRED_VARS
+    _FFmpeg_required
     FFmpeg_${component}_LIBRARIES
     FFmpeg_${component}_INCLUDE_DIRS
   )
 endforeach()
+find_package_handle_standard_args(FFmpeg DEFAULT_MSG ${_FFmpeg_required})
+unset(_FFmpeg_required)
 
-# Give a nice error message if some of the required vars are missing.
-find_package_handle_standard_args(FFmpeg DEFAULT_MSG ${FFmpeg_REQUIRED_VARS})
-
-# ---------------------------------------------------------------------------
-# Create IMPORTED targets
-#
-# Qt6FFmpegMediaPluginImplPrivateDependencies.cmake (same content on both
-# macOS and Windows) specifies exactly:
-#
-#   provided_targets:
-#     "FFmpeg::avcodec;FFmpeg::avformat;FFmpeg::avutil;
-#      FFmpeg::swresample;FFmpeg::swscale"
-#
-# These targets MUST exist after find_package(FFmpeg) returns, otherwise
-# vcpkg's _add_executable wrapper rejects any target that transitively
-# links against them.
-# ---------------------------------------------------------------------------
 if(FFmpeg_FOUND)
+  # Create per-component IMPORTED targets
   foreach(
     component
     AVCODEC
@@ -274,7 +258,81 @@ if(FFmpeg_FOUND)
     endif()
   endforeach()
 
-  # Aggregate interface target for convenience
+  # When libavcodec is static it may have been built with --enable-libfdk-aac.
+  # Add FdkAac::FdkAac as a transitive dep so the final linker resolves the
+  # aacEnc*/aacDec* symbols (mirrors FindChromaprint.cmake's FFTW3 pattern).
+  if(TARGET FFmpeg::avcodec)
+    is_static_library(_avcodec_static FFmpeg::avcodec)
+    if(_avcodec_static)
+      find_package(FdkAac QUIET)
+      if(FdkAac_FOUND)
+        set_property(
+          TARGET FFmpeg::avcodec
+          APPEND
+          PROPERTY INTERFACE_LINK_LIBRARIES FdkAac::FdkAac
+        )
+        # Also append to the cached FFmpeg_LIBRARIES variable so any remaining
+        # consumers that use "${FFmpeg_LIBRARIES}" directly (e.g. legacy call
+        # sites) also get the dependency resolved.
+        list(APPEND FFmpeg_LIBRARIES ${FdkAac_LIBRARY})
+        set(
+          FFmpeg_LIBRARIES
+          ${FFmpeg_LIBRARIES}
+          CACHE STRING
+          "The FFmpeg libraries."
+          FORCE
+        )
+      endif()
+    endif()
+    unset(_avcodec_static)
+  endif()
+
+  # On Apple platforms the static FFmpeg libraries reference VideoToolbox,
+  # CoreMedia and CoreVideo symbols (e.g. av_map_videotoolbox_format_to_pixfmt
+  # in libavutil, hardware-accelerated codecs in libavcodec).  Add the
+  # required frameworks as transitive interface deps on the affected targets.
+  if(APPLE)
+    foreach(_component_target IN ITEMS FFmpeg::avcodec FFmpeg::avutil)
+      if(TARGET ${_component_target})
+        is_static_library(_is_static ${_component_target})
+        if(_is_static)
+          set_property(
+            TARGET ${_component_target}
+            APPEND
+            PROPERTY
+              INTERFACE_LINK_LIBRARIES
+                "-framework VideoToolbox"
+                "-framework CoreMedia"
+                "-framework CoreVideo"
+          )
+        endif()
+        unset(_is_static)
+      endif()
+    endforeach()
+    unset(_component_target)
+
+    # Also append to FFmpeg_LIBRARIES for legacy consumers
+    is_static_library(_avutil_static FFmpeg::avutil)
+    if(_avutil_static)
+      list(
+        APPEND
+        FFmpeg_LIBRARIES
+        "-framework VideoToolbox"
+        "-framework CoreMedia"
+        "-framework CoreVideo"
+      )
+      set(
+        FFmpeg_LIBRARIES
+        ${FFmpeg_LIBRARIES}
+        CACHE STRING
+        "The FFmpeg libraries."
+        FORCE
+      )
+    endif()
+    unset(_avutil_static)
+  endif()
+
+  # Aggregate convenience target
   if(NOT TARGET FFmpeg::FFmpeg)
     add_library(FFmpeg::FFmpeg INTERFACE IMPORTED)
     foreach(component ${FFmpeg_FIND_COMPONENTS})
