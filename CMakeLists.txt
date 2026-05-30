@@ -2817,26 +2817,6 @@ if(FFMPEG)
 
   target_link_libraries(mixxx-lib PRIVATE FFmpeg::FFmpeg)
   target_include_directories(mixxx-lib PUBLIC "${FFmpeg_INCLUDE_DIRS}")
-
-  #  1. -force_load ensures ALL object files from libavutil.a are pulled in
-  #     unconditionally, regardless of link order.
-  #  2. $<TARGET_FILE:FFmpeg::avutil> uses a generator expression so the correct
-  #     ARM64 library path is used on cross-compiled builds (avoids stale cache from
-  #     ${FFmpeg_AVUTIL_LIBRARIES} which may point to the host-arch library).
-  #  3. LINKER: prefix in target_link_options is the correct CMake-idiomatic form;
-  #     avoids the space-in-string splitting ambiguity of target_link_libraries.
-  #  4. Explicit FFmpeg::avutil on mixxx re-lists the archive after the Qt plugin
-  #     init objects, giving ld64 a second pass opportunity.
-  if(APPLE)
-    target_link_libraries(
-      mixxx-lib
-      PRIVATE
-        FFmpeg::avutil
-        "-framework VideoToolbox"
-        "-framework CoreMedia"
-        "-framework CoreVideo"
-    )
-  endif()
 endif()
 
 # STEM file support
@@ -4428,12 +4408,12 @@ if(APPLE)
         "-weak_framework CoreAudio"
         "-weak_framework CoreFoundation"
         "-weak_framework CoreImage"
-        "-weak_framework CoreMedia"
+        "-framework CoreMedia"
         "-weak_framework CoreMidi"
         "-weak_framework CoreServices"
-        "-weak_framework CoreVideo"
+        "-framework CoreVideo"
         "-weak_framework IOSurface"
-        "-weak_framework VideoToolbox"
+        "-framework VideoToolbox"
     )
     if(IOS)
       target_link_libraries(mixxx-lib PRIVATE "-weak_framework UIKit")
