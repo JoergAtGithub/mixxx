@@ -2816,19 +2816,34 @@ if(FFMPEG)
   )
 
   target_link_libraries(mixxx-lib PRIVATE FFmpeg::FFmpeg)
-
   target_include_directories(mixxx-lib PUBLIC "${FFmpeg_INCLUDE_DIRS}")
-  # Qt6's FFmpeg multimedia plugin (libQt6FFmpegMediaPluginImpl.a) references
-  # Apple VideoToolbox symbols.
-  if(APPLE AND FFmpeg_AVUTIL_LIBRARIES)
-    target_link_libraries(
-      mixxx
-      PRIVATE
-        "-force_load ${FFmpeg_AVUTIL_LIBRARIES}"
-        "-framework VideoToolbox"
-        "-framework CoreMedia"
-        "-framework CoreVideo"
-    )
+
+  #  1. -force_load ensures ALL object files from libavutil.a are pulled in
+  #     unconditionally, regardless of link order.
+  #  2. $<TARGET_FILE:FFmpeg::avutil> uses a generator expression so the correct
+  #     ARM64 library path is used on cross-compiled builds (avoids stale cache from
+  #     ${FFmpeg_AVUTIL_LIBRARIES} which may point to the host-arch library).
+  #  3. LINKER: prefix in target_link_options is the correct CMake-idiomatic form;
+  #     avoids the space-in-string splitting ambiguity of target_link_libraries.
+  #  4. Explicit FFmpeg::avutil on mixxx re-lists the archive after the Qt plugin
+  #     init objects, giving ld64 a second pass opportunity.
+  if(APPLE AND TARGET FFmpeg::avutil)
+    is_static_library(_ffmpeg_avutil_static FFmpeg::avutil)
+    if(_ffmpeg_avutil_static)
+      target_link_options(
+        mixxx
+        PRIVATE "LINKER:-force_load,$<TARGET_FILE:FFmpeg::avutil>"
+      )
+      target_link_libraries(
+        mixxx
+        PRIVATE
+          FFmpeg::avutil
+          "-framework VideoToolbox"
+          "-framework CoreMedia"
+          "-framework CoreVideo"
+      )
+    endif()
+    unset(_ffmpeg_avutil_static)
   endif()
 endif()
 
