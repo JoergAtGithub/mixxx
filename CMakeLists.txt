@@ -2820,10 +2820,11 @@ if(FFMPEG)
   target_include_directories(mixxx-lib PUBLIC "${FFmpeg_INCLUDE_DIRS}")
   # Qt6's FFmpeg multimedia plugin (libQt6FFmpegMediaPluginImpl.a) references
   # Apple VideoToolbox symbols.
-  if(APPLE)
+  if(APPLE AND FFmpeg_AVUTIL_LIBRARIES)
     target_link_libraries(
-      mixxx-lib
+      mixxx
       PRIVATE
+        "-force_load ${FFmpeg_AVUTIL_LIBRARIES}"
         "-framework VideoToolbox"
         "-framework CoreMedia"
         "-framework CoreVideo"
