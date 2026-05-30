@@ -31,13 +31,15 @@ HOST_ARCH=$(uname -m)  # One of x86_64, arm64, i386, ppc or ppc64
 
 if [ "$HOST_ARCH" == "x86_64" ]; then
     if [ -n "${BUILDENV_RELEASE}" ]; then
-        echo "ERROR: No release VCPKG for Android yet!"
-        exit 1
+        VCPKG_TARGET_TRIPLET="arm64-android-rel"
+        BUILDENV_BRANCH="2.7-rel"
+        BUILDENV_NAME="mixxx-deps-2.7-arm64-android-rel-6d5a0074"
+        BUILDENV_SHA256="88eb436f26ab8879a48d509470b63fde679a142ada1748a051980f120d211035"
     else
         VCPKG_TARGET_TRIPLET="arm64-android"
         BUILDENV_BRANCH="2.7"
-        BUILDENV_NAME="mixxx-deps-2.7-arm64-android-458eeaf4"
-        BUILDENV_SHA256="77ad7e5e0178bc62f22c458c8d6e0ee5e7482305f18f8099775aa794ac2745b4"
+        BUILDENV_NAME="mixxx-deps-2.7-arm64-android-5777af9b"
+        BUILDENV_SHA256="5f12ffc5356a7821f8aa78b976653debf29961ae1e75774eb4ea79e2a0afb356"
     fi
 else
     echo "ERROR: Unsupported architecture detected: $HOST_ARCH"
