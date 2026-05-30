@@ -2766,8 +2766,8 @@ endif()
 # FFmpeg support
 # FFmpeg is multimedia library that can be found http://ffmpeg.org/
 find_package(FFmpeg COMPONENTS AVCODEC AVFORMAT AVUTIL SWRESAMPLE)
-default_option(FFmpeg "FFmpeg support (version 4.1.9 or later)" "FFmpeg_FOUND")
-if(FFmpeg)
+default_option(FFMPEG "FFmpeg support (version 4.1.9 or later)" "FFmpeg_FOUND")
+if(FFMPEG)
   if(NOT FFmpeg_FOUND)
     message(FATAL_ERROR "FFmpeg was not found")
   endif()
@@ -2808,7 +2808,7 @@ if(FFmpeg)
   target_compile_definitions(
     mixxx-lib
     PUBLIC
-      __FFmpeg__
+      __FFMPEG__
       # Needed to build new FFmpeg
       __STDC_CONSTANT_MACROS
       __STDC_LIMIT_MACROS
@@ -2832,9 +2832,9 @@ if(FFmpeg)
 endif()
 
 # STEM file support
-default_option(STEM "STEM file support" "FFmpeg_FOUND;FFmpeg")
+default_option(STEM "STEM file support" "FFmpeg_FOUND;FFMPEG")
 if(STEM)
-  if(NOT FFmpeg)
+  if(NOT FFMPEG)
     message(FATAL_ERROR "STEM requires that also FFmpeg is enabled")
   endif()
   target_compile_definitions(mixxx-lib PUBLIC __STEM__)
