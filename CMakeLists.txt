@@ -2827,23 +2827,15 @@ if(FFMPEG)
   #     avoids the space-in-string splitting ambiguity of target_link_libraries.
   #  4. Explicit FFmpeg::avutil on mixxx re-lists the archive after the Qt plugin
   #     init objects, giving ld64 a second pass opportunity.
-  if(APPLE AND TARGET FFmpeg::avutil)
-    is_static_library(_ffmpeg_avutil_static FFmpeg::avutil)
-    if(_ffmpeg_avutil_static)
-      target_link_options(
-        mixxx
-        PRIVATE "LINKER:-force_load,$<TARGET_FILE:FFmpeg::avutil>"
-      )
-      target_link_libraries(
-        mixxx
-        PRIVATE
-          FFmpeg::avutil
-          "-framework VideoToolbox"
-          "-framework CoreMedia"
-          "-framework CoreVideo"
-      )
-    endif()
-    unset(_ffmpeg_avutil_static)
+  if(APPLE)
+    target_link_libraries(
+      mixxx-lib
+      PRIVATE
+        FFmpeg::avutil
+        "-framework VideoToolbox"
+        "-framework CoreMedia"
+        "-framework CoreVideo"
+    )
   endif()
 endif()
 
