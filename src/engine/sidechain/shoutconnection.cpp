@@ -380,7 +380,9 @@ void ShoutConnection::updateFromPreferences() {
     }
 
 #ifdef SHOUT_ATTR_F_DEPRECATED
-    if (shout_set_content_format(m_pShout, format, 0 /* SHOUT_USAGE_UNKNOWN */, nullptr) != SHOUTERR_SUCCESS) {
+    if (shout_set_content_format(m_pShout, format,
+                0 /* SHOUT_USAGE_UNKNOWN, letting the server determine content usage */,
+                nullptr) != SHOUTERR_SUCCESS) {
 #else
     if (shout_set_format(m_pShout, format) != SHOUTERR_SUCCESS) {
 #endif
