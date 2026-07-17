@@ -3017,6 +3017,7 @@ if(BUILD_TESTING)
         src/test/controllerrenderingengine_test.cpp
         src/test/qmlcontrolproxytest.cpp
         src/test/qmlkeyutilstest.cpp
+        src/test/qmlskincontrolcreatortest.cpp
         src/test/themeqml_test.cpp
     )
   endif()
@@ -3740,6 +3741,20 @@ add_library(
 target_include_directories(mixxx-lib SYSTEM PUBLIC lib/portaudio)
 target_link_libraries(mixxx-lib PRIVATE PortAudioRingBuffer)
 
+# PipeWire
+option(PIPEWIRE "Enable the PipeWire backend" OFF)
+if(PIPEWIRE)
+  find_package(PipeWire REQUIRED)
+  target_link_libraries(mixxx-lib PUBLIC PipeWire::PipeWire)
+  target_compile_definitions(mixxx-lib PUBLIC __PIPEWIRE__)
+  target_sources(
+    mixxx-lib
+    PRIVATE
+      src/soundio/pipewireenumerator.cpp
+      src/soundio/sounddevicepipewire.cpp
+  )
+endif()
+
 # PortMidi
 default_option(PORTMIDI "Enable the PortMidi backend for MIDI controllers" "NOT ANDROID")
 if(PORTMIDI)
@@ -3803,6 +3818,7 @@ if(QML)
   list(APPEND QT_EXTRA_COMPONENTS "Quick")
   list(APPEND QT_EXTRA_COMPONENTS "QuickControls2")
   list(APPEND QT_EXTRA_COMPONENTS "QuickControls2Impl")
+  list(APPEND QT_EXTRA_COMPONENTS "QuickDialogs2")
   list(APPEND QT_EXTRA_COMPONENTS "QuickLayouts")
   list(APPEND QT_EXTRA_COMPONENTS "QuickShapesPrivate")
   list(APPEND QT_EXTRA_COMPONENTS "QuickTemplates2")
@@ -3932,11 +3948,13 @@ if(QML)
     RESOURCE_PREFIX /mixxx.org/imports
     OPTIONAL_IMPORTS Mixxx
     QML_FILES
+      res/qml/Mixxx/Controls/Slider.qml
       res/qml/Mixxx/Controls/Knob.qml
       res/qml/Mixxx/Controls/Fader.qml
       res/qml/Mixxx/Controls/Spinny.qml
       res/qml/Mixxx/Controls/WaveformOverviewHotcueMarker.qml
       res/qml/Mixxx/Controls/WaveformOverviewMarker.qml
+      res/qml/Mixxx/Controls/WaveformOverviewMarkerLayer.qml
       res/qml/Mixxx/Controls/WaveformOverview.qml
       res/qml/Mixxx/Controls/WaveformDisplay.qml
   )
@@ -3948,6 +3966,7 @@ if(QML)
       src/qml/asyncimageprovider.cpp
       src/qml/qmlapplication.cpp
       src/qml/qmlautoreload.cpp
+      src/qml/qmlbatteryproxy.cpp
       src/qml/qmlbeatsmodel.cpp
       src/qml/qmlchainpresetmodel.cpp
       src/qml/qmlconfigproxy.cpp
@@ -3967,6 +3986,7 @@ if(QML)
       src/qml/qmlmixxxcontrollerscreen.cpp
       src/qml/qmlplayermanagerproxy.cpp
       src/qml/qmlplayerproxy.cpp
+      src/qml/qmlrecordingproxy.cpp
       src/qml/qmlsidebarmodelproxy.cpp
       src/qml/qmllibrarytracklistcolumn.cpp
       src/qml/qmltrackproxy.cpp
@@ -3975,6 +3995,7 @@ if(QML)
       src/qml/qmlwaveformoverview.cpp
       src/qml/qmlwaveformrenderer.cpp
       src/qml/qmlsettingparameter.cpp
+      src/qml/qmlskincontrolcreator.cpp
       src/qml/qmltrackproxy.cpp
       src/qml/qmlsoundmanagerproxy.cpp
       src/qml/qmlpreferencesproxy.cpp
@@ -4282,6 +4303,40 @@ else()
           applocal
       )
 
+      # FIXME: Install using IMPORTED_RUNTIME_ARTIFACTS seems to create plugins in the wrong place, leading to packaging issue and runtime problems.
+      install(
+        DIRECTORY "${Qt6_DIR}/../../Qt${QT_VERSION_MAJOR}/plugins/multimedia"
+        DESTINATION "${MIXXX_INSTALL_DATADIR}/Qt${QT_VERSION_MAJOR}/plugins"
+        COMPONENT applocal
+      )
+
+      install(
+        IMPORTED_RUNTIME_ARTIFACTS
+          Qt${QT_VERSION_MAJOR}::QuickDialogs2
+          DESTINATION
+          "${MIXXX_INSTALL_DATADIR}"
+          COMPONENT
+          applocal
+      )
+
+      install(
+        IMPORTED_RUNTIME_ARTIFACTS
+          Qt${QT_VERSION_MAJOR}::QuickDialogs2QuickImpl
+          DESTINATION
+          "${MIXXX_INSTALL_DATADIR}"
+          COMPONENT
+          applocal
+      )
+
+      install(
+        IMPORTED_RUNTIME_ARTIFACTS
+          Qt${QT_VERSION_MAJOR}::QuickDialogs2Utils
+          DESTINATION
+          "${MIXXX_INSTALL_DATADIR}"
+          COMPONENT
+          applocal
+      )
+
       #install qml6-module-qt5compat-graphicaleffects
       install(
         DIRECTORY
@@ -4297,6 +4352,13 @@ else()
         DESTINATION "${MIXXX_INSTALL_DATADIR}/Qt6/qml"
         COMPONENT applocal
       )
+      # Qt6MultimediaQuick doesn't seem to be included in any defined target but it is required.
+      install(
+        FILES
+          "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}$<$<CONFIG:Debug>:/debug>/bin/Qt6MultimediaQuick$<$<CONFIG:Debug>:d>${CMAKE_SHARED_LIBRARY_SUFFIX}"
+        DESTINATION "${MIXXX_INSTALL_DATADIR}"
+        COMPONENT applocal
+      )
 
       # install qml6-module-qtqml-workerscript
       install(
@@ -4310,6 +4372,14 @@ else()
       install(
         DIRECTORY
           "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}$<$<CONFIG:Debug>:/debug>/Qt6/qml/QtQuick/Controls"
+        DESTINATION "${MIXXX_INSTALL_DATADIR}/Qt6/qml/QtQuick"
+        COMPONENT applocal
+      )
+
+      # install qml6-module-qtquick-dialogs
+      install(
+        DIRECTORY
+          "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}$<$<CONFIG:Debug>:/debug>/Qt6/qml/QtQuick/Dialogs"
         DESTINATION "${MIXXX_INSTALL_DATADIR}/Qt6/qml/QtQuick"
         COMPONENT applocal
       )
@@ -4880,31 +4950,37 @@ endif()
 
 # FDK-AAC is loaded dynamically at runtime by EncoderFdkAac using QLibrary,
 # so copy it into the Windows and macOS packages, but do not link to it.
-if(APPLE AND MACOS_BUNDLE)
-  find_library(FDK_AAC_LIBRARY fdk-aac)
-  if(FDK_AAC_LIBRARY)
-    message(STATUS "Found fdk-aac: ${FDK_AAC_LIBRARY}")
-    file(
-      COPY ${FDK_AAC_LIBRARY}
-      DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/lib/fdk-aac-install"
-      FOLLOW_SYMLINK_CHAIN
-    )
-    install(
-      DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib/fdk-aac-install/"
-      DESTINATION "${MIXXX_INSTALL_PREFIX}/Contents/Frameworks"
-    )
+find_package(FdkAac QUIET)
+if(FdkAac_FOUND)
+  if(WIN32)
+    if(FdkAac_DLL)
+      message(
+        STATUS
+        "Found fdk-aac DLL: ${FdkAac_DLL} (found version \"${FdkAac_VERSION}\")"
+      )
+      install(FILES "${FdkAac_DLL}" DESTINATION "${MIXXX_INSTALL_BINDIR}")
+    else()
+      message(STATUS "Could NOT find fdk-aac.dll (FdkAac_DLL not set)")
+    endif()
   else()
-    message(STATUS "Could NOT find libfdk-aac.dylib")
+    message(
+      STATUS
+      "Found fdk-aac: ${FdkAac_LIBRARY} (found version \"${FdkAac_VERSION}\")"
+    )
+    if(APPLE AND MACOS_BUNDLE)
+      file(
+        COPY "${FdkAac_LIBRARY}"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/lib/fdk-aac-install"
+        FOLLOW_SYMLINK_CHAIN
+      )
+      install(
+        DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib/fdk-aac-install/"
+        DESTINATION "${MIXXX_INSTALL_PREFIX}/Contents/Frameworks"
+      )
+    endif()
   endif()
-elseif(WIN32)
-  # On Windows find_library finds the .lib file, but the installer needs the .dll file.
-  find_file(FDK_AAC_DLL fdk-aac.dll PATH_SUFFIXES ${CMAKE_INSTALL_BINDIR})
-  if(FDK_AAC_DLL)
-    message(STATUS "Found fdk-aac DLL: ${FDK_AAC_DLL}")
-    install(FILES ${FDK_AAC_DLL} DESTINATION ${MIXXX_INSTALL_BINDIR})
-  else()
-    message(STATUS "Could NOT find fdk-aac.dll")
-  endif()
+else()
+  message(STATUS "Could NOT find fdk-aac (FdkAac_FOUND is FALSE)")
 endif()
 
 # Google PerfTools
@@ -5207,6 +5283,9 @@ if(HID)
     )
   endif()
   target_compile_definitions(mixxx-lib PUBLIC __HID__)
+  if(QML)
+    target_compile_definitions(mixxx-qml-lib PUBLIC __HID__)
+  endif()
 endif()
 
 # USB Bulk controller support
@@ -5234,6 +5313,9 @@ if(BULK)
   endif()
   target_compile_definitions(mixxx-lib PUBLIC __BULK__)
   target_link_libraries(mixxx-lib PRIVATE LibUSB::LibUSB)
+  if(QML)
+    target_compile_definitions(mixxx-qml-lib PUBLIC __BULK__)
+  endif()
 endif()
 
 # Vinyl Control
@@ -5369,7 +5451,7 @@ set(CPACK_GIT_COMMIT_DATE ${GIT_COMMIT_DATE})
 # Detailed version information, git info and package file name are set from
 # CPackConfig.cmake, not here.
 
-set(CPACK_SOURCE_IGNORE_FILES "\\\\.#;/#;.*~;\\\\.o$")
+set(CPACK_SOURCE_IGNORE_FILES "\\\\.#;/#;.*~$;\\\\.o$")
 list(APPEND CPACK_SOURCE_IGNORE_FILES "/\\\\.git/")
 list(APPEND CPACK_SOURCE_IGNORE_FILES "/\\\\.github/")
 list(APPEND CPACK_SOURCE_IGNORE_FILES "/build/")

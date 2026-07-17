@@ -21,12 +21,14 @@ case "$1" in
         case "${VERSION_CODENAME}" in
             jammy|bullseye|victoria|vera|vanessa|virginia) # <= Ubuntu 22.04.5 LTS
                 PACKAGES_EXTRA=(
-                    libqt6shadertools6-dev
+                    libqt6shadertools6-dev \
+                    libqt6core5compat6-dev
                 )
                 ;;
             *)
                 PACKAGES_EXTRA=(
-                    qt6-shadertools-dev
+                    qt6-shadertools-dev \
+                    qt6-5compat-dev
                 )
         esac
 
@@ -112,9 +114,9 @@ case "$1" in
             libmsgsl-dev \
             libopus-dev \
             libopusfile-dev \
+            libpipewire-0.3-dev \
             libportmidi-dev \
             libprotobuf-dev \
-            libqt6core5compat6-dev \
             libqt6opengl6-dev \
             libqt6sql6-sqlite \
             libqt6svg6-dev \
@@ -122,6 +124,7 @@ case "$1" in
             libshout-idjc-dev \
             libsndfile1-dev \
             libsoundtouch-dev \
+            libspa-0.2-dev \
             libsqlite3-dev \
             libssl-dev \
             libtag1-dev \
@@ -140,6 +143,7 @@ case "$1" in
             qml6-module-qt5compat-graphicaleffects \
             qml6-module-qtqml-workerscript \
             qml6-module-qtquick-controls \
+            qml6-module-qtquick-dialogs \
             qml6-module-qtquick-layouts \
             qml6-module-qtquick-shapes \
             qml6-module-qtquick-templates \
