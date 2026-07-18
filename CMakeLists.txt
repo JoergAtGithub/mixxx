@@ -4531,12 +4531,12 @@ if(APPLE)
         "-weak_framework CoreAudio"
         "-weak_framework CoreFoundation"
         "-weak_framework CoreImage"
-        "-framework CoreMedia"
+        "-weak_framework CoreMedia"
         "-weak_framework CoreMidi"
         "-weak_framework CoreServices"
-        "-framework CoreVideo"
+        "-weak_framework CoreVideo"
         "-weak_framework IOSurface"
-        "-framework VideoToolbox"
+        "-weak_framework VideoToolbox"
     )
     if(IOS)
       target_link_libraries(mixxx-lib PRIVATE "-weak_framework UIKit")
