@@ -26,13 +26,13 @@
 
     <InstallExecuteSequence>
       <!-- 
-        The "NOT WIX_UPGRADE_DETECTED" condition prevents the custom action from running 
-        in the ExecuteSequence if it already succeeded during the UI phase. This avoids 
-        architecture or permission related loading issues (Error 1157) after elevation.
+        The Condition attribute prevents the custom action from running in the ExecuteSequence 
+        if it already succeeded during the UI phase. This avoids architecture or permission 
+        related loading issues (Error 1157) after elevation.
       -->
-      <Custom Action="FindAllRelatedMixxxInstallations" Before="FindRelatedProducts">
-        NOT WIX_UPGRADE_DETECTED
-      </Custom>
+      <Custom Action="FindAllRelatedMixxxInstallations" 
+              Before="FindRelatedProducts" 
+              Condition="NOT WIX_UPGRADE_DETECTED" />
     </InstallExecuteSequence>
 
     <InstallUISequence>
