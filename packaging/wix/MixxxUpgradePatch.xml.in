@@ -27,7 +27,7 @@
                   BinaryRef="mixxxupgradecustomaction"
                   DllEntry="FindAllRelatedMixxxInstallations"
                   Execute="firstSequence"
-                  Bitness="$(sys.BUILDARCH)" />
+                  Bitness="always64" />
 
     <InstallExecuteSequence>
       <Custom Action="FindAllRelatedMixxxInstallations" Before="FindRelatedProducts" />
