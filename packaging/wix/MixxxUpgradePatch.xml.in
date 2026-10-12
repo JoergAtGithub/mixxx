@@ -21,13 +21,13 @@
       fails with Error 1157 on clean/virgin Windows installations because the 
       WoW64 subsystem cannot resolve the architecture mismatch without globally 
       registered runtime environments.      
-      Setting Bitness forces the installer to launch the native 64-bit Custom Action server.
+      By using Execute="immediate", WiX v6 automatically matches the Custom Action's bitness 
+      to the architecture specified via the command line (-arch x64 / -arch ARM64).
     -->
     <CustomAction Id="FindAllRelatedMixxxInstallations"
                   BinaryRef="mixxxupgradecustomaction"
                   DllEntry="FindAllRelatedMixxxInstallations"
-                  Execute="firstSequence"
-                  Bitness="always64" />
+                  Execute="immediate" />
 
     <InstallExecuteSequence>
       <Custom Action="FindAllRelatedMixxxInstallations" Before="FindRelatedProducts" />
