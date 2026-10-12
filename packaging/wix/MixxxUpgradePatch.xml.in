@@ -15,10 +15,19 @@
     <Binary Id="mixxxupgradecustomaction"
             SourceFile="$<TARGET_FILE:mixxxupgradecustomaction>" />
 
+    <!--
+      In WiX v4, CustomActions default to a 32-bit helper process (always32).
+      Trying to load our native 64-bit Custom Action DLL into a 32-bit process 
+      fails with Error 1157 on clean/virgin Windows installations because the 
+      WoW64 subsystem cannot resolve the architecture mismatch without globally 
+      registered runtime environments.      
+      Setting Bitness forces the installer to launch the native 64-bit Custom Action server.
+    -->
     <CustomAction Id="FindAllRelatedMixxxInstallations"
                   BinaryRef="mixxxupgradecustomaction"
                   DllEntry="FindAllRelatedMixxxInstallations"
-                  Execute="firstSequence" />
+                  Execute="firstSequence"
+                  Bitness="$(sys.BUILDARCH)" />
 
     <InstallExecuteSequence>
       <Custom Action="FindAllRelatedMixxxInstallations" Before="FindRelatedProducts" />
