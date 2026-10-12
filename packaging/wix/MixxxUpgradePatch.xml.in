@@ -12,6 +12,11 @@
     can clean up the old installation.
   -->
   <CPackWiXFragment Id="#PRODUCT">
+    <!--
+      Ensures the WIX_UPGRADE_DETECTED property is treated as secure.
+    -->
+    <Property Id="WIX_UPGRADE_DETECTED" Secure="yes" />
+
     <Binary Id="mixxxupgradecustomaction"
             SourceFile="$<TARGET_FILE:mixxxupgradecustomaction>" />
 
@@ -24,19 +29,17 @@
                   DllEntry="FindAllRelatedMixxxInstallations"
                   Execute="immediate" />
 
-    <InstallExecuteSequence>
-      <!-- 
-        The Condition attribute prevents the custom action from running in the ExecuteSequence 
-        if it already succeeded during the UI phase. This avoids architecture or permission 
-        related loading issues (Error 1157) after elevation.
-      -->
-      <Custom Action="FindAllRelatedMixxxInstallations" 
-              Before="FindRelatedProducts" 
-              Condition="NOT WIX_UPGRADE_DETECTED" />
-    </InstallExecuteSequence>
+    <!-- 
+      The custom action is completely removed from InstallExecuteSequence.
+      This ensures the DLL is never invoked inside the restricted SYSTEM service context,
+      eliminating the Error 1157 during the elevated installation phase.
+    -->
 
     <InstallUISequence>
-      <!-- The custom action runs here first during interactive installations -->
+      <!-- 
+        The custom action only runs during interactive installations. The UI phase 
+        has full access to the user environment to safely detect older installations.
+      -->
       <Custom Action="FindAllRelatedMixxxInstallations" Before="FindRelatedProducts" />
     </InstallUISequence>
   </CPackWiXFragment>
