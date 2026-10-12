@@ -16,13 +16,8 @@
             SourceFile="$<TARGET_FILE:mixxxupgradecustomaction>" />
 
     <!--
-      In WiX v4, CustomActions default to a 32-bit helper process (always32).
-      Trying to load our native 64-bit Custom Action DLL into a 32-bit process 
-      fails with Error 1157 on clean/virgin Windows installations because the 
-      WoW64 subsystem cannot resolve the architecture mismatch without globally 
-      registered runtime environments.      
-      By using Execute="immediate", WiX v6 automatically matches the Custom Action's bitness 
-      to the architecture specified via the command line (-arch x64 / -arch ARM64).
+      Using Execute="immediate" without architecture attributes allows WiX v6 
+      to compile natively for both x64 and ARM64 without producing schema validation errors.
     -->
     <CustomAction Id="FindAllRelatedMixxxInstallations"
                   BinaryRef="mixxxupgradecustomaction"
@@ -30,10 +25,18 @@
                   Execute="immediate" />
 
     <InstallExecuteSequence>
-      <Custom Action="FindAllRelatedMixxxInstallations" Before="FindRelatedProducts" />
+      <!-- 
+        The "NOT WIX_UPGRADE_DETECTED" condition prevents the custom action from running 
+        in the ExecuteSequence if it already succeeded during the UI phase. This avoids 
+        architecture or permission related loading issues (Error 1157) after elevation.
+      -->
+      <Custom Action="FindAllRelatedMixxxInstallations" Before="FindRelatedProducts">
+        NOT WIX_UPGRADE_DETECTED
+      </Custom>
     </InstallExecuteSequence>
 
     <InstallUISequence>
+      <!-- The custom action runs here first during interactive installations -->
       <Custom Action="FindAllRelatedMixxxInstallations" Before="FindRelatedProducts" />
     </InstallUISequence>
   </CPackWiXFragment>
