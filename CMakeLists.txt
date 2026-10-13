@@ -2586,7 +2586,6 @@ if(WIN32)
     set(CMAKE_INSTALL_DEBUG_LIBRARIES true)
     set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY true)
   endif()
-  include(InstallRequiredSystemLibraries)
 endif()
 
 if(NOT ANDROID)
@@ -5733,6 +5732,11 @@ if(WIN32)
     CPACK_WIX_PATCH_FILE
     "${CMAKE_CURRENT_BINARY_DIR}/packaging/wix/MixxxUpgradePatch.xml"
   )
+
+  if(OpenMP_CXX_FOUND)
+    set(CMAKE_INSTALL_OPENMP_LIBRARIES TRUE)
+  endif()
+  include(InstallRequiredSystemLibraries)
 
   # uses CMAKE_PROJECT_VERSION
   configure_file(packaging/wix/LICENSE.rtf.in packaging/wix/LICENSE.rtf @ONLY)
