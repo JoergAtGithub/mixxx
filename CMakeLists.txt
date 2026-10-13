@@ -2388,7 +2388,6 @@ if(WIN32)
     set(CMAKE_INSTALL_DEBUG_LIBRARIES true)
     set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY true)
   endif()
-  include(InstallRequiredSystemLibraries)
 endif()
 
 install(
@@ -5234,6 +5233,14 @@ if(WIN32)
     "${CMAKE_CURRENT_BINARY_DIR}/packaging/wix/MixxxUpgradePatch.xml"
   )
 
+  # OpenMP_CXX_FOUND is set by FindSleef.cmake
+  # if OpenMP is used we need to ship vcomp140.dll of
+  # the MS Visual C++ Redistributables
+  if(OpenMP_CXX_FOUND)
+    set(CMAKE_INSTALL_OPENMP_LIBRARIES TRUE)
+  endif()  
+  include(InstallRequiredSystemLibraries)
+  
   # uses CMAKE_PROJECT_VERSION
   configure_file(packaging/wix/LICENSE.rtf.in packaging/wix/LICENSE.rtf @ONLY)
 endif()
