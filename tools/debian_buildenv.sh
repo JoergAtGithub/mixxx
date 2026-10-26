@@ -112,6 +112,7 @@ case "$1" in
             libmodplug-dev \
             libmp3lame-dev \
             libmsgsl-dev \
+            libonnxruntime-dev \
             libopus-dev \
             libopusfile-dev \
             libpipewire-0.3-dev \

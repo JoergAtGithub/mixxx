@@ -2277,9 +2277,9 @@ endif()
 # Windows-specific options
 if(WIN32)
   # https://docs.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt
-  # _WIN32_WINNT_WIN7 = 0x0601
-  target_compile_definitions(mixxx-lib PUBLIC WINVER=0x0601)
-  target_compile_definitions(mixxx-lib PUBLIC _WIN32_WINNT=0x0601)
+  # _WIN32_WINNT_WIN10 = 0x0A00
+  target_compile_definitions(mixxx-lib PUBLIC WINVER=0x0A00)
+  target_compile_definitions(mixxx-lib PUBLIC _WIN32_WINNT=0x0A00)
   if(MSVC)
     target_compile_definitions(mixxx-lib PUBLIC _USE_MATH_DEFINES)
   endif()
@@ -3523,6 +3523,22 @@ endif()
 # Ebur128
 find_package(Ebur128 REQUIRED)
 target_link_libraries(mixxx-lib PRIVATE Ebur128::Ebur128)
+
+# ONNX Runtime (WinML on Windows, onnxruntime from vcpkg/distribution elsewhere)
+option(ONNXRUNTIME "Support for running ONNX models (WinML on Windows)" ON)
+if(ONNXRUNTIME)
+  find_package(OnnxRuntime)
+  if(OnnxRuntime_FOUND)
+    target_sources(
+      mixxx-lib
+      PRIVATE src/ml/mlmodel_ort.cpp src/ml/mlplatform.cpp
+    )
+    target_link_libraries(mixxx-lib PRIVATE OnnxRuntime::OnnxRuntime)
+    target_compile_definitions(mixxx-lib PUBLIC __ONNXRUNTIME__)
+  else()
+    message(STATUS "ONNX Runtime not found, ONNX support disabled")
+  endif()
+endif()
 
 # FidLib
 add_library(fidlib STATIC EXCLUDE_FROM_ALL lib/fidlib/fidlib.c)
