@@ -4392,14 +4392,21 @@ else()
           applocal
       )
 
-      install(
-        IMPORTED_RUNTIME_ARTIFACTS
-          Qt${QT_VERSION_MAJOR}::QuickShapesPrivate
-          DESTINATION
-          "${MIXXX_INSTALL_DATADIR}"
-          COMPONENT
-          applocal
+      get_target_property(
+        _quickshapes_type
+        Qt${QT_VERSION_MAJOR}::QuickShapesPrivate
+        TYPE
       )
+      if(NOT _quickshapes_type STREQUAL "INTERFACE_LIBRARY")
+        install(
+          IMPORTED_RUNTIME_ARTIFACTS
+            Qt${QT_VERSION_MAJOR}::QuickShapesPrivate
+            DESTINATION
+            "${MIXXX_INSTALL_DATADIR}"
+            COMPONENT
+            applocal
+        )
+      endif()
 
       if(QT_VERSION VERSION_LESS 6.4)
         # From Qt 6.4 integrated in QuickControls2
