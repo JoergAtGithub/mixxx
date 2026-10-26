@@ -12,6 +12,17 @@ namespace ml {
 /// Backends (selected at build time, see cmake/modules/MixxxOnnxRuntime.cmake):
 ///   Windows: the Windows ML that is built into the OS (Windows.AI.MachineLearning)
 ///   others:  ONNX Runtime (vcpkg or distribution package)
+/// Result of probeBackend()
+struct MlBackendProbe {
+    bool ok = false;
+    /// Backend description on success, error message otherwise
+    QString description;
+};
+
+/// Initializes ONNX Runtime and selects the best execution provider without
+/// loading a model. Slow, call it from a worker thread. Never throws.
+MlBackendProbe probeBackend();
+
 class MlModel {
   public:
     ~MlModel();

@@ -6,6 +6,14 @@
 #include <QProcessEnvironment>
 #include <QStandardPaths>
 #include <QtGlobal>
+
+#ifdef __ONNXRUNTIME__
+#include <QFutureWatcher>
+#include <QMessageBox>
+#include <QtConcurrent>
+
+#include "ml/mlmodel.h"
+#endif
 #include <gsl/pointers>
 
 #ifdef __BROADCAST__
@@ -792,6 +800,35 @@ void CoreServices::initialize(QApplication* pApp) {
     }
 
     m_isInitialized = true;
+
+#ifdef __ONNXRUNTIME__
+    // Check in the background that ONNX Runtime works, so the user gets an
+    // early message without delaying the GUI. Works for the QWidget and the
+    // QML GUI alike since both run on a QApplication.
+    auto* pWatcher = new QFutureWatcher<mixxx::ml::MlBackendProbe>(this);
+    connect(pWatcher,
+            &QFutureWatcherBase::finished,
+            this,
+            [this, pWatcher] {
+                const mixxx::ml::MlBackendProbe probe = pWatcher->result();
+                pWatcher->deleteLater();
+                if (probe.ok) {
+                    qInfo() << "ONNX Runtime backend:" << probe.description;
+                } else {
+                    qWarning() << "ONNX Runtime is not usable:" << probe.description;
+                    auto* pBox = new QMessageBox(QMessageBox::Warning,
+                            tr("Machine learning unavailable"),
+                            tr("ONNX Runtime could not be initialized. Features "
+                               "based on machine learning are disabled."),
+                            QMessageBox::Ok);
+                    pBox->setDetailedText(probe.description);
+                    pBox->setAttribute(Qt::WA_DeleteOnClose);
+                    pBox->open();
+                }
+                emit mlBackendProbed(probe.ok, probe.description);
+            });
+    pWatcher->setFuture(QtConcurrent::run(&mixxx::ml::probeBackend));
+#endif
 
     ControllerScriptEngineBase::registerPlayerManager(getPlayerManager());
 

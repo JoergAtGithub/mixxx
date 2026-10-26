@@ -3527,14 +3527,18 @@ target_link_libraries(mixxx-lib PRIVATE Ebur128::Ebur128)
 # ONNX Runtime (WinML on Windows, onnxruntime from vcpkg/distribution elsewhere)
 option(ONNXRUNTIME "Support for running ONNX models (WinML on Windows)" ON)
 if(ONNXRUNTIME)
-  find_package(OnnxRuntime)
+  find_package(OnnxRuntime 1.23)
   if(OnnxRuntime_FOUND)
     target_sources(
       mixxx-lib
-      PRIVATE src/ml/mlmodel_ort.cpp src/ml/mlplatform.cpp
+      PRIVATE src/ml/mlmodel_ort.cpp src/ml/ortexecutionproviders.cpp
     )
     target_link_libraries(mixxx-lib PRIVATE OnnxRuntime::OnnxRuntime)
     target_compile_definitions(mixxx-lib PUBLIC __ONNXRUNTIME__)
+    if(WIN32 AND OnnxRuntime_DLLS)
+      # Self-contained Windows App SDK: ship the runtime DLLs next to mixxx.exe
+      install(FILES ${OnnxRuntime_DLLS} DESTINATION "${MIXXX_INSTALL_BINDIR}")
+    endif()
   else()
     message(STATUS "ONNX Runtime not found, ONNX support disabled")
   endif()

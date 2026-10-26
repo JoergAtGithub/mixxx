@@ -160,7 +160,6 @@ if(WIN32)
       OnnxRuntime_INCLUDE_DIR
       OnnxRuntime_WinML_INCLUDE_DIR
       OnnxRuntime_WinML_LIBRARY
-      OnnxRuntime_Bootstrap_LIBRARY
     VERSION_VAR OnnxRuntime_VERSION
   )
 

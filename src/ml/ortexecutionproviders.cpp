@@ -1,4 +1,4 @@
-#include "ml/mlplatform.h"
+#include "ml/ortexecutionproviders.h"
 
 #include <QString>
 #include <string>
@@ -6,7 +6,6 @@
 #include "util/logger.h"
 
 #ifdef _WIN32
-#include <MddBootstrap.h>
 #include <WinMLEpCatalog.h>
 #include <windows.h>
 #endif
@@ -18,10 +17,7 @@ namespace ml {
 
 namespace {
 
-const Logger kLogger("MlPlatform");
-
-// Windows App SDK 1.8
-constexpr UINT32 kMajorMinor = 0x00010008;
+const Logger kLogger("OrtExecutionProviders");
 
 BOOL CALLBACK registerProvider(WinMLEpHandle ep, const WinMLEpInfo* info, void* pContext) {
     auto* pEnv = static_cast<Ort::Env*>(pContext);
@@ -59,15 +55,8 @@ BOOL CALLBACK registerProvider(WinMLEpHandle ep, const WinMLEpInfo* info, void* 
 } // namespace
 
 bool initializePlatform() {
-    const HRESULT hr = MddBootstrapInitialize2(kMajorMinor,
-            L"",
-            PACKAGE_VERSION{},
-            MddBootstrapInitializeOptions_OnNoMatch_ShowUI);
-    if (FAILED(hr)) {
-        kLogger.warning() << "Windows App Runtime 1.8 is not available, HRESULT"
-                          << Qt::hex << hr;
-        return false;
-    }
+    // Self-contained deployment: the runtime DLLs sit next to mixxx.exe,
+    // so no framework bootstrap is needed.
     return true;
 }
 

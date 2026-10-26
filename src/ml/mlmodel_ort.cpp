@@ -1,11 +1,13 @@
 #include <onnxruntime_cxx_api.h>
 
+#include <QScopeGuard>
+#include <QThread>
 #include <filesystem>
 #include <string>
 #include <vector>
 
 #include "ml/mlmodel.h"
-#include "ml/mlplatform.h"
+#include "ml/ortexecutionproviders.h"
 #include "util/logger.h"
 
 namespace mixxx {
@@ -15,7 +17,8 @@ namespace {
 
 const Logger kLogger("MlModel");
 
-#if ORT_API_VERSION >= 22
+static_assert(ORT_API_VERSION >= 23, "ONNX Runtime 1.23 or newer is required");
+
 const char* deviceTypeName(OrtHardwareDeviceType type) {
     switch (type) {
     case OrtHardwareDeviceType_NPU:
@@ -48,9 +51,63 @@ QString describeDevice(const Ort::ConstEpDevice& epDevice) {
                     QString::fromUtf8(hw.Vendor()),
                     QString::number(hw.DeviceId()));
 }
-#endif
+
+QString selectBackend(Ort::Env& env, Ort::SessionOptions& options) {
+    QString backend = QStringLiteral("CPU via 'CPUExecutionProvider' (default)");
+    const std::vector<Ort::ConstEpDevice> devices = env.GetEpDevices();
+    kLogger.info() << "Available execution provider devices:" << devices.size();
+    const Ort::ConstEpDevice* best = nullptr;
+    for (const auto& device : devices) {
+        kLogger.info() << "  -" << describeDevice(device);
+        if (device.Device().Type() == OrtHardwareDeviceType_CPU) {
+            continue;
+        }
+        if (!best ||
+                deviceRank(device.Device().Type()) >
+                        deviceRank(best->Device().Type())) {
+            best = &device;
+        }
+    }
+    if (best) {
+        try {
+            options.AppendExecutionProvider_V2(env, {*best}, Ort::KeyValuePairs{});
+            backend = describeDevice(*best) +
+                    QStringLiteral(", CPU as fallback for unsupported operators");
+        } catch (const Ort::Exception& e) {
+            kLogger.warning() << "Failed to enable" << describeDevice(*best)
+                              << ":" << e.what() << "- falling back to CPU";
+        }
+    }
+    return backend;
+}
 
 } // namespace
+
+MlBackendProbe probeBackend() {
+    // Name the (pooled) worker thread for the log, restore the name afterwards
+    // because the thread is shared with other tasks.
+    QThread* const pThread = QThread::currentThread();
+    const QString previousName = pThread->objectName();
+    pThread->setObjectName(QStringLiteral("MlProbe"));
+    const auto restoreName = qScopeGuard([&] { pThread->setObjectName(previousName); });
+    try {
+        if (!initializePlatform()) {
+            return {false, QStringLiteral("ONNX Runtime platform initialization failed")};
+        }
+        kLogger.info() << "ONNX Runtime version:"
+                       << QString::fromUtf8(Ort::GetVersionString());
+        kLogger.info() << "ONNX Runtime build info:"
+                       << QString::fromUtf8(Ort::GetBuildInfoString());
+        Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "mixxx");
+        registerPlatformExecutionProviders(env);
+        Ort::SessionOptions options;
+        const QString backend = selectBackend(env, options);
+        kLogger.info() << "Selected backend:" << backend;
+        return {true, backend};
+    } catch (const std::exception& e) {
+        return {false, QString::fromUtf8(e.what())};
+    }
+}
 
 struct MlModel::Impl {
     Impl(Ort::Env&& env, Ort::Session&& session)
@@ -80,37 +137,7 @@ std::unique_ptr<MlModel> MlModel::load(const QString& modelPath) {
         Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "mixxx");
         registerPlatformExecutionProviders(env);
         Ort::SessionOptions options;
-        QString backend = QStringLiteral("CPU via 'CPUExecutionProvider' (default)");
-
-#if ORT_API_VERSION >= 22
-        const std::vector<Ort::ConstEpDevice> devices = env.GetEpDevices();
-        kLogger.info() << "Available execution provider devices:" << devices.size();
-        const Ort::ConstEpDevice* best = nullptr;
-        for (const auto& device : devices) {
-            kLogger.info() << "  -" << describeDevice(device);
-            if (device.Device().Type() == OrtHardwareDeviceType_CPU) {
-                continue;
-            }
-            if (!best ||
-                    deviceRank(device.Device().Type()) >
-                            deviceRank(best->Device().Type())) {
-                best = &device;
-            }
-        }
-        if (best) {
-            try {
-                options.AppendExecutionProvider_V2(env, {*best}, Ort::KeyValuePairs{});
-                backend = describeDevice(*best) +
-                        QStringLiteral(", CPU as fallback for unsupported operators");
-            } catch (const Ort::Exception& e) {
-                kLogger.warning() << "Failed to enable" << describeDevice(*best)
-                                  << ":" << e.what() << "- falling back to CPU";
-            }
-        }
-#else
-        kLogger.info() << "ONNX Runtime older than 1.22: automatic device "
-                          "selection not available, using CPU";
-#endif
+        const QString backend = selectBackend(env, options);
 
         const std::filesystem::path path(modelPath.toStdU16String());
         Ort::Session session(env, path.c_str(), options);

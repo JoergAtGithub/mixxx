@@ -14,6 +14,12 @@
 #include <rubberband/RubberBandStretcher.h>
 #endif
 
+#ifdef __ONNXRUNTIME__
+#include <onnxruntime_cxx_api.h>
+
+#include "ml/ortexecutionproviders.h"
+#endif
+
 #include <FLAC/format.h>
 #include <chromaprint.h>
 #include <ebur128.h>
@@ -179,6 +185,14 @@ QStringList VersionStore::dependencyVersions() {
             // Should be accurate.
             QStringLiteral("libshout: %1")
                     .arg(shout_version(nullptr, nullptr, nullptr)),
+#ifdef __ONNXRUNTIME__
+            // Should be accurate. The platform layer must be initialized first
+            // so the matching onnxruntime.dll gets loaded on Windows.
+            QStringLiteral("ONNX Runtime: %1")
+                    .arg(mixxx::ml::initializePlatform()
+                                    ? QString::fromUtf8(Ort::GetVersionString())
+                                    : QStringLiteral("unavailable")),
+#endif
 #endif
             QStringLiteral("PortAudio: %1 %2")
                     .arg(Pa_GetVersion())
