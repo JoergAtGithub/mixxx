@@ -99,7 +99,7 @@ std::unique_ptr<MlModel> MlModel::load(const QString& modelPath) {
         }
         if (best) {
             try {
-                options.AppendExecutionProvider_V2(env, {*best}, {});
+                options.AppendExecutionProvider_V2(env, {*best}, Ort::KeyValuePairs{});
                 backend = describeDevice(*best) +
                         QStringLiteral(", CPU as fallback for unsupported operators");
             } catch (const Ort::Exception& e) {
