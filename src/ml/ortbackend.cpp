@@ -1,12 +1,9 @@
-#include <onnxruntime_cxx_api.h>
+#include "ml/ortbackend.h"
 
 #include <QScopeGuard>
 #include <QThread>
-#include <filesystem>
-#include <string>
 #include <vector>
 
-#include "ml/mlmodel.h"
 #include "ml/ortexecutionproviders.h"
 #include "util/logger.h"
 
@@ -15,7 +12,7 @@ namespace ml {
 
 namespace {
 
-const Logger kLogger("MlModel");
+const Logger kLogger("OrtBackend");
 
 static_assert(ORT_API_VERSION >= 23, "ONNX Runtime 1.23 or newer is required");
 
@@ -52,6 +49,8 @@ QString describeDevice(const Ort::ConstEpDevice& epDevice) {
                     QString::number(hw.DeviceId()));
 }
 
+} // namespace
+
 QString selectBackend(Ort::Env& env, Ort::SessionOptions& options) {
     QString backend = QStringLiteral("CPU via 'CPUExecutionProvider' (default)");
     const std::vector<Ort::ConstEpDevice> devices = env.GetEpDevices();
@@ -81,8 +80,6 @@ QString selectBackend(Ort::Env& env, Ort::SessionOptions& options) {
     return backend;
 }
 
-} // namespace
-
 MlBackendProbe probeBackend() {
     // Name the (pooled) worker thread for the log, restore the name afterwards
     // because the thread is shared with other tasks.
@@ -107,50 +104,6 @@ MlBackendProbe probeBackend() {
     } catch (const std::exception& e) {
         return {false, QString::fromUtf8(e.what())};
     }
-}
-
-struct MlModel::Impl {
-    Impl(Ort::Env&& env, Ort::Session&& session)
-            : env(std::move(env)),
-              session(std::move(session)) {
-    }
-    Ort::Env env;
-    Ort::Session session;
-};
-
-MlModel::MlModel(std::unique_ptr<Impl> impl, QString backendDescription)
-        : m_impl(std::move(impl)),
-          m_backendDescription(std::move(backendDescription)) {
-}
-
-MlModel::~MlModel() = default;
-
-// static
-std::unique_ptr<MlModel> MlModel::load(const QString& modelPath) {
-    try {
-        if (!initializePlatform()) {
-            return nullptr;
-        }
-        kLogger.info() << "ONNX Runtime version:"
-                       << QString::fromUtf8(Ort::GetVersionString());
-
-        Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "mixxx");
-        registerPlatformExecutionProviders(env);
-        Ort::SessionOptions options;
-        const QString backend = selectBackend(env, options);
-
-        const std::filesystem::path path(modelPath.toStdU16String());
-        Ort::Session session(env, path.c_str(), options);
-
-        kLogger.info() << "Model loaded:" << modelPath;
-        kLogger.info() << "Selected backend:" << backend;
-        return std::unique_ptr<MlModel>(new MlModel(
-                std::make_unique<Impl>(std::move(env), std::move(session)),
-                backend));
-    } catch (const std::exception& e) {
-        kLogger.warning() << "Failed to load ONNX model" << modelPath << ":" << e.what();
-    }
-    return nullptr;
 }
 
 } // namespace ml

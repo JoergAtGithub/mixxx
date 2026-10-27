@@ -3524,21 +3524,59 @@ endif()
 find_package(Ebur128 REQUIRED)
 target_link_libraries(mixxx-lib PRIVATE Ebur128::Ebur128)
 
+# Microsoft Windows App SDK (WinAppSDK)
+target_link_libraries(mixxx-lib PRIVATE windowsapp)
+
 # ONNX Runtime (WinML on Windows, onnxruntime from vcpkg/distribution elsewhere)
 option(ONNXRUNTIME "Support for running ONNX models (WinML on Windows)" ON)
 if(ONNXRUNTIME)
   find_package(OnnxRuntime 1.23)
+  if(OnnxRuntime_FOUND AND WIN32)
+    # Windows ML headers and import library (windowsappsdk-ml). The DLLs are
+    # loaded from the local Windows installation. Set WINDOWSAPPSDK_ML_ROOT to
+    # a prefix containing include/windowsappsdk-ml and lib/windowsappsdk-ml
+    # (e.g. the vcpkg installed/x64-windows directory) if it is not found.
+    set(
+      WINDOWSAPPSDK_ML_ROOT
+      ""
+      CACHE PATH
+      "Prefix of the windowsappsdk-ml headers and libraries"
+    )
+    find_path(
+      WinML_INCLUDE_DIR
+      NAMES WinMLEpCatalog.h
+      HINTS "${WINDOWSAPPSDK_ML_ROOT}"
+      PATH_SUFFIXES include/windowsappsdk-ml windowsappsdk-ml
+    )
+    find_library(
+      WinML_LIBRARY
+      NAMES Microsoft.Windows.AI.MachineLearning
+      HINTS "${WINDOWSAPPSDK_ML_ROOT}"
+      PATH_SUFFIXES lib/windowsappsdk-ml windowsappsdk-ml
+    )
+    mark_as_advanced(WinML_INCLUDE_DIR WinML_LIBRARY)
+    if(NOT WinML_INCLUDE_DIR OR NOT WinML_LIBRARY)
+      message(
+        STATUS
+        "Windows ML headers/libraries not found (set WINDOWSAPPSDK_ML_ROOT), ONNX support disabled"
+      )
+      set(OnnxRuntime_FOUND FALSE)
+    endif()
+  endif()
   if(OnnxRuntime_FOUND)
     target_sources(
       mixxx-lib
-      PRIVATE src/ml/mlmodel_ort.cpp src/ml/ortexecutionproviders.cpp
+      PRIVATE
+        src/ml/mlmodel.cpp
+        src/ml/ortbackend.cpp
+        src/ml/ortexecutionproviders.cpp
     )
     target_link_libraries(mixxx-lib PRIVATE OnnxRuntime::OnnxRuntime)
-    target_compile_definitions(mixxx-lib PUBLIC __ONNXRUNTIME__)
-    if(WIN32 AND OnnxRuntime_DLLS)
-      # Self-contained Windows App SDK: ship the runtime DLLs next to mixxx.exe
-      install(FILES ${OnnxRuntime_DLLS} DESTINATION "${MIXXX_INSTALL_BINDIR}")
+    if(WIN32)
+      target_include_directories(mixxx-lib PRIVATE "${WinML_INCLUDE_DIR}")
+      target_link_libraries(mixxx-lib PRIVATE "${WinML_LIBRARY}")
     endif()
+    target_compile_definitions(mixxx-lib PUBLIC __ONNXRUNTIME__)
   else()
     message(STATUS "ONNX Runtime not found, ONNX support disabled")
   endif()

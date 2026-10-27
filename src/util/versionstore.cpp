@@ -16,6 +16,7 @@
 
 #ifdef __ONNXRUNTIME__
 #include <onnxruntime_cxx_api.h>
+#include <winrt/Windows.AI.MachineLearning.h>
 
 #include "ml/ortexecutionproviders.h"
 #endif
@@ -185,6 +186,8 @@ QStringList VersionStore::dependencyVersions() {
             // Should be accurate.
             QStringLiteral("libshout: %1")
                     .arg(shout_version(nullptr, nullptr, nullptr)),
+
+#endif
 #ifdef __ONNXRUNTIME__
             // Should be accurate. The platform layer must be initialized first
             // so the matching onnxruntime.dll gets loaded on Windows.
@@ -192,7 +195,6 @@ QStringList VersionStore::dependencyVersions() {
                     .arg(mixxx::ml::initializePlatform()
                                     ? QString::fromUtf8(Ort::GetVersionString())
                                     : QStringLiteral("unavailable")),
-#endif
 #endif
             QStringLiteral("PortAudio: %1 %2")
                     .arg(Pa_GetVersion())

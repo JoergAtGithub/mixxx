@@ -13,6 +13,12 @@
 namespace mixxx {
 namespace ml {
 
+bool initializePlatform() {
+    // Nothing to do: on Windows the runtime DLLs are loaded from the OS
+    // installation, elsewhere ONNX Runtime is linked directly.
+    return true;
+}
+
 #ifdef _WIN32
 
 namespace {
@@ -54,12 +60,6 @@ BOOL CALLBACK registerProvider(WinMLEpHandle ep, const WinMLEpInfo* info, void* 
 
 } // namespace
 
-bool initializePlatform() {
-    // Self-contained deployment: the runtime DLLs sit next to mixxx.exe,
-    // so no framework bootstrap is needed.
-    return true;
-}
-
 void registerPlatformExecutionProviders(Ort::Env& env) {
     WinMLEpCatalogHandle catalog = nullptr;
     HRESULT hr = WinMLEpCatalogCreate(&catalog);
@@ -77,10 +77,6 @@ void registerPlatformExecutionProviders(Ort::Env& env) {
 }
 
 #else
-
-bool initializePlatform() {
-    return true;
-}
 
 void registerPlatformExecutionProviders(Ort::Env&) {
 }
