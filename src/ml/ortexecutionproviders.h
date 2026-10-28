@@ -6,9 +6,10 @@ namespace mixxx {
 namespace ml {
 
 /// The only platform specific part of the ONNX Runtime integration. Must be
-/// called before any ONNX Runtime API is used. On Windows the runtime DLLs ship
-/// next to mixxx.exe (self-contained Windows App SDK), so nothing needs to be
-/// bootstrapped. Returns false if ONNX Runtime is unusable.
+/// called before any ONNX Runtime API is used. On Windows it initializes the
+/// Windows App SDK dynamic dependency bootstrapper, so that the delay loaded
+/// onnxruntime.dll and Windows ML DLL are resolved from the installed (framework
+/// dependent) Windows App SDK runtime. Returns false if that fails.
 bool initializePlatform();
 
 /// Called after the environment has been created. On Windows it makes sure the

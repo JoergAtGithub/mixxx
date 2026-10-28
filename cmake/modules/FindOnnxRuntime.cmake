@@ -6,9 +6,10 @@ Finds ONNX Runtime for running ONNX models.
 
 On Windows only the ONNX Runtime headers and the ``onnxruntime.lib`` import
 library from the buildenv are used here. The Windows ML headers and import
-libraries are located by the main ``CMakeLists.txt``. All DLLs, including
-``onnxruntime.dll``, are loaded from the local Windows 11 installation,
-nothing is shipped by Mixxx.
+libraries are located by the main ``CMakeLists.txt``. Windows ML is used
+framework-dependent: ``onnxruntime.dll`` and the Windows ML DLL are delay
+loaded from the installed Windows App SDK runtime after the dynamic dependency
+bootstrapper has been initialized.
 
 On all other platforms ONNX Runtime is used without such wrapper
 in particular:
@@ -59,12 +60,22 @@ if(WIN32)
   find_path(
     OnnxRuntime_INCLUDE_DIR
     NAMES onnxruntime_cxx_api.h
-    PATH_SUFFIXES onnxruntime
+    HINTS "${WINDOWSAPPSDK_ML_ROOT}"
+    PATH_SUFFIXES
+      include/windowsappsdk-ml/winml
+      windowsappsdk-ml/winml
+      onnxruntime
     DOC "ONNX Runtime include directory"
   )
   mark_as_advanced(OnnxRuntime_INCLUDE_DIR)
 
-  find_library(OnnxRuntime_LIBRARY NAMES onnxruntime DOC "ONNX Runtime library")
+  find_library(
+    OnnxRuntime_LIBRARY
+    NAMES onnxruntime
+    HINTS "${WINDOWSAPPSDK_ML_ROOT}"
+    PATH_SUFFIXES lib/windowsappsdk-ml windowsappsdk-ml
+    DOC "ONNX Runtime library"
+  )
   mark_as_advanced(OnnxRuntime_LIBRARY)
 
   if(
@@ -101,8 +112,6 @@ if(WIN32)
         PROPERTIES
           IMPORTED_LOCATION "${OnnxRuntime_LIBRARY}"
           INTERFACE_INCLUDE_DIRECTORIES "${OnnxRuntime_INCLUDE_DIRS}"
-          INTERFACE_LINK_LIBRARIES
-            "${OnnxRuntime_LIBRARIES};delayimp;-DELAYLOAD:onnxruntime.dll;-DELAYLOAD:Microsoft.Windows.AI.MachineLearning.dll"
       )
     endif()
   endif()

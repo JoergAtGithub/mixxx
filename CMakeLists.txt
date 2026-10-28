@@ -3574,7 +3574,21 @@ if(ONNXRUNTIME)
     target_link_libraries(mixxx-lib PRIVATE OnnxRuntime::OnnxRuntime)
     if(WIN32)
       target_include_directories(mixxx-lib PRIVATE "${WinML_INCLUDE_DIR}")
-      target_link_libraries(mixxx-lib PRIVATE "${WinML_LIBRARY}")
+      # onnxruntime.dll is only resolvable after initializePlatform()
+      target_compile_definitions(mixxx-lib PUBLIC ORT_API_MANUAL_INIT)
+      # Framework-dependent: the Windows App SDK runtime provides
+      # onnxruntime.dll and the Windows ML DLL. They are delay loaded so
+      # that the package dependency can be added first, see
+      # mixxx::ml::initializePlatform().
+      target_link_libraries(
+        mixxx-lib
+        PRIVATE
+          "${WinML_LIBRARY}"
+          OneCoreUAP # TryCreatePackageDependency / AddPackageDependency
+          delayimp
+          -DELAYLOAD:onnxruntime.dll
+          -DELAYLOAD:Microsoft.Windows.AI.MachineLearning.dll
+      )
     endif()
     target_compile_definitions(mixxx-lib PUBLIC __ONNXRUNTIME__)
   else()
