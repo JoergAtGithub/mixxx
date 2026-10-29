@@ -53,6 +53,16 @@ The following cache variables may also be set:
 
 #]=======================================================================]
 
+# The standard "Found ..." message is replaced by an own one which tells
+# whether only the import library or the complete library was found.
+set(_OnnxRuntime_was_quiet ${OnnxRuntime_FIND_QUIETLY})
+set(OnnxRuntime_FIND_QUIETLY TRUE)
+if(WIN32)
+  set(_OnnxRuntime_library_kind "import library")
+else()
+  set(_OnnxRuntime_library_kind "library")
+endif()
+
 if(WIN32)
   # Only the ONNX Runtime headers and import library come from the buildenv.
   # The Windows ML headers/import libraries are added by the main CMakeLists.txt
@@ -179,4 +189,19 @@ else()
       )
     endif()
   endif()
+endif()
+
+if(OnnxRuntime_FOUND AND NOT _OnnxRuntime_was_quiet)
+  if(OnnxRuntime_FIND_VERSION)
+    set(
+      _OnnxRuntime_version_info
+      "found suitable version \"${OnnxRuntime_VERSION}\", minimum required is \"${OnnxRuntime_FIND_VERSION}\""
+    )
+  else()
+    set(_OnnxRuntime_version_info "found version \"${OnnxRuntime_VERSION}\"")
+  endif()
+  message(
+    STATUS
+    "Found OnnxRuntime ${_OnnxRuntime_library_kind}: ${OnnxRuntime_LIBRARY} (${_OnnxRuntime_version_info})"
+  )
 endif()

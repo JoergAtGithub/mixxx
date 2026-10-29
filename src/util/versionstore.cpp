@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <QFileInfo>
 #include <QStandardPaths>
 #include <QtGlobal>
 #include <utility>
@@ -12,13 +13,6 @@
 
 #ifdef __RUBBERBAND__
 #include <rubberband/RubberBandStretcher.h>
-#endif
-
-#ifdef __ONNXRUNTIME__
-#include <onnxruntime_cxx_api.h>
-#include <winrt/Windows.AI.MachineLearning.h>
-
-#include "ml/ortexecutionproviders.h"
 #endif
 
 #include <FLAC/format.h>
@@ -180,21 +174,13 @@ QStringList VersionStore::dependencyVersions() {
 
     // WARNING: may be inaccurate since some come from compile-time header
     // definitions instead of the actual dynamically loaded library).
-    return {// Should be accurate.
+    QStringList versions = {// Should be accurate.
             QStringLiteral("Qt: %1").arg(qVersion()),
 #ifdef __BROADCAST__
             // Should be accurate.
             QStringLiteral("libshout: %1")
                     .arg(shout_version(nullptr, nullptr, nullptr)),
 
-#endif
-#ifdef __ONNXRUNTIME__
-            // Should be accurate. The platform layer must be initialized first
-            // so the matching onnxruntime.dll gets loaded on Windows.
-            QStringLiteral("ONNX Runtime: %1")
-                    .arg(mixxx::ml::initializePlatform()
-                                    ? QString::fromUtf8(Ort::GetVersionString())
-                                    : QStringLiteral("unavailable")),
 #endif
             QStringLiteral("PortAudio: %1 %2")
                     .arg(Pa_GetVersion())
@@ -219,6 +205,7 @@ QStringList VersionStore::dependencyVersions() {
             // The version of the FLAC headers Mixxx was compiled with.
             QStringLiteral("FLAC: %1").arg(FLAC__VERSION_STRING),
             QStringLiteral("libmp3lame: %1").arg(get_lame_version())};
+    return versions;
 }
 
 void VersionStore::logBuildDetails() {

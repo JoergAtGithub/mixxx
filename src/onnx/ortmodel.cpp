@@ -1,21 +1,21 @@
-#include "ml/mlmodel.h"
+#include "onnx/ortmodel.h"
 
 #include <onnxruntime_cxx_api.h>
 
 #include <filesystem>
 
-#include "ml/ortbackend.h"
-#include "ml/ortexecutionproviders.h"
+#include "onnx/ortloader.h"
+#include "onnx/ortselectexecutionprovider.h"
 #include "util/logger.h"
 
 namespace mixxx {
-namespace ml {
+namespace onnx {
 
 namespace {
-const Logger kLogger("MlModel");
+const Logger kLogger("OrtModel");
 } // namespace
 
-struct MlModel::Impl {
+struct OrtModel::Impl {
     Impl(Ort::Env&& env, Ort::Session&& session)
             : env(std::move(env)),
               session(std::move(session)) {
@@ -24,30 +24,29 @@ struct MlModel::Impl {
     Ort::Session session;
 };
 
-MlModel::MlModel(std::unique_ptr<Impl> impl, QString backendDescription)
+OrtModel::OrtModel(std::unique_ptr<Impl> impl, QString backendDescription)
         : m_impl(std::move(impl)),
           m_backendDescription(std::move(backendDescription)) {
 }
 
-MlModel::~MlModel() = default;
+OrtModel::~OrtModel() = default;
 
 // static
-std::unique_ptr<MlModel> MlModel::load(const QString& modelPath) {
+std::unique_ptr<OrtModel> OrtModel::load(const QString& modelPath) {
     try {
         if (!initializePlatform()) {
             return nullptr;
         }
         Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "mixxx");
-        registerPlatformExecutionProviders(env);
         Ort::SessionOptions options;
-        const QString backend = selectBackend(env, options);
+        const QString backend = selectExecutionProvider(env, options);
 
         const std::filesystem::path path(modelPath.toStdU16String());
         Ort::Session session(env, path.c_str(), options);
 
         kLogger.info() << "Model loaded:" << modelPath;
         kLogger.info() << "Selected backend:" << backend;
-        return std::unique_ptr<MlModel>(new MlModel(
+        return std::unique_ptr<OrtModel>(new OrtModel(
                 std::make_unique<Impl>(std::move(env), std::move(session)),
                 backend));
     } catch (const std::exception& e) {
@@ -56,5 +55,5 @@ std::unique_ptr<MlModel> MlModel::load(const QString& modelPath) {
     return nullptr;
 }
 
-} // namespace ml
+} // namespace onnx
 } // namespace mixxx

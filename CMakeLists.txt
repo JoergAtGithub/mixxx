@@ -3524,10 +3524,7 @@ endif()
 find_package(Ebur128 REQUIRED)
 target_link_libraries(mixxx-lib PRIVATE Ebur128::Ebur128)
 
-# Microsoft Windows App SDK (WinAppSDK)
-target_link_libraries(mixxx-lib PRIVATE windowsapp)
-
-# ONNX Runtime (WinML on Windows, onnxruntime from vcpkg/distribution elsewhere)
+# ONNX Runtime
 option(ONNXRUNTIME "Support for running ONNX models (WinML on Windows)" ON)
 if(ONNXRUNTIME)
   find_package(OnnxRuntime 1.23)
@@ -3555,6 +3552,39 @@ if(ONNXRUNTIME)
       PATH_SUFFIXES lib/windowsappsdk-ml windowsappsdk-ml
     )
     mark_as_advanced(WinML_INCLUDE_DIR WinML_LIBRARY)
+    # Version of the import libraries, taken from the vcpkg package metadata
+    # next to the headers. The loaded DLLs must not be older.
+    set(WinML_IMPORTLIB_VERSION "")
+    if(WinML_INCLUDE_DIR)
+      cmake_path(GET WinML_INCLUDE_DIR PARENT_PATH _winml_include_parent)
+      cmake_path(GET _winml_include_parent PARENT_PATH _winml_prefix)
+      set(
+        _winml_spdx
+        "${_winml_prefix}/share/windowsappsdk-ml-importlibs/vcpkg.spdx.json"
+      )
+      if(EXISTS "${_winml_spdx}")
+        file(READ "${_winml_spdx}" _winml_spdx_content)
+        if(
+          _winml_spdx_content
+            MATCHES
+            "\"name\": \"windowsappsdk-ml-importlibs\",[^}]*\"versionInfo\": \"([0-9]+\\.[0-9]+\\.[0-9]+)\""
+        )
+          set(WinML_IMPORTLIB_VERSION "${CMAKE_MATCH_1}")
+        endif()
+      endif()
+    endif()
+    if(NOT WinML_IMPORTLIB_VERSION)
+      message(
+        STATUS
+        "Cannot determine the Windows ML import library version, ONNX support disabled"
+      )
+      set(OnnxRuntime_FOUND FALSE)
+    else()
+      message(
+        STATUS
+        "Found WindowsML import library: ${WinML_LIBRARY} (found version \"${WinML_IMPORTLIB_VERSION}\")"
+      )
+    endif()
     if(NOT WinML_INCLUDE_DIR OR NOT WinML_LIBRARY)
       message(
         STATUS
@@ -3567,24 +3597,31 @@ if(ONNXRUNTIME)
     target_sources(
       mixxx-lib
       PRIVATE
-        src/ml/mlmodel.cpp
-        src/ml/ortbackend.cpp
-        src/ml/ortexecutionproviders.cpp
+        src/onnx/ortmodel.cpp
+        src/onnx/ortselectexecutionprovider.cpp
+        src/onnx/ortloader.cpp
     )
     target_link_libraries(mixxx-lib PRIVATE OnnxRuntime::OnnxRuntime)
+    # The OrtApi is fetched in mixxx::onnx::initializePlatform() on all platforms
+    target_compile_definitions(mixxx-lib PUBLIC ORT_API_MANUAL_INIT)
     if(WIN32)
       target_include_directories(mixxx-lib PRIVATE "${WinML_INCLUDE_DIR}")
-      # onnxruntime.dll is only resolvable after initializePlatform()
-      target_compile_definitions(mixxx-lib PUBLIC ORT_API_MANUAL_INIT)
+      set_source_files_properties(
+        src/onnx/ortloader.cpp
+        PROPERTIES
+          COMPILE_DEFINITIONS
+            "WINML_IMPORTLIB_VERSION=\"${WinML_IMPORTLIB_VERSION}\""
+      )
       # Framework-dependent: the Windows App SDK runtime provides
       # onnxruntime.dll and the Windows ML DLL. They are delay loaded so
       # that the package dependency can be added first, see
-      # mixxx::ml::initializePlatform().
+      # mixxx::onnx::initializePlatform().
       target_link_libraries(
         mixxx-lib
         PRIVATE
           "${WinML_LIBRARY}"
           OneCoreUAP # TryCreatePackageDependency / AddPackageDependency
+          Version # GetFileVersionInfo, DLL version check
           delayimp
           -DELAYLOAD:onnxruntime.dll
           -DELAYLOAD:Microsoft.Windows.AI.MachineLearning.dll

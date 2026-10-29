@@ -12,7 +12,7 @@
 #include <QMessageBox>
 #include <QtConcurrent>
 
-#include "ml/ortbackend.h"
+#include "onnx/ortselectexecutionprovider.h"
 #endif
 #include <gsl/pointers>
 
@@ -57,6 +57,9 @@
 #include "qml/qmlplayermanagerproxy.h"
 #include "qml/qmlpreferencesproxy.h"
 #include "qml/qmlsoundmanagerproxy.h"
+#endif
+#ifdef __ONNXRUNTIME__
+#include "onnx/ortloader.h"
 #endif
 #include "soundio/soundmanager.h"
 #include "sources/soundsourceproxy.h"
@@ -502,6 +505,9 @@ void CoreServices::initialize(QApplication* pApp) {
     }
 
     VersionStore::logBuildDetails();
+#ifdef __ONNXRUNTIME__
+    mixxx::onnx::logRuntimeDetails();
+#endif
 
 #if defined(Q_OS_LINUX) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     // XESetWireToError will segfault if running as a Wayland client
@@ -805,12 +811,12 @@ void CoreServices::initialize(QApplication* pApp) {
     // Check in the background that ONNX Runtime works, so the user gets an
     // early message without delaying the GUI. Works for the QWidget and the
     // QML GUI alike since both run on a QApplication.
-    auto* pWatcher = new QFutureWatcher<mixxx::ml::MlBackendProbe>(this);
+    auto* pWatcher = new QFutureWatcher<mixxx::onnx::OrtExecutionProviderProbe>(this);
     connect(pWatcher,
             &QFutureWatcherBase::finished,
             this,
             [this, pWatcher] {
-                const mixxx::ml::MlBackendProbe probe = pWatcher->result();
+                const mixxx::onnx::OrtExecutionProviderProbe probe = pWatcher->result();
                 pWatcher->deleteLater();
                 if (probe.ok) {
                     qInfo() << "ONNX Runtime backend:" << probe.description;
@@ -825,9 +831,9 @@ void CoreServices::initialize(QApplication* pApp) {
                     pBox->setAttribute(Qt::WA_DeleteOnClose);
                     pBox->open();
                 }
-                emit mlBackendProbed(probe.ok, probe.description);
+                emit ortExecutionProviderProbed(probe.ok, probe.description);
             });
-    pWatcher->setFuture(QtConcurrent::run(&mixxx::ml::probeBackend));
+    pWatcher->setFuture(QtConcurrent::run(&mixxx::onnx::probeExecutionProvider));
 #endif
 
     ControllerScriptEngineBase::registerPlayerManager(getPlayerManager());

@@ -111,7 +111,7 @@ class CoreServices : public QObject {
     void libraryScanSummary(const LibraryScanResultSummary& result);
     /// Emitted in the main thread once the ONNX Runtime start-up check is done.
     /// On failure, description is an error message.
-    void mlBackendProbed(bool ok, const QString& description);
+    void ortExecutionProviderProbed(bool ok, const QString& description);
 
   private:
     bool initializeDatabase();

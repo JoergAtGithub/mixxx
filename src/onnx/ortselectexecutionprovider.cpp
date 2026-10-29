@@ -1,18 +1,26 @@
-#include "ml/ortbackend.h"
+#include "onnx/ortselectexecutionprovider.h"
 
 #include <QScopeGuard>
 #include <QThread>
 #include <vector>
 
-#include "ml/ortexecutionproviders.h"
+#include "onnx/ortloader.h"
 #include "util/logger.h"
 
+#ifdef _WIN32
+#include <windows.h>
+// clang-format off
+#include <appmodel.h>
+// clang-format on
+#include <WinMLEpCatalog.h>
+#endif
+
 namespace mixxx {
-namespace ml {
+namespace onnx {
 
 namespace {
 
-const Logger kLogger("OrtBackend");
+const Logger kLogger("OrtSelectExecutionProvider");
 
 static_assert(ORT_API_VERSION >= 23, "ONNX Runtime 1.23 or newer is required");
 
@@ -49,9 +57,68 @@ QString describeDevice(const Ort::ConstEpDevice& epDevice) {
                     QString::number(hw.DeviceId()));
 }
 
+#ifdef _WIN32
+
+BOOL CALLBACK registerProvider(WinMLEpHandle ep, const WinMLEpInfo* info, void* pContext) {
+    auto* pEnv = static_cast<Ort::Env*>(pContext);
+    kLogger.info() << "Execution provider package:" << info->name << info->version
+                   << "certified:"
+                   << (info->certification == WinMLEpCertification_Certified);
+    if (info->certification != WinMLEpCertification_Certified) {
+        return TRUE;
+    }
+    HRESULT hr = WinMLEpEnsureReady(ep);
+    if (FAILED(hr)) {
+        kLogger.warning() << "Execution provider" << info->name
+                          << "cannot be made ready, HRESULT" << Qt::hex << hr;
+        return TRUE;
+    }
+    size_t size = 0;
+    if (FAILED(WinMLEpGetLibraryPathSize(ep, &size)) || size == 0) {
+        return TRUE;
+    }
+    std::string path(size, '\0');
+    size_t used = 0;
+    if (FAILED(WinMLEpGetLibraryPath(ep, size, path.data(), &used))) {
+        return TRUE;
+    }
+    try {
+        pEnv->RegisterExecutionProviderLibrary(
+                info->name, QString::fromUtf8(path.c_str()).toStdWString());
+        kLogger.info() << "Registered execution provider" << info->name;
+    } catch (const Ort::Exception& e) {
+        kLogger.warning() << "Registering" << info->name << "failed:" << e.what();
+    }
+    return TRUE;
+}
+
+void registerPlatformExecutionProviders(Ort::Env& env) {
+    WinMLEpCatalogHandle catalog = nullptr;
+    HRESULT hr = WinMLEpCatalogCreate(&catalog);
+    if (FAILED(hr)) {
+        kLogger.warning() << "Windows ML EP catalog not available, HRESULT"
+                          << Qt::hex << hr;
+        return;
+    }
+    hr = WinMLEpCatalogEnumProviders(catalog, registerProvider, &env);
+    if (FAILED(hr)) {
+        kLogger.warning() << "Enumerating execution providers failed, HRESULT"
+                          << Qt::hex << hr;
+    }
+    WinMLEpCatalogRelease(catalog);
+}
+
+#else
+
+void registerPlatformExecutionProviders(Ort::Env&) {
+}
+
+#endif
+
 } // namespace
 
-QString selectBackend(Ort::Env& env, Ort::SessionOptions& options) {
+QString selectExecutionProvider(Ort::Env& env, Ort::SessionOptions& options) {
+    registerPlatformExecutionProviders(env);
     QString backend = QStringLiteral("CPU via 'CPUExecutionProvider' (default)");
     const std::vector<Ort::ConstEpDevice> devices = env.GetEpDevices();
     kLogger.info() << "Available execution provider devices:" << devices.size();
@@ -80,12 +147,12 @@ QString selectBackend(Ort::Env& env, Ort::SessionOptions& options) {
     return backend;
 }
 
-MlBackendProbe probeBackend() {
+OrtExecutionProviderProbe probeExecutionProvider() {
     // Name the (pooled) worker thread for the log, restore the name afterwards
     // because the thread is shared with other tasks.
     QThread* const pThread = QThread::currentThread();
     const QString previousName = pThread->objectName();
-    pThread->setObjectName(QStringLiteral("MlProbe"));
+    pThread->setObjectName(QStringLiteral("OrtProbe"));
     const auto restoreName = qScopeGuard([&] { pThread->setObjectName(previousName); });
     try {
         if (!initializePlatform()) {
@@ -96,9 +163,8 @@ MlBackendProbe probeBackend() {
         kLogger.info() << "ONNX Runtime build info:"
                        << QString::fromUtf8(Ort::GetBuildInfoString());
         Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "mixxx");
-        registerPlatformExecutionProviders(env);
         Ort::SessionOptions options;
-        const QString backend = selectBackend(env, options);
+        const QString backend = selectExecutionProvider(env, options);
         kLogger.info() << "Selected backend:" << backend;
         return {true, backend};
     } catch (const std::exception& e) {
@@ -106,5 +172,5 @@ MlBackendProbe probeBackend() {
     }
 }
 
-} // namespace ml
+} // namespace onnx
 } // namespace mixxx
