@@ -536,13 +536,28 @@ void SoundManagerConfig::loadDefaults(SoundManager* soundManager, unsigned int f
             }
 #endif
 #ifdef __WINDOWS__
-            //Existence of ASIO doesn't necessarily mean you've got ASIO devices
-            //Do something more advanced one day if you like - Adam
-            // hoping this counts as more advanced, tests if ASIO is an option
-            // and then that we have at least one ASIO output device -- bkgood
-            auto deviceList = soundManager->getDeviceList(
-                    SoundManagerConfig::kAPIAsio, true, false);
-            if (apiList.contains(SoundManagerConfig::kAPIAsio) && !deviceList.isEmpty()) {
+            // Existence of ASIO doesn't necessarily mean you've got ASIO devices
+            // Do something more advanced one day if you like - Adam
+            //  hoping this counts as more advanced, tests if ASIO is an option
+            //  and then that we have at least one ASIO output device -- bkgood
+            //  A present ASIO device can still be unusable: e.g. the Realtek
+            //  ASIO driver enumerates but rejects every standard sample rate,
+            //  so defaulting to it leaves the user without sound. Only pick
+            //  ASIO if at least one of its output devices can actually be
+            //  opened.
+            bool usableAsioDevice = false;
+            if (apiList.contains(MIXXX_PORTAUDIO_ASIO_STRING)) {
+                const QList<SoundDevicePointer> asioDevices =
+                        soundManager->getDeviceList(
+                                MIXXX_PORTAUDIO_ASIO_STRING, true, false);
+                for (const auto& pDevice : asioDevices) {
+                    if (pDevice->isUsable()) {
+                        usableAsioDevice = true;
+                        break;
+                    }
+                }
+            }
+            if (usableAsioDevice) {
                 m_api = SoundManagerConfig::kAPIAsio;
             } else {
                 m_api = SoundManagerConfig::kAPIDirectSound;
